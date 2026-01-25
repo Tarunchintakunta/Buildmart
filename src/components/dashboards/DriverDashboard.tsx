@@ -228,6 +228,15 @@ export default function DriverDashboard() {
         </View>
       )}
 
+      {/* Scan QR Code Button */}
+      <TouchableOpacity
+        className="bg-orange-500 rounded-xl p-4 mb-6 flex-row items-center justify-center"
+        onPress={() => router.push('/(app)/scan?mode=delivery')}
+      >
+        <Ionicons name="scan" size={24} color="white" />
+        <Text className="text-white font-semibold text-lg ml-3">Scan QR Code</Text>
+      </TouchableOpacity>
+
       {/* Performance Stats */}
       <View className="mb-6">
         <Text className="text-white text-lg font-semibold mb-3">Your Performance</Text>

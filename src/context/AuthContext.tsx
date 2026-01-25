@@ -221,10 +221,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const stored = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
         const parsedUser = JSON.parse(stored);
-        setUser(parsedUser);
+        // Validate that the user has required fields
+        if (parsedUser && parsedUser.role && parsedUser.phone) {
+          setUser(parsedUser);
+        } else {
+          console.warn('Invalid user data in storage, clearing...', parsedUser);
+          await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+        }
       }
     } catch (error) {
       console.error('Failed to load auth state:', error);
+      // Clear corrupted data
+      try {
+        await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+      } catch (clearError) {
+        console.error('Failed to clear corrupted auth data:', clearError);
+      }
     } finally {
       setIsLoading(false);
     }

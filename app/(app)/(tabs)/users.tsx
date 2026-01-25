@@ -61,7 +61,7 @@ export default function UsersScreen() {
     return matchesSearch && matchesRole;
   });
 
-  const getUserCounts = () => {
+  const getUserCounts = (): Record<UserRole | 'all', number> => {
     return {
       all: MOCK_USERS.length,
       customer: MOCK_USERS.filter((u) => u.role === 'customer').length,
@@ -69,6 +69,7 @@ export default function UsersScreen() {
       worker: MOCK_USERS.filter((u) => u.role === 'worker').length,
       shopkeeper: MOCK_USERS.filter((u) => u.role === 'shopkeeper').length,
       driver: MOCK_USERS.filter((u) => u.role === 'driver').length,
+      admin: MOCK_USERS.filter((u) => u.role === 'admin').length,
     };
   };
 
