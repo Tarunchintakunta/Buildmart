@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -8,6 +8,22 @@ import '../global.css';
 
 function RootLayoutNav() {
   const { isLoading, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!isAuthenticated && !inAuthGroup) {
+      // Redirect to login if not authenticated
+      router.replace('/(auth)/login');
+    } else if (isAuthenticated && inAuthGroup) {
+      // Redirect to app if authenticated but still in auth screens
+      router.replace('/(app)');
+    }
+  }, [isAuthenticated, isLoading, segments]);
 
   if (isLoading) {
     return (
@@ -21,11 +37,8 @@ function RootLayoutNav() {
     <>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }}>
-        {!isAuthenticated ? (
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        ) : (
-          <Stack.Screen name="(app)" options={{ headerShown: false }} />
-        )}
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(app)" options={{ headerShown: false }} />
       </Stack>
     </>
   );

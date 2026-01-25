@@ -6,7 +6,7 @@ import { User, UserRole } from '../types/database';
 const MOCK_USERS: Record<string, User> = {
   // Customers
   '9876543101': {
-    id: 'u1000000-0000-0000-0000-000000000001',
+    id: 'a1000000-0000-0000-0000-000000000001',
     phone: '9876543101',
     full_name: 'Rahul Sharma',
     email: 'rahul@email.com',
@@ -20,7 +20,7 @@ const MOCK_USERS: Record<string, User> = {
     updated_at: new Date().toISOString(),
   },
   '9876543102': {
-    id: 'u1000000-0000-0000-0000-000000000002',
+    id: 'a1000000-0000-0000-0000-000000000002',
     phone: '9876543102',
     full_name: 'Priya Patel',
     email: 'priya@email.com',
@@ -35,7 +35,7 @@ const MOCK_USERS: Record<string, User> = {
   },
   // Contractors
   '9876543201': {
-    id: 'u2000000-0000-0000-0000-000000000001',
+    id: 'a2000000-0000-0000-0000-000000000001',
     phone: '9876543201',
     full_name: 'Rajesh Constructions',
     email: 'rajesh.const@email.com',
@@ -49,7 +49,7 @@ const MOCK_USERS: Record<string, User> = {
     updated_at: new Date().toISOString(),
   },
   '9876543202': {
-    id: 'u2000000-0000-0000-0000-000000000002',
+    id: 'a2000000-0000-0000-0000-000000000002',
     phone: '9876543202',
     full_name: 'BuildRight Pvt Ltd',
     email: 'buildright@email.com',
@@ -64,7 +64,7 @@ const MOCK_USERS: Record<string, User> = {
   },
   // Workers
   '9876543301': {
-    id: 'u3000000-0000-0000-0000-000000000001',
+    id: 'a3000000-0000-0000-0000-000000000001',
     phone: '9876543301',
     full_name: 'Ramu Yadav',
     email: 'ramu@email.com',
@@ -78,7 +78,7 @@ const MOCK_USERS: Record<string, User> = {
     updated_at: new Date().toISOString(),
   },
   '9876543302': {
-    id: 'u3000000-0000-0000-0000-000000000002',
+    id: 'a3000000-0000-0000-0000-000000000002',
     phone: '9876543302',
     full_name: 'Suresh Kumar',
     email: 'suresh@email.com',
@@ -92,7 +92,7 @@ const MOCK_USERS: Record<string, User> = {
     updated_at: new Date().toISOString(),
   },
   '9876543304': {
-    id: 'u3000000-0000-0000-0000-000000000004',
+    id: 'a3000000-0000-0000-0000-000000000004',
     phone: '9876543304',
     full_name: 'Ganesh Babu',
     email: 'ganesh@email.com',
@@ -107,7 +107,7 @@ const MOCK_USERS: Record<string, User> = {
   },
   // Shopkeepers
   '9876543401': {
-    id: 'u4000000-0000-0000-0000-000000000001',
+    id: 'a4000000-0000-0000-0000-000000000001',
     phone: '9876543401',
     full_name: 'Anand Hardware',
     email: 'anand.hw@email.com',
@@ -121,7 +121,7 @@ const MOCK_USERS: Record<string, User> = {
     updated_at: new Date().toISOString(),
   },
   '9876543402': {
-    id: 'u4000000-0000-0000-0000-000000000002',
+    id: 'a4000000-0000-0000-0000-000000000002',
     phone: '9876543402',
     full_name: 'Sri Lakshmi Traders',
     email: 'lakshmi.trade@email.com',
@@ -136,7 +136,7 @@ const MOCK_USERS: Record<string, User> = {
   },
   // Drivers
   '9876543501': {
-    id: 'u5000000-0000-0000-0000-000000000001',
+    id: 'a5000000-0000-0000-0000-000000000001',
     phone: '9876543501',
     full_name: 'Krishna Driver',
     email: 'krishna.d@email.com',
@@ -150,7 +150,7 @@ const MOCK_USERS: Record<string, User> = {
     updated_at: new Date().toISOString(),
   },
   '9876543503': {
-    id: 'u5000000-0000-0000-0000-000000000003',
+    id: 'a5000000-0000-0000-0000-000000000003',
     phone: '9876543503',
     full_name: 'Naveen Transport',
     email: 'naveen.t@email.com',
@@ -165,7 +165,7 @@ const MOCK_USERS: Record<string, User> = {
   },
   // Admins
   '9876543601': {
-    id: 'u6000000-0000-0000-0000-000000000001',
+    id: 'a6000000-0000-0000-0000-000000000001',
     phone: '9876543601',
     full_name: 'Admin One',
     email: 'admin1@marketplace.com',
@@ -179,7 +179,7 @@ const MOCK_USERS: Record<string, User> = {
     updated_at: new Date().toISOString(),
   },
   '9876543602': {
-    id: 'u6000000-0000-0000-0000-000000000002',
+    id: 'a6000000-0000-0000-0000-000000000002',
     phone: '9876543602',
     full_name: 'Admin Two',
     email: 'admin2@marketplace.com',
