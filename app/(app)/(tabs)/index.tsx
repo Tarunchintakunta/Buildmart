@@ -107,21 +107,27 @@ export default function HomeScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-900">
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-800">
+      <View 
+        className="flex-row items-center justify-between px-5 py-4 border-b"
+        style={{ borderBottomColor: '#374151' }}
+      >
         <View>
-          <Text className="text-gray-400 text-sm">Welcome back,</Text>
-          <Text className="text-white text-xl font-bold">{user?.full_name}</Text>
+          <Text className="text-gray-400 text-sm font-medium mb-1">Welcome back,</Text>
+          <Text className="text-white text-2xl font-bold">{user?.full_name}</Text>
         </View>
-        <View className="flex-row items-center space-x-3">
+        <View className="flex-row items-center space-x-4">
           {/* Cart (for customer/contractor) */}
           {(user?.role === 'customer' || user?.role === 'contractor') && (
             <TouchableOpacity
               className="relative"
               onPress={() => router.push('/(app)/checkout')}
             >
-              <Ionicons name="cart-outline" size={26} color="white" />
+              <Ionicons name="cart-outline" size={28} color="white" />
               {cartItemCount > 0 && (
-                <View className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full items-center justify-center">
+                <View 
+                  className="absolute -top-1 -right-1 w-6 h-6 rounded-full items-center justify-center"
+                  style={{ backgroundColor: '#F97316' }}
+                >
                   <Text className="text-white text-xs font-bold">{cartItemCount}</Text>
                 </View>
               )}
@@ -129,7 +135,7 @@ export default function HomeScreen() {
           )}
           {/* Notifications */}
           <TouchableOpacity>
-            <Ionicons name="notifications-outline" size={26} color="white" />
+            <Ionicons name="notifications-outline" size={28} color="white" />
           </TouchableOpacity>
         </View>
       </View>

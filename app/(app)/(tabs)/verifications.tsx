@@ -147,29 +147,46 @@ export default function VerificationsScreen() {
     const isRejected = verification.status === 'rejected';
 
     return (
-      <View className={`bg-gray-800 rounded-xl p-4 mb-3 ${
-        isPending ? 'border-l-4 border-yellow-500' : ''
-      }`}>
+      <View 
+        className="rounded-2xl p-5 mb-4"
+        style={{
+          backgroundColor: '#1F2937',
+          borderLeftWidth: isPending ? 4 : 0,
+          borderLeftColor: isPending ? '#F59E0B' : 'transparent',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}
+      >
         {/* Header */}
         <View className="flex-row items-start mb-4">
-          <View className="w-16 h-16 bg-gray-700 rounded-full items-center justify-center">
-            <Ionicons name="person" size={32} color="#6B7280" />
+          <View 
+            className="w-16 h-16 rounded-xl items-center justify-center"
+            style={{ backgroundColor: '#374151' }}
+          >
+            <Ionicons name="person" size={36} color="#6B7280" />
           </View>
           <View className="flex-1 ml-4">
-            <Text className="text-white font-semibold text-lg">{verification.workerName}</Text>
-            <Text className="text-gray-400">{verification.phone}</Text>
-            <View className="flex-row flex-wrap mt-2">
+            <Text className="text-white font-bold text-lg mb-1">{verification.workerName}</Text>
+            <Text className="text-gray-400 font-medium mb-2">{verification.phone}</Text>
+            <View className="flex-row flex-wrap">
               {verification.skills.map((skill, index) => (
-                <View key={index} className="bg-gray-700 px-2 py-1 rounded mr-2 mb-1">
-                  <Text className="text-gray-300 text-xs">{skill}</Text>
+                <View 
+                  key={index} 
+                  className="px-3 py-1 rounded-xl mr-2 mb-1"
+                  style={{ backgroundColor: '#374151' }}
+                >
+                  <Text className="text-gray-300 text-xs font-semibold">{skill}</Text>
                 </View>
               ))}
             </View>
           </View>
           <View className="items-end">
-            <Text className="text-gray-500 text-xs">Experience</Text>
-            <Text className="text-white font-medium">{verification.experience} years</Text>
-            <Text className="text-orange-500 font-bold mt-1">₹{verification.dailyRate}/day</Text>
+            <Text className="text-gray-500 text-xs font-medium mb-1">Experience</Text>
+            <Text className="text-white font-bold">{verification.experience} years</Text>
+            <Text className="text-orange-500 font-bold text-base mt-1">₹{verification.dailyRate}/day</Text>
           </View>
         </View>
 
@@ -233,27 +250,37 @@ export default function VerificationsScreen() {
 
         {/* Actions for Pending */}
         {isPending && (
-          <View className="flex-row space-x-3 pt-3 border-t border-gray-700">
+          <View 
+            className="flex-row space-x-3 pt-4"
+            style={{ borderTopWidth: 1, borderTopColor: '#374151' }}
+          >
             <TouchableOpacity
-              className="flex-1 bg-gray-700 py-3 rounded-lg flex-row items-center justify-center"
+              className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
+              style={{
+                backgroundColor: '#374151',
+                borderWidth: 1,
+                borderColor: '#4B5563',
+              }}
               onPress={() => setSelectedVerification(verification)}
             >
-              <Ionicons name="eye" size={18} color="#9CA3AF" />
-              <Text className="text-gray-300 font-medium ml-2">View Details</Text>
+              <Ionicons name="eye" size={20} color="#9CA3AF" />
+              <Text className="text-gray-300 font-bold ml-2">View Details</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 bg-green-500 py-3 rounded-lg flex-row items-center justify-center"
+              className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
+              style={{ backgroundColor: '#10B981' }}
               onPress={() => handleApprove(verification)}
             >
-              <Ionicons name="checkmark" size={18} color="white" />
-              <Text className="text-white font-medium ml-2">Approve</Text>
+              <Ionicons name="checkmark" size={20} color="white" />
+              <Text className="text-white font-bold ml-2">Approve</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 bg-red-500 py-3 rounded-lg flex-row items-center justify-center"
+              className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
+              style={{ backgroundColor: '#EF4444' }}
               onPress={() => handleReject(verification)}
             >
-              <Ionicons name="close" size={18} color="white" />
-              <Text className="text-white font-medium ml-2">Reject</Text>
+              <Ionicons name="close" size={20} color="white" />
+              <Text className="text-white font-bold ml-2">Reject</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -264,11 +291,17 @@ export default function VerificationsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-900">
       {/* Header */}
-      <View className="px-4 py-3 border-b border-gray-800">
+      <View 
+        className="px-5 py-4 border-b"
+        style={{ borderBottomColor: '#374151' }}
+      >
         <View className="flex-row items-center justify-between">
-          <Text className="text-white text-2xl font-bold">Verifications</Text>
+          <Text className="text-white text-3xl font-bold">Verifications</Text>
           {pendingCount > 0 && (
-            <View className="bg-yellow-500 px-3 py-1 rounded-full">
+            <View 
+              className="px-4 py-2 rounded-xl"
+              style={{ backgroundColor: '#F59E0B' }}
+            >
               <Text className="text-black font-bold">{pendingCount} Pending</Text>
             </View>
           )}
@@ -276,19 +309,25 @@ export default function VerificationsScreen() {
       </View>
 
       {/* Tabs */}
-      <View className="flex-row px-4 py-3 border-b border-gray-800">
+      <View 
+        className="flex-row px-4 py-4 border-b"
+        style={{ borderBottomColor: '#374151' }}
+      >
         {VERIFICATION_TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
-            className={`flex-1 py-2 rounded-lg mr-2 ${
-              selectedTab === tab ? 'bg-orange-500' : 'bg-gray-800'
-            }`}
+            className="flex-1 py-3 rounded-xl mr-2"
+            style={{
+              backgroundColor: selectedTab === tab ? '#F97316' : '#1F2937',
+            }}
             onPress={() => setSelectedTab(tab)}
           >
             <Text
-              className={`text-center font-medium ${
-                selectedTab === tab ? 'text-white' : 'text-gray-400'
-              }`}
+              className="text-center font-semibold"
+              style={{
+                color: selectedTab === tab ? '#FFFFFF' : '#9CA3AF',
+                fontSize: 14,
+              }}
             >
               {tab}
             </Text>

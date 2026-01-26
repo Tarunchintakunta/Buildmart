@@ -216,31 +216,41 @@ export default function WorkersScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-900">
       {/* Header */}
-      <View className="px-4 py-3 border-b border-gray-800">
-        <Text className="text-white text-2xl font-bold">
+      <View 
+        className="px-5 py-4 border-b"
+        style={{ borderBottomColor: '#374151' }}
+      >
+        <Text className="text-white text-3xl font-bold mb-4">
           {isContractor ? 'Hire Workers' : 'Find Workers'}
         </Text>
 
         {/* Search Bar */}
-        <View className="flex-row items-center bg-gray-800 rounded-xl px-4 mt-3">
-          <Ionicons name="search" size={20} color="#6B7280" />
+        <View 
+          className="flex-row items-center rounded-2xl px-4"
+          style={{
+            backgroundColor: '#1F2937',
+            borderWidth: 1,
+            borderColor: '#374151',
+          }}
+        >
+          <Ionicons name="search" size={22} color="#6B7280" />
           <TextInput
-            className="flex-1 text-white py-3 ml-2"
+            className="flex-1 text-white py-4 ml-3 text-base"
             placeholder="Search workers..."
             placeholderTextColor="#6B7280"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#6B7280" />
+            <TouchableOpacity onPress={() => setSearchQuery('')} className="ml-2">
+              <Ionicons name="close-circle" size={22} color="#6B7280" />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Skills Filter */}
-      <View className="py-3 border-b border-gray-800">
+      <View className="py-4 border-b" style={{ borderBottomColor: '#374151' }}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -249,20 +259,23 @@ export default function WorkersScreen() {
           {SKILLS.map((skill) => (
             <TouchableOpacity
               key={skill.id}
-              className={`flex-row items-center px-4 py-2 rounded-full mr-2 ${
-                selectedSkill === skill.id ? 'bg-orange-500' : 'bg-gray-800'
-              }`}
+              className="flex-row items-center px-5 py-3 rounded-xl mr-3"
+              style={{
+                backgroundColor: selectedSkill === skill.id ? '#F97316' : '#1F2937',
+              }}
               onPress={() => setSelectedSkill(skill.id)}
             >
               <Ionicons
                 name={skill.icon as any}
-                size={16}
+                size={18}
                 color={selectedSkill === skill.id ? 'white' : '#9CA3AF'}
               />
               <Text
-                className={`ml-2 font-medium ${
-                  selectedSkill === skill.id ? 'text-white' : 'text-gray-400'
-                }`}
+                className="ml-2 font-semibold"
+                style={{
+                  color: selectedSkill === skill.id ? '#FFFFFF' : '#9CA3AF',
+                  fontSize: 14,
+                }}
               >
                 {skill.name}
               </Text>

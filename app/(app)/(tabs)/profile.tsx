@@ -39,19 +39,19 @@ export default function ProfileScreen() {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'customer':
-        return 'bg-blue-500';
+        return '#3B82F6';
       case 'contractor':
-        return 'bg-purple-500';
+        return '#8B5CF6';
       case 'worker':
-        return 'bg-green-500';
+        return '#10B981';
       case 'shopkeeper':
-        return 'bg-orange-500';
+        return '#F97316';
       case 'driver':
-        return 'bg-cyan-500';
+        return '#06B6D4';
       case 'admin':
-        return 'bg-red-500';
+        return '#EF4444';
       default:
-        return 'bg-gray-500';
+        return '#6B7280';
     }
   };
 
@@ -140,36 +140,64 @@ export default function ProfileScreen() {
     <SafeAreaView className="flex-1 bg-gray-900">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="px-4 py-3 border-b border-gray-800">
-          <Text className="text-white text-2xl font-bold">Profile</Text>
+        <View 
+          className="px-5 py-4 border-b"
+          style={{ borderBottomColor: '#374151' }}
+        >
+          <Text className="text-white text-3xl font-bold">Profile</Text>
         </View>
 
         {/* Profile Card */}
         <View className="px-4 mt-4">
-          <View className="bg-gray-800 rounded-2xl p-5">
+          <View 
+            className="rounded-2xl p-6"
+            style={{
+              backgroundColor: '#1F2937',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
+          >
             <View className="flex-row items-center">
-              <View className="w-20 h-20 bg-gray-700 rounded-full items-center justify-center">
-                <Ionicons name="person" size={40} color="#6B7280" />
+              <View 
+                className="w-24 h-24 rounded-2xl items-center justify-center"
+                style={{ backgroundColor: '#374151' }}
+              >
+                <Ionicons name="person" size={48} color="#6B7280" />
               </View>
               <View className="ml-4 flex-1">
-                <Text className="text-white text-xl font-bold">{user?.full_name}</Text>
-                <Text className="text-gray-400">{user?.phone}</Text>
-                <View className={`self-start px-3 py-1 rounded-full mt-2 ${getRoleColor(user?.role || '')}`}>
-                  <Text className="text-white text-sm font-medium">
+                <Text className="text-white text-2xl font-bold mb-1">{user?.full_name}</Text>
+                <Text className="text-gray-400 font-medium mb-2">{user?.phone}</Text>
+                <View 
+                  className="self-start px-4 py-2 rounded-xl"
+                  style={{ backgroundColor: `${getRoleColor(user?.role || '')}20` }}
+                >
+                  <Text 
+                    className="font-bold text-sm"
+                    style={{ color: getRoleColor(user?.role || '') }}
+                  >
                     {getRoleLabel(user?.role || '')}
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity className="bg-gray-700 p-2 rounded-full">
-                <Ionicons name="pencil" size={20} color="#9CA3AF" />
+              <TouchableOpacity 
+                className="p-3 rounded-xl"
+                style={{ backgroundColor: '#374151' }}
+              >
+                <Ionicons name="pencil" size={22} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
 
             {/* Location */}
             {user?.address && (
-              <View className="flex-row items-center mt-4 pt-4 border-t border-gray-700">
-                <Ionicons name="location" size={18} color="#9CA3AF" />
-                <Text className="text-gray-400 ml-2 flex-1" numberOfLines={1}>
+              <View 
+                className="flex-row items-center mt-4 pt-4"
+                style={{ borderTopWidth: 1, borderTopColor: '#374151' }}
+              >
+                <Ionicons name="location" size={20} color="#9CA3AF" />
+                <Text className="text-gray-400 ml-2 flex-1 font-medium" numberOfLines={1}>
                   {user.address}, {user.city}
                 </Text>
               </View>
@@ -179,20 +207,37 @@ export default function ProfileScreen() {
 
         {/* Wallet Summary */}
         <View className="px-4 mt-4">
-          <TouchableOpacity className="bg-orange-500 rounded-2xl p-5">
+          <TouchableOpacity 
+            className="rounded-2xl p-6"
+            style={{
+              backgroundColor: '#F97316',
+              shadowColor: '#F97316',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
+            onPress={() => router.push('/(app)/(tabs)/wallet')}
+          >
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-orange-100 text-sm">Wallet Balance</Text>
-                <Text className="text-white text-2xl font-bold mt-1">
+                <Text className="text-orange-100 text-sm font-medium mb-1">Wallet Balance</Text>
+                <Text className="text-white text-3xl font-bold">
                   ₹{walletBalance.toLocaleString()}
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <View className="bg-white/20 rounded-full p-3 mr-3">
-                  <Ionicons name="add" size={20} color="white" />
+                <View 
+                  className="rounded-full p-3 mr-3"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+                >
+                  <Ionicons name="add" size={22} color="white" />
                 </View>
-                <View className="bg-white/20 rounded-full p-3">
-                  <Ionicons name="wallet" size={20} color="white" />
+                <View 
+                  className="rounded-full p-3"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+                >
+                  <Ionicons name="wallet" size={22} color="white" />
                 </View>
               </View>
             </View>
@@ -201,21 +246,36 @@ export default function ProfileScreen() {
 
         {/* Menu Items */}
         <View className="px-4 mt-6">
-          <Text className="text-gray-400 text-sm mb-3 px-2">MENU</Text>
-          <View className="bg-gray-800 rounded-2xl overflow-hidden">
+          <Text className="text-gray-400 text-sm mb-4 px-2 font-semibold">MENU</Text>
+          <View 
+            className="rounded-2xl overflow-hidden"
+            style={{
+              backgroundColor: '#1F2937',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
+          >
             {getMenuItems().map((item, index) => (
               <TouchableOpacity
                 key={item.id}
-                className={`flex-row items-center px-4 py-4 ${
-                  index !== getMenuItems().length - 1 ? 'border-b border-gray-700' : ''
-                }`}
+                className="flex-row items-center px-5 py-4"
+                style={{
+                  borderBottomWidth: index !== getMenuItems().length - 1 ? 1 : 0,
+                  borderBottomColor: '#374151',
+                }}
                 onPress={() => item.route && router.push(item.route as any)}
               >
-                <View className="w-10 h-10 bg-gray-700 rounded-full items-center justify-center">
-                  <Ionicons name={item.icon as any} size={20} color="#F97316" />
+                <View 
+                  className="w-12 h-12 rounded-xl items-center justify-center"
+                  style={{ backgroundColor: 'rgba(249, 115, 22, 0.2)' }}
+                >
+                  <Ionicons name={item.icon as any} size={24} color="#F97316" />
                 </View>
-                <Text className="text-white font-medium ml-3 flex-1">{item.label}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+                <Text className="text-white font-bold ml-4 flex-1 text-base">{item.label}</Text>
+                <Ionicons name="chevron-forward" size={22} color="#6B7280" />
               </TouchableOpacity>
             ))}
           </View>
@@ -224,11 +284,16 @@ export default function ProfileScreen() {
         {/* Logout Button */}
         <View className="px-4 mt-6 mb-8">
           <TouchableOpacity
-            className="bg-red-500/10 rounded-2xl py-4 flex-row items-center justify-center"
+            className="rounded-2xl py-4 flex-row items-center justify-center"
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.2)',
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.3)',
+            }}
             onPress={handleLogout}
           >
-            <Ionicons name="log-out" size={20} color="#EF4444" />
-            <Text className="text-red-500 font-semibold ml-2">Logout</Text>
+            <Ionicons name="log-out" size={22} color="#EF4444" />
+            <Text className="text-red-500 font-bold ml-2">Logout</Text>
           </TouchableOpacity>
         </View>
 

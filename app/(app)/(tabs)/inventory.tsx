@@ -134,77 +134,126 @@ export default function InventoryScreen() {
     );
   };
 
+  const getStockStatusValue = (stock: number, minStock: number) => {
+    if (stock === 0) return { label: 'Out of Stock', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.2)' };
+    if (stock <= minStock) return { label: 'Low Stock', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.2)' };
+    return { label: 'In Stock', color: '#10B981', bg: 'rgba(16, 185, 129, 0.2)' };
+  };
+
   const renderInventoryItem = ({ item }: { item: typeof MOCK_INVENTORY[0] }) => {
-    const stockStatus = getStockStatus(item.stock, item.minStock);
+    const stockStatus = getStockStatusValue(item.stock, item.minStock);
     const isLowOrOut = item.stock <= item.minStock;
 
     return (
-      <View className={`bg-gray-800 rounded-xl p-4 mb-3 ${isLowOrOut ? 'border-l-4 border-yellow-500' : ''}`}>
-        <View className="flex-row justify-between items-start mb-3">
+      <View 
+        className="rounded-2xl p-5 mb-4"
+        style={{
+          backgroundColor: '#1F2937',
+          borderLeftWidth: isLowOrOut ? 4 : 0,
+          borderLeftColor: isLowOrOut ? '#F59E0B' : 'transparent',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}
+      >
+        <View className="flex-row justify-between items-start mb-4">
           <View className="flex-1">
-            <Text className="text-white font-semibold text-lg">{item.product}</Text>
-            <View className="flex-row items-center mt-1">
-              <View className="bg-gray-700 px-2 py-0.5 rounded">
-                <Text className="text-gray-300 text-xs">{item.category}</Text>
+            <Text className="text-white font-bold text-lg mb-2">{item.product}</Text>
+            <View className="flex-row items-center">
+              <View 
+                className="px-3 py-1 rounded-xl"
+                style={{ backgroundColor: '#374151' }}
+              >
+                <Text className="text-gray-300 text-xs font-semibold">{item.category}</Text>
               </View>
               <Text className="text-gray-500 mx-2">•</Text>
-              <Text className="text-gray-400 text-sm">₹{item.price}/{item.unit}</Text>
+              <Text className="text-gray-400 text-sm font-medium">₹{item.price}/{item.unit}</Text>
             </View>
           </View>
-          <View className={`px-2 py-1 rounded ${stockStatus.bg}`}>
-            <Text className={`text-xs font-medium ${stockStatus.color}`}>
+          <View 
+            className="px-3 py-2 rounded-xl"
+            style={{ backgroundColor: stockStatus.bg }}
+          >
+            <Text 
+              className="text-xs font-bold"
+              style={{ color: stockStatus.color }}
+            >
               {stockStatus.label}
             </Text>
           </View>
         </View>
 
         {/* Stock Info */}
-        <View className="flex-row items-center justify-between py-3 border-t border-gray-700">
+        <View 
+          className="flex-row items-center justify-between py-4 mb-4"
+          style={{ borderTopWidth: 1, borderTopColor: '#374151' }}
+        >
           <View>
-            <Text className="text-gray-500 text-xs">Current Stock</Text>
-            <Text className={`text-xl font-bold ${
-              item.stock === 0 ? 'text-red-500' : item.stock <= item.minStock ? 'text-yellow-500' : 'text-white'
-            }`}>
+            <Text className="text-gray-500 text-xs font-medium mb-1">Current Stock</Text>
+            <Text 
+              className="text-2xl font-bold"
+              style={{
+                color: item.stock === 0 ? '#EF4444' : item.stock <= item.minStock ? '#F59E0B' : '#FFFFFF',
+              }}
+            >
               {item.stock} {item.unit}s
             </Text>
           </View>
           <View className="items-end">
-            <Text className="text-gray-500 text-xs">Minimum Stock</Text>
-            <Text className="text-gray-400">{item.minStock} {item.unit}s</Text>
+            <Text className="text-gray-500 text-xs font-medium mb-1">Minimum Stock</Text>
+            <Text className="text-gray-400 font-semibold">{item.minStock} {item.unit}s</Text>
           </View>
         </View>
 
         {/* Stock Progress Bar */}
-        <View className="h-2 bg-gray-700 rounded-full mt-2 overflow-hidden">
+        <View 
+          className="h-2 rounded-full mb-4 overflow-hidden"
+          style={{ backgroundColor: '#374151' }}
+        >
           <View
-            className={`h-full rounded-full ${
-              item.stock === 0 ? 'bg-red-500' : item.stock <= item.minStock ? 'bg-yellow-500' : 'bg-green-500'
-            }`}
-            style={{ width: `${Math.min((item.stock / (item.minStock * 2)) * 100, 100)}%` }}
+            className="h-full rounded-full"
+            style={{ 
+              width: `${Math.min((item.stock / (item.minStock * 2)) * 100, 100)}%`,
+              backgroundColor: item.stock === 0 ? '#EF4444' : item.stock <= item.minStock ? '#F59E0B' : '#10B981',
+            }}
           />
         </View>
 
         {/* Actions */}
-        <View className="flex-row space-x-3 mt-4 pt-3 border-t border-gray-700">
+        <View 
+          className="flex-row space-x-3 mt-4 pt-4"
+          style={{ borderTopWidth: 1, borderTopColor: '#374151' }}
+        >
           <TouchableOpacity
-            className="flex-1 bg-gray-700 py-3 rounded-lg flex-row items-center justify-center"
+            className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
+            style={{
+              backgroundColor: '#374151',
+              borderWidth: 1,
+              borderColor: '#4B5563',
+            }}
             onPress={() => setEditingItem(item.id)}
           >
-            <Ionicons name="create" size={18} color="#F97316" />
-            <Text className="text-orange-500 font-medium ml-2">Update Stock</Text>
+            <Ionicons name="create" size={20} color="#F97316" />
+            <Text className="text-orange-500 font-bold ml-2">Update Stock</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            className={`flex-1 py-3 rounded-lg flex-row items-center justify-center ${
-              item.isAvailable ? 'bg-red-500/20' : 'bg-green-500/20'
-            }`}
+            className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
+            style={{
+              backgroundColor: item.isAvailable ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+            }}
             onPress={() => handleToggleAvailability(item.id, item.isAvailable)}
           >
             <Ionicons
               name={item.isAvailable ? 'eye-off' : 'eye'}
-              size={18}
-              color={item.isAvailable ? '#EF4444' : '#22C55E'}
+              size={20}
+              color={item.isAvailable ? '#EF4444' : '#10B981'}
             />
-            <Text className={`font-medium ml-2 ${item.isAvailable ? 'text-red-500' : 'text-green-500'}`}>
+            <Text 
+              className="font-bold ml-2"
+              style={{ color: item.isAvailable ? '#EF4444' : '#10B981' }}
+            >
               {item.isAvailable ? 'Hide' : 'Show'}
             </Text>
           </TouchableOpacity>
@@ -212,9 +261,19 @@ export default function InventoryScreen() {
 
         {/* Quick Restock for low/out of stock */}
         {isLowOrOut && (
-          <TouchableOpacity className="bg-orange-500 py-3 rounded-lg mt-3 flex-row items-center justify-center">
-            <Ionicons name="refresh" size={18} color="white" />
-            <Text className="text-white font-semibold ml-2">Quick Restock</Text>
+          <TouchableOpacity 
+            className="py-3 rounded-xl mt-4 flex-row items-center justify-center"
+            style={{
+              backgroundColor: '#F97316',
+              shadowColor: '#F97316',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
+          >
+            <Ionicons name="refresh" size={20} color="white" />
+            <Text className="text-white font-bold ml-2">Quick Restock</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -224,20 +283,33 @@ export default function InventoryScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-900">
       {/* Header */}
-      <View className="px-4 py-3 border-b border-gray-800">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-white text-2xl font-bold">Inventory</Text>
-          <TouchableOpacity className="bg-orange-500 px-4 py-2 rounded-full flex-row items-center">
-            <Ionicons name="add" size={18} color="white" />
-            <Text className="text-white font-medium ml-1">Add Product</Text>
+      <View 
+        className="px-5 py-4 border-b"
+        style={{ borderBottomColor: '#374151' }}
+      >
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-white text-3xl font-bold">Inventory</Text>
+          <TouchableOpacity 
+            className="px-5 py-3 rounded-xl flex-row items-center"
+            style={{ backgroundColor: '#F97316' }}
+          >
+            <Ionicons name="add" size={20} color="white" />
+            <Text className="text-white font-bold ml-2">Add Product</Text>
           </TouchableOpacity>
         </View>
 
         {/* Search */}
-        <View className="flex-row items-center bg-gray-800 rounded-xl px-4 mt-3">
-          <Ionicons name="search" size={20} color="#6B7280" />
+        <View 
+          className="flex-row items-center rounded-2xl px-4"
+          style={{
+            backgroundColor: '#1F2937',
+            borderWidth: 1,
+            borderColor: '#374151',
+          }}
+        >
+          <Ionicons name="search" size={22} color="#6B7280" />
           <TextInput
-            className="flex-1 text-white py-3 ml-2"
+            className="flex-1 text-white py-4 ml-3 text-base"
             placeholder="Search products..."
             placeholderTextColor="#6B7280"
             value={searchQuery}
@@ -247,32 +319,71 @@ export default function InventoryScreen() {
       </View>
 
       {/* Stats */}
-      <View className="flex-row px-4 py-3 space-x-3">
-        <View className="flex-1 bg-gray-800 rounded-xl p-3 flex-row items-center">
-          <View className="w-10 h-10 bg-blue-500/20 rounded-full items-center justify-center">
-            <Ionicons name="cube" size={20} color="#3B82F6" />
+      <View className="flex-row px-4 py-4 space-x-3">
+        <View 
+          className="flex-1 rounded-2xl p-4 flex-row items-center"
+          style={{
+            backgroundColor: '#1F2937',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 4,
+          }}
+        >
+          <View 
+            className="w-12 h-12 rounded-xl items-center justify-center"
+            style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
+          >
+            <Ionicons name="cube" size={24} color="#3B82F6" />
           </View>
           <View className="ml-3">
-            <Text className="text-white font-bold">{MOCK_INVENTORY.length}</Text>
-            <Text className="text-gray-400 text-xs">Products</Text>
+            <Text className="text-white font-bold text-xl">{MOCK_INVENTORY.length}</Text>
+            <Text className="text-gray-400 text-xs font-medium">Products</Text>
           </View>
         </View>
-        <View className="flex-1 bg-gray-800 rounded-xl p-3 flex-row items-center">
-          <View className="w-10 h-10 bg-yellow-500/20 rounded-full items-center justify-center">
-            <Ionicons name="warning" size={20} color="#EAB308" />
+        <View 
+          className="flex-1 rounded-2xl p-4 flex-row items-center"
+          style={{
+            backgroundColor: '#1F2937',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 4,
+          }}
+        >
+          <View 
+            className="w-12 h-12 rounded-xl items-center justify-center"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}
+          >
+            <Ionicons name="warning" size={24} color="#F59E0B" />
           </View>
           <View className="ml-3">
-            <Text className="text-yellow-500 font-bold">{lowStockCount}</Text>
-            <Text className="text-gray-400 text-xs">Low Stock</Text>
+            <Text className="text-yellow-500 font-bold text-xl">{lowStockCount}</Text>
+            <Text className="text-gray-400 text-xs font-medium">Low Stock</Text>
           </View>
         </View>
-        <View className="flex-1 bg-gray-800 rounded-xl p-3 flex-row items-center">
-          <View className="w-10 h-10 bg-red-500/20 rounded-full items-center justify-center">
-            <Ionicons name="close-circle" size={20} color="#EF4444" />
+        <View 
+          className="flex-1 rounded-2xl p-4 flex-row items-center"
+          style={{
+            backgroundColor: '#1F2937',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 4,
+          }}
+        >
+          <View 
+            className="w-12 h-12 rounded-xl items-center justify-center"
+            style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
+          >
+            <Ionicons name="close-circle" size={24} color="#EF4444" />
           </View>
           <View className="ml-3">
-            <Text className="text-red-500 font-bold">{outOfStockCount}</Text>
-            <Text className="text-gray-400 text-xs">Out</Text>
+            <Text className="text-red-500 font-bold text-xl">{outOfStockCount}</Text>
+            <Text className="text-gray-400 text-xs font-medium">Out</Text>
           </View>
         </View>
       </View>

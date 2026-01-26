@@ -191,53 +191,73 @@ export default function ShopScreen() {
     const cartQty = getCartQuantity(product.id);
 
     return (
-      <View className="w-[48%] bg-gray-800 rounded-xl mb-3 overflow-hidden">
+      <View 
+        className="w-[48%] rounded-2xl mb-4 overflow-hidden"
+        style={{
+          backgroundColor: '#1F2937',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}
+      >
         {/* Product Image Placeholder */}
-        <View className="h-28 bg-gray-700 items-center justify-center">
-          <Ionicons name="cube" size={40} color="#6B7280" />
+        <View 
+          className="h-32 items-center justify-center relative"
+          style={{ backgroundColor: '#374151' }}
+        >
+          <Ionicons name="cube" size={44} color="#6B7280" />
           {product.isHeavy && (
-            <View className="absolute top-2 right-2 bg-orange-500/80 px-2 py-1 rounded">
-              <Text className="text-white text-xs">Heavy</Text>
+            <View 
+              className="absolute top-2 right-2 px-2 py-1 rounded-lg"
+              style={{ backgroundColor: 'rgba(249, 115, 22, 0.9)' }}
+            >
+              <Text className="text-white text-xs font-semibold">Heavy</Text>
             </View>
           )}
         </View>
 
-        <View className="p-3">
-          <Text className="text-white font-medium" numberOfLines={2}>
+        <View className="p-4">
+          <Text className="text-white font-bold text-base mb-1" numberOfLines={2}>
             {product.name}
           </Text>
-          <Text className="text-gray-400 text-xs mt-1">{product.shop.name}</Text>
+          <Text className="text-gray-400 text-xs mb-3">{product.shop.name}</Text>
 
-          <View className="flex-row items-center justify-between mt-2">
+          <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-orange-500 font-bold">₹{product.price}</Text>
+              <Text className="text-orange-500 font-bold text-lg">₹{product.price}</Text>
               <Text className="text-gray-500 text-xs">per {product.unit}</Text>
             </View>
 
             {cartQty > 0 ? (
-              <View className="flex-row items-center bg-orange-500 rounded-lg">
+              <View 
+                className="flex-row items-center rounded-xl overflow-hidden"
+                style={{ backgroundColor: '#F97316' }}
+              >
                 <TouchableOpacity
                   className="px-3 py-2"
                   onPress={() => {
                     // Decrease quantity logic would go here
                   }}
                 >
-                  <Ionicons name="remove" size={16} color="white" />
+                  <Ionicons name="remove" size={18} color="white" />
                 </TouchableOpacity>
-                <Text className="text-white font-bold px-2">{cartQty}</Text>
+                <Text className="text-white font-bold px-3 text-base">{cartQty}</Text>
                 <TouchableOpacity
                   className="px-3 py-2"
                   onPress={() => handleAddToCart(product)}
                 >
-                  <Ionicons name="add" size={16} color="white" />
+                  <Ionicons name="add" size={18} color="white" />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
-                className="bg-orange-500 px-4 py-2 rounded-lg"
+                className="px-4 py-2 rounded-xl"
+                style={{ backgroundColor: '#F97316' }}
                 onPress={() => handleAddToCart(product)}
               >
-                <Text className="text-white font-medium">Add</Text>
+                <Text className="text-white font-semibold">Add</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -249,16 +269,19 @@ export default function ShopScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-900">
       {/* Header */}
-      <View className="px-4 py-3 border-b border-gray-800">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-white text-2xl font-bold">Shop</Text>
+      <View className="px-4 py-4 border-b border-gray-800">
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-white text-3xl font-bold">Shop</Text>
           <TouchableOpacity
             className="relative"
             onPress={() => router.push('/(app)/checkout')}
           >
             <Ionicons name="cart" size={28} color="white" />
             {cartItemCount > 0 && (
-              <View className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full items-center justify-center">
+              <View 
+                className="absolute -top-1 -right-1 w-6 h-6 rounded-full items-center justify-center"
+                style={{ backgroundColor: '#F97316' }}
+              >
                 <Text className="text-white text-xs font-bold">{cartItemCount}</Text>
               </View>
             )}
@@ -266,25 +289,32 @@ export default function ShopScreen() {
         </View>
 
         {/* Search Bar */}
-        <View className="flex-row items-center bg-gray-800 rounded-xl px-4 mt-3">
-          <Ionicons name="search" size={20} color="#6B7280" />
+        <View 
+          className="flex-row items-center rounded-2xl px-4"
+          style={{
+            backgroundColor: '#1F2937',
+            borderWidth: 1,
+            borderColor: '#374151',
+          }}
+        >
+          <Ionicons name="search" size={22} color="#6B7280" />
           <TextInput
-            className="flex-1 text-white py-3 ml-2"
+            className="flex-1 text-white py-4 ml-3 text-base"
             placeholder="Search materials..."
             placeholderTextColor="#6B7280"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#6B7280" />
+            <TouchableOpacity onPress={() => setSearchQuery('')} className="ml-2">
+              <Ionicons name="close-circle" size={22} color="#6B7280" />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Categories */}
-      <View className="py-3 border-b border-gray-800">
+      <View className="py-4 border-b border-gray-800">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -293,20 +323,24 @@ export default function ShopScreen() {
           {CATEGORIES.map((category) => (
             <TouchableOpacity
               key={category.id}
-              className={`flex-row items-center px-4 py-2 rounded-full mr-2 ${
-                selectedCategory === category.id ? 'bg-orange-500' : 'bg-gray-800'
+              className={`flex-row items-center px-5 py-3 rounded-xl mr-3 ${
+                selectedCategory === category.id ? '' : ''
               }`}
+              style={{
+                backgroundColor: selectedCategory === category.id ? '#F97316' : '#1F2937',
+              }}
               onPress={() => setSelectedCategory(category.id)}
             >
               <Ionicons
                 name={category.icon as any}
-                size={16}
+                size={18}
                 color={selectedCategory === category.id ? 'white' : '#9CA3AF'}
               />
               <Text
-                className={`ml-2 font-medium ${
+                className={`ml-2 font-semibold ${
                   selectedCategory === category.id ? 'text-white' : 'text-gray-400'
                 }`}
+                style={{ fontSize: 14 }}
               >
                 {category.name}
               </Text>
@@ -316,9 +350,12 @@ export default function ShopScreen() {
       </View>
 
       {/* Delivery Info Banner */}
-      <View className="mx-4 mt-3 bg-orange-500/10 rounded-xl p-3 flex-row items-center">
-        <Ionicons name="time" size={20} color="#F97316" />
-        <Text className="text-orange-500 ml-2 flex-1">
+      <View 
+        className="mx-4 mt-4 rounded-2xl p-4 flex-row items-center"
+        style={{ backgroundColor: 'rgba(249, 115, 22, 0.1)' }}
+      >
+        <Ionicons name="time" size={22} color="#F97316" />
+        <Text className="text-orange-500 ml-3 flex-1 font-semibold">
           Heavy materials delivered in 30-60 minutes
         </Text>
       </View>
@@ -342,13 +379,27 @@ export default function ShopScreen() {
 
       {/* Cart Footer */}
       {cartItemCount > 0 && (
-        <View className="px-4 py-3 bg-gray-800 border-t border-gray-700">
+        <View 
+          className="px-4 py-4 border-t"
+          style={{ 
+            backgroundColor: '#1F2937',
+            borderTopColor: '#374151',
+          }}
+        >
           <TouchableOpacity
-            className="bg-orange-500 rounded-xl py-4 flex-row items-center justify-center"
+            className="rounded-2xl py-4 flex-row items-center justify-center"
+            style={{
+              backgroundColor: '#F97316',
+              shadowColor: '#F97316',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
             onPress={() => router.push('/(app)/checkout')}
           >
-            <Ionicons name="cart" size={20} color="white" />
-            <Text className="text-white font-semibold ml-2">
+            <Ionicons name="cart" size={22} color="white" />
+            <Text className="text-white font-bold ml-2 text-base">
               View Cart ({cartItemCount} items)
             </Text>
           </TouchableOpacity>

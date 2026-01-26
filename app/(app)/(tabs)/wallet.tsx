@@ -177,15 +177,28 @@ export default function WalletScreen() {
     <SafeAreaView className="flex-1 bg-gray-900">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="px-4 py-3 border-b border-gray-800">
-          <Text className="text-white text-2xl font-bold">Wallet</Text>
+        <View 
+          className="px-5 py-4 border-b"
+          style={{ borderBottomColor: '#374151' }}
+        >
+          <Text className="text-white text-3xl font-bold">Wallet</Text>
         </View>
 
         {/* Balance Card */}
         <View className="px-4 mt-4">
-          <View className="bg-orange-500 rounded-2xl p-6">
-            <Text className="text-orange-100 text-sm">Available Balance</Text>
-            <Text className="text-white text-4xl font-bold mt-2">
+          <View 
+            className="rounded-2xl p-6"
+            style={{
+              backgroundColor: '#F97316',
+              shadowColor: '#F97316',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
+          >
+            <Text className="text-orange-100 text-sm font-medium mb-2">Available Balance</Text>
+            <Text className="text-white text-5xl font-bold">
               ₹{balance.toLocaleString()}
             </Text>
 
@@ -200,14 +213,20 @@ export default function WalletScreen() {
 
             {/* Action Buttons */}
             <View className="flex-row mt-6 space-x-3">
-              <TouchableOpacity className="flex-1 bg-white/20 py-3 rounded-xl flex-row items-center justify-center">
-                <Ionicons name="add" size={20} color="white" />
-                <Text className="text-white font-semibold ml-2">Add Money</Text>
+              <TouchableOpacity 
+                className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+              >
+                <Ionicons name="add" size={22} color="white" />
+                <Text className="text-white font-bold ml-2">Add Money</Text>
               </TouchableOpacity>
               {isEarner && (
-                <TouchableOpacity className="flex-1 bg-white/20 py-3 rounded-xl flex-row items-center justify-center">
-                  <Ionicons name="arrow-up" size={20} color="white" />
-                  <Text className="text-white font-semibold ml-2">Withdraw</Text>
+                <TouchableOpacity 
+                  className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+                >
+                  <Ionicons name="arrow-up" size={22} color="white" />
+                  <Text className="text-white font-bold ml-2">Withdraw</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -216,29 +235,52 @@ export default function WalletScreen() {
 
         {/* Stats Cards */}
         <View className="flex-row px-4 mt-4 space-x-3">
-          <View className="flex-1 bg-gray-800 rounded-xl p-4">
-            <View className="flex-row items-center">
+          <View 
+            className="flex-1 rounded-2xl p-5"
+            style={{
+              backgroundColor: '#1F2937',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
+          >
+            <View className="flex-row items-center mb-3">
               <Ionicons
                 name={isEarner ? 'trending-up' : 'cart'}
-                size={20}
-                color={isEarner ? '#22C55E' : '#3B82F6'}
+                size={22}
+                color={isEarner ? '#10B981' : '#3B82F6'}
               />
-              <Text className="text-gray-400 ml-2">
+              <Text className="text-gray-400 ml-2 font-medium">
                 {isEarner ? 'Total Earned' : 'Total Spent'}
               </Text>
             </View>
-            <Text className={`text-xl font-bold mt-2 ${isEarner ? 'text-green-500' : 'text-white'}`}>
+            <Text 
+              className="text-2xl font-bold"
+              style={{ color: isEarner ? '#10B981' : '#FFFFFF' }}
+            >
               ₹{(isEarner ? totalEarned : totalSpent).toLocaleString()}
             </Text>
           </View>
 
           {heldBalance > 0 && (
-            <View className="flex-1 bg-gray-800 rounded-xl p-4">
-              <View className="flex-row items-center">
-                <Ionicons name="lock-closed" size={20} color="#EAB308" />
-                <Text className="text-gray-400 ml-2">In Escrow</Text>
+            <View 
+              className="flex-1 rounded-2xl p-5"
+              style={{
+                backgroundColor: '#1F2937',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
+            >
+              <View className="flex-row items-center mb-3">
+                <Ionicons name="lock-closed" size={22} color="#F59E0B" />
+                <Text className="text-gray-400 ml-2 font-medium">In Escrow</Text>
               </View>
-              <Text className="text-yellow-500 text-xl font-bold mt-2">
+              <Text className="text-yellow-500 text-2xl font-bold">
                 ₹{heldBalance.toLocaleString()}
               </Text>
             </View>
@@ -246,7 +288,7 @@ export default function WalletScreen() {
         </View>
 
         {/* Transaction Tabs */}
-        <View className="flex-row px-4 mt-6">
+        <View className="flex-row px-4 mt-6 mb-4">
           {TRANSACTION_TABS.map((tab) => (
             <TouchableOpacity
               key={tab}
