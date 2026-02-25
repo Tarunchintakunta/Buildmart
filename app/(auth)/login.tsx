@@ -11,27 +11,46 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
+import { LightTheme } from '../../src/theme/designSystem';
+
+const T = LightTheme;
 
 export default function LoginScreen() {
+  const router = useRouter();
+  const { role } = useLocalSearchParams<{ role?: string }>();
+  const { sendOTP, login } = useAuth();
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [showDevLogin, setShowDevLogin] = useState(false);
 
-  const handleLogin = async () => {
-    if (phone.length < 10) {
+  const formatPhone = (text: string) => {
+    const digits = text.replace(/\D/g, '');
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
+  };
+
+  const rawPhone = phone.replace(/\s/g, '');
+
+  const handleGetOTP = async () => {
+    if (rawPhone.length < 10) {
       Alert.alert('Invalid Phone', 'Please enter a valid 10-digit phone number');
       return;
     }
-
     setIsLoading(true);
     try {
-      const result = await login(phone);
-      if (!result.success) {
-        Alert.alert('Login Failed', result.error || 'Unknown error');
+      const result = await sendOTP(rawPhone);
+      if (result.success) {
+        router.push({
+          pathname: '/(auth)/verify',
+          params: { phone: rawPhone, role: role ?? 'customer' },
+        });
+      } else {
+        Alert.alert('Error', result.error ?? 'Failed to send OTP');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
@@ -39,14 +58,13 @@ export default function LoginScreen() {
   };
 
   const quickLogin = async (phoneNumber: string) => {
-    setPhone(phoneNumber);
     setIsLoading(true);
     try {
       const result = await login(phoneNumber);
       if (!result.success) {
-        Alert.alert('Login Failed', result.error || 'Unknown error');
+        Alert.alert('Login Failed', result.error ?? 'Unknown error');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Something went wrong');
     } finally {
       setIsLoading(false);
@@ -54,177 +72,161 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
-      {/* Decorative Background Elements */}
-      <View className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
-      <View className="absolute bottom-0 left-0 w-48 h-48 bg-orange-500/5 rounded-full blur-3xl" />
-      
+    <SafeAreaView style={{ flex: 1, backgroundColor: T.surface }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
-        <ScrollView 
-          className="flex-1" 
+        <ScrollView
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 px-6 py-8">
-            {/* Logo/Header Section */}
-            <View className="items-center mb-12 mt-8">
-              <View 
-                className="w-24 h-24 rounded-3xl items-center justify-center mb-6"
-                style={{
-                  backgroundColor: '#F97316',
-                  shadowColor: '#F97316',
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 12,
-                  elevation: 8,
-                }}
-              >
-                <Ionicons name="construct" size={48} color="white" />
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.logoRow}>
+              <View style={styles.logoIcon}>
+                <Ionicons name="cart" size={16} color={T.white} />
               </View>
-              <Text className="text-4xl font-bold text-white mb-2">BuildMart</Text>
-              <Text className="text-gray-400 text-center text-base max-w-xs leading-5">
-                Construction Materials & Labor Marketplace
-              </Text>
+              <Text style={styles.logoText}>BuildMart</Text>
             </View>
+            <TouchableOpacity style={styles.helpButton}>
+              <Ionicons name="help-circle-outline" size={24} color={T.textSecondary} />
+            </TouchableOpacity>
+          </View>
 
-            {/* Welcome Section */}
-            <View className="mb-8">
-              <Text className="text-3xl font-bold text-white mb-2">Welcome back</Text>
-              <Text className="text-gray-400 text-base leading-6">
-                Enter your phone number to continue
-              </Text>
-            </View>
-
-            {/* Phone Input Card */}
-            <View className="mb-6">
-              <Text className="text-gray-300 mb-3 text-sm font-medium">Phone Number</Text>
-              <View 
-                className="flex-row items-center rounded-2xl px-5 py-4"
-                style={{
-                  backgroundColor: 'rgba(31, 41, 55, 0.8)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(55, 65, 81, 0.5)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 4,
-                }}
-              >
-                <View className="flex-row items-center mr-3">
-                  <Text className="text-white text-lg font-semibold">+91</Text>
-                  <View className="w-px h-6 bg-gray-600 ml-3" />
-                </View>
-                <TextInput
-                  className="flex-1 text-white text-lg font-medium"
-                  placeholder="Enter phone number"
-                  placeholderTextColor="#6B7280"
-                  keyboardType="phone-pad"
-                  value={phone}
-                  onChangeText={setPhone}
-                  maxLength={10}
-                  autoFocus={false}
-                />
-                {phone.length > 0 && (
-                  <TouchableOpacity
-                    onPress={() => setPhone('')}
-                    className="ml-2"
-                  >
-                    <Ionicons name="close-circle" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                )}
+          {/* Construction Image Placeholder */}
+          <View style={styles.imageContainer}>
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="business" size={40} color="#94A3B8" />
+              <View style={styles.imageOverlay}>
+                <Ionicons name="construct-outline" size={18} color="#CBD5E1" />
               </View>
             </View>
+          </View>
 
-            {/* Login Button */}
+          {/* Welcome Section */}
+          <View style={styles.content}>
+            <Text style={styles.welcomeTitle}>Welcome back</Text>
+            <Text style={styles.welcomeSubtitle}>
+              Enter your phone number to access your account and manage your
+              construction projects.
+            </Text>
+
+            {/* Phone Input */}
+            <Text style={styles.inputLabel}>Phone Number</Text>
+            <View style={styles.phoneInputRow}>
+              <View style={styles.countryCode}>
+                <Text style={styles.flag}>🇮🇳</Text>
+                <Text style={styles.codeText}>+91</Text>
+              </View>
+              <View style={styles.phoneDivider} />
+              <TextInput
+                style={styles.phoneInput}
+                placeholder="00000 00000"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+                value={formatPhone(phone)}
+                onChangeText={(text) => setPhone(text.replace(/\s/g, ''))}
+                maxLength={11}
+              />
+              <TouchableOpacity style={styles.contactIcon}>
+                <Ionicons name="person-outline" size={18} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Get OTP Button */}
             <TouchableOpacity
-              className="py-4 rounded-2xl mb-6"
-              onPress={handleLogin}
-              disabled={phone.length < 10 || isLoading}
-              style={{
-                backgroundColor: phone.length >= 10 ? '#F97316' : 'rgba(55, 65, 81, 0.5)',
-                opacity: phone.length >= 10 && !isLoading ? 1 : 0.6,
-                shadowColor: phone.length >= 10 ? '#F97316' : '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: phone.length >= 10 ? 0.3 : 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
+              style={[
+                styles.otpButton,
+                rawPhone.length < 10 && styles.otpButtonDisabled,
+              ]}
+              onPress={handleGetOTP}
+              disabled={rawPhone.length < 10 || isLoading}
             >
               {isLoading ? (
-                <View className="flex-row items-center justify-center">
-                  <ActivityIndicator size="small" color="white" />
-                  <Text className="text-white text-center font-semibold text-lg ml-2">
-                    Signing in...
-                  </Text>
-                </View>
+                <ActivityIndicator size="small" color={T.white} />
               ) : (
-                <Text className="text-white text-center font-semibold text-lg">
-                  Continue
-                </Text>
+                <View style={styles.buttonContent}>
+                  <Text style={styles.otpButtonText}>Get OTP</Text>
+                  <Ionicons name="arrow-forward" size={18} color={T.white} />
+                </View>
               )}
             </TouchableOpacity>
 
-            {/* Divider */}
-            <View className="flex-row items-center my-6">
-              <View className="flex-1 h-px bg-gray-700" />
-              <Text className="text-gray-500 text-xs mx-4 font-medium">OR</Text>
-              <View className="flex-1 h-px bg-gray-700" />
+            {/* Partner With Us Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>PARTNER WITH US</Text>
+              <View style={styles.dividerLine} />
             </View>
 
-            {/* Quick Login Section */}
-            <View className="mt-2">
-              <Text className="text-gray-400 text-center mb-5 text-sm font-medium">
-                Quick Login (Demo)
-              </Text>
-              <View className="space-y-2.5">
-                <QuickLoginButton
-                  label="Customer"
-                  phone="9876543101"
-                  icon="person"
-                  color="#3B82F6"
-                  onPress={() => quickLogin('9876543101')}
-                />
-                <QuickLoginButton
-                  label="Contractor"
-                  phone="9876543201"
-                  icon="business"
-                  color="#8B5CF6"
-                  onPress={() => quickLogin('9876543201')}
-                />
-                <QuickLoginButton
-                  label="Worker"
-                  phone="9876543301"
-                  icon="hammer"
-                  color="#F59E0B"
-                  onPress={() => quickLogin('9876543301')}
-                />
-                <QuickLoginButton
-                  label="Shopkeeper"
-                  phone="9876543401"
-                  icon="storefront"
-                  color="#10B981"
-                  onPress={() => quickLogin('9876543401')}
-                />
-                <QuickLoginButton
-                  label="Driver"
-                  phone="9876543501"
-                  icon="car"
-                  color="#EF4444"
-                  onPress={() => quickLogin('9876543501')}
-                />
-                <QuickLoginButton
-                  label="Admin"
-                  phone="9876543601"
-                  icon="shield-checkmark"
-                  color="#6366F1"
-                  onPress={() => quickLogin('9876543601')}
-                />
+            {/* Feature Badges */}
+            <View style={styles.badgeRow}>
+              <View style={styles.badge}>
+                <View style={styles.badgeIcon}>
+                  <Ionicons name="rocket" size={18} color={T.amber} />
+                </View>
+                <Text style={styles.badgeText}>FAST DELIVERY</Text>
+              </View>
+              <View style={styles.badge}>
+                <View style={styles.badgeIcon}>
+                  <Ionicons name="shield-checkmark" size={18} color={T.amber} />
+                </View>
+                <Text style={styles.badgeText}>QUALITY ASSURED</Text>
               </View>
             </View>
+
+            {/* Terms */}
+            <Text style={styles.termsText}>
+              By continuing, you agree to BuildMart's{' '}
+              <Text style={styles.termsLink}>Terms of Service</Text>
+              {'\n'}and <Text style={styles.termsLink}>Privacy Policy</Text>
+            </Text>
+
+            {/* Footer */}
+            <View style={styles.footerRow}>
+              <Ionicons name="star" size={12} color={T.amber} />
+              <Text style={styles.footerText}>
+                OFFICIAL BUILDMART SUPPLIER NETWORK
+              </Text>
+            </View>
+
+            {/* Dev Quick Login (collapsible) */}
+            <TouchableOpacity
+              onPress={() => setShowDevLogin(!showDevLogin)}
+              style={styles.devToggle}
+            >
+              <Ionicons
+                name={showDevLogin ? 'chevron-up' : 'chevron-down'}
+                size={14}
+                color="#D1D5DB"
+              />
+              <Text style={styles.devToggleText}>Quick Login (Dev)</Text>
+            </TouchableOpacity>
+
+            {showDevLogin && (
+              <View style={styles.devSection}>
+                {[
+                  { label: 'Customer', phone: '9876543101', icon: 'person' as const, color: '#3B82F6' },
+                  { label: 'Contractor', phone: '9876543201', icon: 'business' as const, color: '#8B5CF6' },
+                  { label: 'Worker', phone: '9876543301', icon: 'hammer' as const, color: '#F59E0B' },
+                  { label: 'Shopkeeper', phone: '9876543401', icon: 'storefront' as const, color: '#10B981' },
+                  { label: 'Driver', phone: '9876543501', icon: 'car' as const, color: '#EF4444' },
+                  { label: 'Admin', phone: '9876543601', icon: 'shield-checkmark' as const, color: '#6366F1' },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.phone}
+                    style={styles.devButton}
+                    onPress={() => quickLogin(item.phone)}
+                  >
+                    <Ionicons name={item.icon} size={16} color={item.color} />
+                    <Text style={styles.devButtonText}>{item.label}</Text>
+                    <Text style={styles.devButtonPhone}>{item.phone}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -232,58 +234,254 @@ export default function LoginScreen() {
   );
 }
 
-function QuickLoginButton({
-  label,
-  phone,
-  icon,
-  color,
-  onPress,
-}: {
-  label: string;
-  phone: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  onPress: () => void;
-}) {
-  // Convert hex color to rgba for background
-  const hexToRgba = (hex: string, alpha: number) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-
-  return (
-    <TouchableOpacity
-      className="flex-row items-center p-4 rounded-2xl"
-      onPress={onPress}
-      style={{
-        backgroundColor: 'rgba(31, 41, 55, 0.6)',
-        borderWidth: 1,
-        borderColor: 'rgba(55, 65, 81, 0.3)',
-        shadowColor: color,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-      }}
-    >
-      <View 
-        className="w-12 h-12 rounded-xl items-center justify-center"
-        style={{ backgroundColor: hexToRgba(color, 0.2) }}
-      >
-        <Ionicons name={icon} size={22} color={color} />
-      </View>
-      <View className="flex-1 ml-4">
-        <Text className="text-white font-semibold text-base mb-0.5">{label}</Text>
-        <Text className="text-gray-400 text-sm">{phone}</Text>
-      </View>
-      <View 
-        className="w-8 h-8 rounded-full items-center justify-center"
-        style={{ backgroundColor: 'rgba(55, 65, 81, 0.5)' }}
-      >
-        <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-      </View>
-    </TouchableOpacity>
-  );
-}
+const styles = {
+  header: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  logoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  logoIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: T.amber,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  logoText: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: T.text,
+  },
+  helpButton: {
+    padding: 4,
+  },
+  imageContainer: {
+    paddingHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  imagePlaceholder: {
+    height: 170,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 16,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  imageOverlay: {
+    position: 'absolute' as const,
+    bottom: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  content: {
+    paddingHorizontal: 24,
+  },
+  welcomeTitle: {
+    fontSize: 26,
+    fontWeight: '800' as const,
+    color: T.text,
+    marginBottom: 8,
+  },
+  welcomeSubtitle: {
+    fontSize: 14,
+    color: T.textSecondary,
+    lineHeight: 21,
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: T.text,
+    marginBottom: 8,
+  },
+  phoneInputRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: T.border,
+    paddingHorizontal: 14,
+    height: 52,
+    marginBottom: 16,
+  },
+  countryCode: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+  },
+  flag: {
+    fontSize: 18,
+  },
+  codeText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: T.text,
+  },
+  phoneDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: T.border,
+    marginHorizontal: 12,
+  },
+  phoneInput: {
+    flex: 1,
+    fontSize: 15,
+    color: T.text,
+    fontWeight: '500' as const,
+  },
+  contactIcon: {
+    padding: 4,
+  },
+  otpButton: {
+    backgroundColor: T.navy,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center' as const,
+    marginBottom: 24,
+    shadowColor: T.navy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  otpButtonDisabled: {
+    opacity: 0.5,
+  },
+  buttonContent: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  otpButtonText: {
+    color: T.white,
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  divider: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: T.border,
+  },
+  dividerText: {
+    fontSize: 11,
+    color: T.textMuted,
+    fontWeight: '600' as const,
+    letterSpacing: 1.5,
+    marginHorizontal: 14,
+  },
+  badgeRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    gap: 16,
+    marginBottom: 24,
+  },
+  badge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: T.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.border,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  badgeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: T.amberBg,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
+    color: T.text,
+  },
+  termsText: {
+    fontSize: 12,
+    color: T.textSecondary,
+    textAlign: 'center' as const,
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  termsLink: {
+    fontWeight: '700' as const,
+    color: T.text,
+    textDecorationLine: 'underline' as const,
+  },
+  footerRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    marginBottom: 16,
+  },
+  footerText: {
+    fontSize: 10,
+    color: T.textMuted,
+    fontWeight: '600' as const,
+    letterSpacing: 1.5,
+  },
+  devToggle: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 4,
+    paddingVertical: 8,
+    marginTop: 8,
+  },
+  devToggleText: {
+    fontSize: 11,
+    color: '#D1D5DB',
+  },
+  devSection: {
+    gap: 6,
+    marginTop: 4,
+  },
+  devButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    gap: 10,
+  },
+  devButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: T.text,
+    flex: 1,
+  },
+  devButtonPhone: {
+    fontSize: 12,
+    color: T.textMuted,
+  },
+};

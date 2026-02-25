@@ -1,216 +1,134 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useWalletStore, useLaborStore } from '../../store/useStore';
+import { useWalletStore } from '../../store/useStore';
+import { LightTheme } from '../../theme/designSystem';
+
+const T = LightTheme;
 
 const STATS = [
-  { label: 'Active Contracts', value: '4', icon: 'document-text', color: '#3B82F6' },
-  { label: 'Workers Hired', value: '12', icon: 'people', color: '#10B981' },
-  { label: 'Pending Orders', value: '3', icon: 'cube', color: '#F59E0B' },
-  { label: 'This Month', value: '₹2.5L', icon: 'trending-up', color: '#8B5CF6' },
+  { label: 'Active Contracts', value: '4', icon: 'document-text' as const, color: '#3B82F6' },
+  { label: 'Workers Hired', value: '12', icon: 'people' as const, color: '#10B981' },
+  { label: 'Pending Orders', value: '3', icon: 'cube' as const, color: '#F59E0B' },
+  { label: 'This Month', value: 'Rs.2.5L', icon: 'trending-up' as const, color: '#8B5CF6' },
+];
+
+const AGREEMENTS = [
+  { id: 'AGR-2024-001', worker: 'Ramu Yadav', title: 'Site Labor', rate: 'Rs.600/day', endDate: 'Mar 15' },
+  { id: 'AGR-2024-002', worker: 'Suresh Kumar', title: 'Mason Work', rate: 'Rs.5,600/week', endDate: 'Apr 30' },
+];
+
+const WORKERS = [
+  { name: 'Ramu Y.', skill: 'Coolie', rate: 'Rs.600/day', rating: 4.5 },
+  { name: 'Mohammed A.', skill: 'Electrician', rate: 'Rs.900/day', rating: 4.6 },
+  { name: 'Venkat R.', skill: 'Carpenter', rate: 'Rs.1000/day', rating: 4.9 },
 ];
 
 export default function ContractorDashboard() {
   const router = useRouter();
   const wallet = useWalletStore((state) => state.wallet);
-
   const walletBalance = wallet?.balance ?? 500000;
   const heldBalance = wallet?.held_balance ?? 50000;
 
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-      <View className="p-4">
+    <View style={{ flex: 1 }}>
+      <View style={{ padding: 16, gap: 20 }}>
         {/* Wallet Card */}
-        <View 
-          className="rounded-2xl p-6 mb-6"
-          style={{
-            backgroundColor: '#1F2937',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 12,
-            elevation: 8,
-          }}
-        >
-          <View className="flex-row justify-between items-start mb-4">
-            <View className="flex-1">
-              <Text className="text-gray-400 text-sm font-medium mb-1">Available Balance</Text>
-              <Text className="text-white text-4xl font-bold">
-                ₹{walletBalance.toLocaleString()}
-              </Text>
+        <View style={s.walletCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+            <View>
+              <Text style={s.walletLabel}>Available Balance</Text>
+              <Text style={s.walletAmount}>Rs.{walletBalance.toLocaleString()}</Text>
             </View>
-            <TouchableOpacity 
-              className="px-5 py-3 rounded-xl"
-              style={{ backgroundColor: '#F97316' }}
-            >
-              <Text className="text-white font-bold">Add Funds</Text>
+            <TouchableOpacity style={s.addFundsBtn}>
+              <Ionicons name="add" size={16} color={T.white} />
+              <Text style={s.addFundsText}>Add Funds</Text>
             </TouchableOpacity>
           </View>
-          <View 
-            className="flex-row items-center px-4 py-3 rounded-xl mt-4"
-            style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}
-          >
-            <Ionicons name="lock-closed" size={20} color="#F59E0B" />
-            <Text className="text-yellow-500 ml-2 font-semibold">
-              ₹{heldBalance.toLocaleString()} held in escrow
-            </Text>
+          <View style={s.escrowBadge}>
+            <Ionicons name="lock-closed" size={16} color={T.amber} />
+            <Text style={s.escrowText}>Rs.{heldBalance.toLocaleString()} held in escrow</Text>
           </View>
         </View>
 
         {/* Stats Grid */}
-        <View className="flex-row flex-wrap justify-between mb-6">
-          {STATS.map((stat, index) => (
-            <View 
-              key={index} 
-              className="w-[48%] rounded-2xl p-5 mb-3"
-              style={{
-                backgroundColor: '#1F2937',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <View className="flex-row items-center justify-between mb-3">
-                <View
-                  className="w-12 h-12 rounded-xl items-center justify-center"
-                  style={{ backgroundColor: `${stat.color}20` }}
-                >
-                  <Ionicons name={stat.icon as any} size={24} color={stat.color} />
+        <View style={s.statsGrid}>
+          {STATS.map((stat, i) => (
+            <View key={i} style={s.statCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <View style={[s.statIcon, { backgroundColor: `${stat.color}15` }]}>
+                  <Ionicons name={stat.icon} size={22} color={stat.color} />
                 </View>
-                <Text className="text-white text-2xl font-bold">{stat.value}</Text>
+                <Text style={s.statValue}>{stat.value}</Text>
               </View>
-              <Text className="text-gray-400 text-sm font-medium">{stat.label}</Text>
+              <Text style={s.statLabel}>{stat.label}</Text>
             </View>
           ))}
         </View>
 
         {/* Quick Actions */}
-        <View className="mb-6">
-          <Text className="text-white text-xl font-bold mb-4">Quick Actions</Text>
-          <View className="flex-row space-x-3">
-            <TouchableOpacity
-              className="flex-1 rounded-2xl p-4 flex-row items-center justify-center"
-              style={{
-                backgroundColor: '#F97316',
-                shadowColor: '#F97316',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-              onPress={() => router.push('/(app)/agreement/create')}
-            >
-              <Ionicons name="add-circle" size={22} color="white" />
-              <Text className="text-white font-bold ml-2">New Agreement</Text>
+        <View>
+          <Text style={s.sectionTitle}>Quick Actions</Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity style={s.primaryAction} onPress={() => router.push('/(app)/agreement/create')}>
+              <Ionicons name="add-circle" size={20} color={T.white} />
+              <Text style={s.primaryActionText}>New Agreement</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              className="flex-1 rounded-2xl p-4 flex-row items-center justify-center"
-              style={{
-                backgroundColor: '#1F2937',
-                borderWidth: 1,
-                borderColor: '#374151',
-              }}
-              onPress={() => router.push('/(app)/(tabs)/shop')}
-            >
-              <Ionicons name="cart" size={22} color="#F97316" />
-              <Text className="text-white font-bold ml-2">Bulk Order</Text>
+            <TouchableOpacity style={s.secondaryAction} onPress={() => router.push('/(app)/(tabs)/shop')}>
+              <Ionicons name="cart" size={20} color={T.navy} />
+              <Text style={s.secondaryActionText}>Bulk Order</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-      {/* Active Agreements */}
-      <View className="mb-6">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-white text-lg font-semibold">Active Agreements</Text>
-          <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/agreements')}>
-            <Text className="text-orange-500">View All</Text>
-          </TouchableOpacity>
-        </View>
-
-        {[
-          {
-            id: 'AGR-2024-001',
-            worker: 'Ramu Yadav',
-            title: 'Site Labor',
-            rate: '₹600/day',
-            status: 'active',
-            endDate: 'Mar 15',
-          },
-          {
-            id: 'AGR-2024-002',
-            worker: 'Suresh Kumar',
-            title: 'Mason Work',
-            rate: '₹5,600/week',
-            status: 'active',
-            endDate: 'Apr 30',
-          },
-        ].map((agreement, index) => (
-          <TouchableOpacity
-            key={index}
-            className="bg-gray-800 rounded-xl p-4 mb-3"
-            onPress={() => router.push(`/(app)/agreement/${agreement.id}`)}
-          >
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1">
-                <Text className="text-white font-medium">{agreement.title}</Text>
-                <Text className="text-gray-400 text-sm mt-1">{agreement.worker}</Text>
-                <View className="flex-row items-center mt-2">
-                  <Text className="text-orange-500 font-semibold">{agreement.rate}</Text>
-                  <Text className="text-gray-500 mx-2">•</Text>
-                  <Text className="text-gray-400 text-sm">Ends {agreement.endDate}</Text>
+        {/* Active Agreements */}
+        <View>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionTitle}>Active Agreements</Text>
+            <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/agreements')}>
+              <Text style={s.viewAll}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          {AGREEMENTS.map((agr) => (
+            <TouchableOpacity key={agr.id} style={s.agreementCard} onPress={() => router.push(`/(app)/agreement/${agr.id}`)}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.agreementTitle}>{agr.title}</Text>
+                <Text style={s.agreementWorker}>{agr.worker}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                  <Text style={s.agreementRate}>{agr.rate}</Text>
+                  <Text style={s.dot}> · </Text>
+                  <Text style={s.agreementEnd}>Ends {agr.endDate}</Text>
                 </View>
               </View>
-              <View className="bg-green-500/20 px-2 py-1 rounded">
-                <Text className="text-green-500 text-xs font-medium">Active</Text>
+              <View style={s.activeBadge}>
+                <Text style={s.activeBadgeText}>Active</Text>
               </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {/* Available Workers */}
-        <View className="mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-white text-xl font-bold">Available Workers</Text>
+        <View style={{ marginBottom: 16 }}>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionTitle}>Available Workers</Text>
             <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/workers')}>
-              <Text className="text-orange-500 font-semibold">View All</Text>
+              <Text style={s.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
-            <View className="flex-row space-x-4">
-              {[
-                { name: 'Ramu Y.', skill: 'Coolie', rate: '₹600/day', rating: 4.5 },
-                { name: 'Mohammed A.', skill: 'Electrician', rate: '₹900/day', rating: 4.6 },
-                { name: 'Venkat R.', skill: 'Carpenter', rate: '₹1000/day', rating: 4.9 },
-              ].map((worker, index) => (
-                <TouchableOpacity
-                  key={index}
-                  className="rounded-2xl p-4 w-44"
-                  style={{
-                    backgroundColor: '#1F2937',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
-                    elevation: 4,
-                  }}
-                  onPress={() => router.push('/(app)/(tabs)/workers')}
-                >
-                  <View 
-                    className="w-14 h-14 rounded-xl items-center justify-center mb-3"
-                    style={{ backgroundColor: '#374151' }}
-                  >
-                    <Ionicons name="person" size={28} color="#6B7280" />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', gap: 12, paddingRight: 16 }}>
+              {WORKERS.map((w, i) => (
+                <TouchableOpacity key={i} style={s.workerCard} onPress={() => router.push('/(app)/(tabs)/workers')}>
+                  <View style={s.workerAvatar}>
+                    <Ionicons name="person" size={26} color={T.textMuted} />
                   </View>
-                  <Text className="text-white font-bold text-base mb-1">{worker.name}</Text>
-                  <Text className="text-gray-400 text-sm mb-2">{worker.skill}</Text>
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-orange-500 font-bold text-sm">{worker.rate}</Text>
-                    <View className="flex-row items-center">
-                      <Ionicons name="star" size={14} color="#F59E0B" />
-                      <Text className="text-gray-400 text-xs ml-1 font-medium">{worker.rating}</Text>
+                  <Text style={s.workerName}>{w.name}</Text>
+                  <Text style={s.workerSkill}>{w.skill}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                    <Text style={s.workerRate}>{w.rate}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <Ionicons name="star" size={13} color="#F59E0B" />
+                      <Text style={s.workerRating}>{w.rating}</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -219,6 +137,42 @@ export default function ContractorDashboard() {
           </ScrollView>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
+
+const s = {
+  walletCard: { backgroundColor: T.navy, borderRadius: 16, padding: 20, shadowColor: T.navy, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
+  walletLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '500' as const, marginBottom: 4 },
+  walletAmount: { fontSize: 32, fontWeight: '800' as const, color: T.white },
+  addFundsBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: T.amber, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, gap: 4 },
+  addFundsText: { fontSize: 13, fontWeight: '700' as const, color: T.white },
+  escrowBadge: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: 'rgba(242,150,13,0.15)', borderRadius: 10, padding: 12, gap: 8 },
+  escrowText: { fontSize: 13, fontWeight: '600' as const, color: T.amber },
+  statsGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12 },
+  statCard: { width: '47%' as any, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border },
+  statIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center' as const, alignItems: 'center' as const },
+  statValue: { fontSize: 22, fontWeight: '800' as const, color: T.text },
+  statLabel: { fontSize: 13, fontWeight: '600' as const, color: T.textSecondary },
+  sectionTitle: { fontSize: 18, fontWeight: '800' as const, color: T.text, marginBottom: 14 },
+  sectionHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 14 },
+  viewAll: { fontSize: 13, fontWeight: '600' as const, color: T.amber },
+  primaryAction: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.navy, borderRadius: 14, paddingVertical: 14, gap: 8 },
+  primaryActionText: { fontSize: 14, fontWeight: '700' as const, color: T.white },
+  secondaryAction: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.surface, borderRadius: 14, paddingVertical: 14, gap: 8, borderWidth: 1, borderColor: T.border },
+  secondaryActionText: { fontSize: 14, fontWeight: '700' as const, color: T.navy },
+  agreementCard: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, marginBottom: 10 },
+  agreementTitle: { fontSize: 15, fontWeight: '700' as const, color: T.text },
+  agreementWorker: { fontSize: 13, color: T.textSecondary, marginTop: 2 },
+  agreementRate: { fontSize: 14, fontWeight: '700' as const, color: T.amber },
+  dot: { fontSize: 12, color: T.textMuted },
+  agreementEnd: { fontSize: 12, color: T.textMuted },
+  activeBadge: { backgroundColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  activeBadgeText: { fontSize: 11, fontWeight: '700' as const, color: '#10B981' },
+  workerCard: { backgroundColor: T.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: T.border, width: 160 },
+  workerAvatar: { width: 52, height: 52, borderRadius: 14, backgroundColor: T.bg, justifyContent: 'center' as const, alignItems: 'center' as const, marginBottom: 10 },
+  workerName: { fontSize: 14, fontWeight: '700' as const, color: T.text },
+  workerSkill: { fontSize: 12, color: T.textSecondary, marginTop: 2 },
+  workerRate: { fontSize: 13, fontWeight: '700' as const, color: T.amber },
+  workerRating: { fontSize: 12, fontWeight: '600' as const, color: T.textSecondary },
+};

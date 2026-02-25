@@ -2,223 +2,123 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdminStore } from '../../store/useStore';
+import { LightTheme } from '../../theme/designSystem';
+
+const T = LightTheme;
 
 const STATS = [
-  { label: 'Total Users', value: '1,250', icon: 'people', color: '#3B82F6' },
-  { label: 'Active Workers', value: '342', icon: 'hammer', color: '#10B981' },
-  { label: 'Pending Verify', value: '12', icon: 'shield', color: '#F59E0B' },
-  { label: "Today's Orders", value: '89', icon: 'receipt', color: '#8B5CF6' },
+  { label: 'Total Users', value: '1,250', icon: 'people' as const, color: '#3B82F6' },
+  { label: 'Active Workers', value: '342', icon: 'hammer' as const, color: '#10B981' },
+  { label: 'Pending Verify', value: '12', icon: 'shield' as const, color: '#F59E0B' },
+  { label: "Today's Orders", value: '89', icon: 'receipt' as const, color: '#8B5CF6' },
 ];
 
 const RECENT_ACTIVITIES = [
-  { type: 'verification', message: 'Ganesh Babu submitted ID for verification', time: '5 min ago', icon: 'shield-checkmark', color: '#F59E0B' },
-  { type: 'order', message: 'New bulk order worth ₹30,000 placed', time: '12 min ago', icon: 'receipt', color: '#3B82F6' },
-  { type: 'agreement', message: 'New agreement signed between Rajesh Const. and Ramu', time: '25 min ago', icon: 'document-text', color: '#10B981' },
-  { type: 'user', message: 'New shopkeeper registered: Metro Hardware', time: '1 hour ago', icon: 'person-add', color: '#8B5CF6' },
+  { message: 'Ganesh Babu submitted ID for verification', time: '5 min ago', icon: 'shield-checkmark' as const, color: '#F59E0B' },
+  { message: 'New bulk order worth Rs.30,000 placed', time: '12 min ago', icon: 'receipt' as const, color: '#3B82F6' },
+  { message: 'New agreement signed between Rajesh Const. and Ramu', time: '25 min ago', icon: 'document-text' as const, color: '#10B981' },
+  { message: 'New shopkeeper registered: Metro Hardware', time: '1 hour ago', icon: 'person-add' as const, color: '#8B5CF6' },
 ];
 
 export default function AdminDashboard() {
   const router = useRouter();
   const pendingVerifications = useAdminStore((state) => state.pendingVerifications);
 
-  // Mock pending verifications
   const mockPendingVerifications = [
-    {
-      id: 'v1',
-      workerName: 'Ganesh Babu',
-      phone: '9876543304',
-      idType: 'Aadhar Card',
-      submittedAt: '2 hours ago',
-      skills: ['Plumber', 'Welder'],
-    },
-    {
-      id: 'v2',
-      workerName: 'Srinivas K',
-      phone: '9876543306',
-      idType: 'Driving License',
-      submittedAt: '5 hours ago',
-      skills: ['Mason'],
-    },
+    { id: 'v1', workerName: 'Ganesh Babu', phone: '9876543304', idType: 'Aadhar Card', submittedAt: '2 hours ago', skills: ['Plumber', 'Welder'] },
+    { id: 'v2', workerName: 'Srinivas K', phone: '9876543306', idType: 'Driving License', submittedAt: '5 hours ago', skills: ['Mason'] },
   ];
 
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-      <View className="p-4">
+    <View style={{ flex: 1 }}>
+      <View style={{ padding: 16, gap: 20 }}>
         {/* Admin Header */}
-        <View 
-          className="rounded-2xl p-6 mb-6"
-          style={{
-            backgroundColor: '#1F2937',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 12,
-            elevation: 8,
-          }}
-        >
-          <View className="flex-row items-center">
-            <View 
-              className="w-16 h-16 rounded-2xl items-center justify-center"
-              style={{ backgroundColor: '#F97316' }}
-            >
-              <Ionicons name="shield-checkmark" size={32} color="white" />
-            </View>
-            <View className="ml-4">
-              <Text className="text-white text-2xl font-bold">Admin Console</Text>
-              <Text className="text-gray-400 font-medium">BuildMart Management</Text>
-            </View>
+        <View style={s.headerCard}>
+          <View style={s.headerIcon}>
+            <Ionicons name="shield-checkmark" size={28} color={T.white} />
+          </View>
+          <View style={{ marginLeft: 14 }}>
+            <Text style={s.headerTitle}>Admin Console</Text>
+            <Text style={s.headerSub}>BuildMart Management</Text>
           </View>
         </View>
 
         {/* Stats Grid */}
-        <View className="flex-row flex-wrap justify-between mb-6">
-          {STATS.map((stat, index) => (
+        <View style={s.statsGrid}>
+          {STATS.map((stat, i) => (
             <TouchableOpacity
-              key={index}
-              className="w-[48%] rounded-2xl p-5 mb-3"
-              style={{
-                backgroundColor: '#1F2937',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
+              key={i}
+              style={s.statCard}
               onPress={() => {
-                if (stat.label === 'Pending Verify') {
-                  router.push('/(app)/(tabs)/verifications');
-                } else if (stat.label === 'Total Users') {
-                  router.push('/(app)/(tabs)/users');
-                }
+                if (stat.label === 'Pending Verify') router.push('/(app)/(tabs)/verifications');
+                else if (stat.label === 'Total Users') router.push('/(app)/(tabs)/users');
               }}
             >
-              <View
-                className="w-12 h-12 rounded-xl items-center justify-center mb-3"
-                style={{ backgroundColor: `${stat.color}20` }}
-              >
-                <Ionicons name={stat.icon as any} size={24} color={stat.color} />
+              <View style={[s.statIcon, { backgroundColor: `${stat.color}15` }]}>
+                <Ionicons name={stat.icon} size={22} color={stat.color} />
               </View>
-              <Text className="text-white text-3xl font-bold mb-1">{stat.value}</Text>
-              <Text className="text-gray-400 text-sm font-medium">{stat.label}</Text>
+              <Text style={s.statValue}>{stat.value}</Text>
+              <Text style={s.statLabel}>{stat.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Quick Actions */}
-        <View className="flex-row space-x-3 mb-6">
-          <TouchableOpacity
-            className="flex-1 rounded-2xl p-4 flex-row items-center justify-center"
-            style={{
-              backgroundColor: '#F97316',
-              shadowColor: '#F97316',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-            onPress={() => router.push('/(app)/(tabs)/verifications')}
-          >
-            <Ionicons name="shield-checkmark" size={22} color="white" />
-            <Text className="text-white font-bold ml-2">Verify Workers</Text>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <TouchableOpacity style={s.primaryAction} onPress={() => router.push('/(app)/(tabs)/verifications')}>
+            <Ionicons name="shield-checkmark" size={20} color={T.white} />
+            <Text style={s.primaryActionText}>Verify Workers</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            className="flex-1 rounded-2xl p-4 flex-row items-center justify-center"
-            style={{
-              backgroundColor: '#1F2937',
-              borderWidth: 1,
-              borderColor: '#374151',
-            }}
-            onPress={() => router.push('/(app)/(tabs)/users')}
-          >
-            <Ionicons name="people" size={22} color="#F97316" />
-            <Text className="text-white font-bold ml-2">Manage Users</Text>
+          <TouchableOpacity style={s.secondaryAction} onPress={() => router.push('/(app)/(tabs)/users')}>
+            <Ionicons name="people" size={20} color={T.navy} />
+            <Text style={s.secondaryActionText}>Manage Users</Text>
           </TouchableOpacity>
         </View>
 
         {/* Pending Verifications */}
-        <View className="mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-white text-xl font-bold">Pending Verifications</Text>
+        <View>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionTitle}>Pending Verifications</Text>
             <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/verifications')}>
-              <Text className="text-orange-500 font-semibold">
-                View All ({mockPendingVerifications.length})
-              </Text>
+              <Text style={s.viewAll}>View All ({mockPendingVerifications.length})</Text>
             </TouchableOpacity>
           </View>
-
-          {mockPendingVerifications.map((verification, index) => (
-            <View
-              key={index}
-              className="rounded-2xl p-5 mb-4"
-              style={{
-                backgroundColor: '#1F2937',
-                borderLeftWidth: 4,
-                borderLeftColor: '#F59E0B',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <View className="flex-row justify-between items-start mb-4">
-                <View className="flex-1">
-                  <View className="flex-row items-center mb-3">
-                    <View 
-                      className="w-12 h-12 rounded-xl items-center justify-center"
-                      style={{ backgroundColor: '#374151' }}
-                    >
-                      <Ionicons name="person" size={24} color="#6B7280" />
-                    </View>
-                    <View className="ml-4">
-                      <Text className="text-white font-bold text-base">{verification.workerName}</Text>
-                      <Text className="text-gray-400 text-sm font-medium">{verification.phone}</Text>
-                    </View>
-                  </View>
-
-                  <View className="flex-row items-center mb-3">
-                    <Ionicons name="card" size={18} color="#9CA3AF" />
-                    <Text className="text-gray-400 ml-2 font-medium">{verification.idType}</Text>
-                    <Text className="text-gray-500 mx-2">•</Text>
-                    <Text className="text-gray-500 text-sm font-medium">{verification.submittedAt}</Text>
-                  </View>
-
-                  <View className="flex-row">
-                    {verification.skills.map((skill, idx) => (
-                      <View 
-                        key={idx} 
-                        className="px-3 py-1 rounded-xl mr-2"
-                        style={{ backgroundColor: '#374151' }}
-                      >
-                        <Text className="text-gray-300 text-xs font-semibold">{skill}</Text>
-                      </View>
-                    ))}
-                  </View>
+          {mockPendingVerifications.map((v) => (
+            <View key={v.id} style={s.verifyCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <View style={s.verifyAvatar}>
+                  <Ionicons name="person" size={22} color={T.textMuted} />
+                </View>
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={s.verifyName}>{v.workerName}</Text>
+                  <Text style={s.verifyPhone}>{v.phone}</Text>
                 </View>
               </View>
-
-              {/* Action Buttons */}
-              <View className="flex-row space-x-3 mt-4">
-                <TouchableOpacity 
-                  className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-                  style={{ backgroundColor: '#374151' }}
-                >
-                  <Ionicons name="eye" size={20} color="#9CA3AF" />
-                  <Text className="text-gray-300 font-bold ml-2">View ID</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
+                <Ionicons name="card" size={16} color={T.textMuted} />
+                <Text style={s.verifyMeta}>{v.idType}</Text>
+                <Text style={s.dot}>·</Text>
+                <Text style={s.verifyMeta}>{v.submittedAt}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
+                {v.skills.map((skill) => (
+                  <View key={skill} style={s.skillBadge}>
+                    <Text style={s.skillText}>{skill}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity style={s.viewIdBtn}>
+                  <Ionicons name="eye" size={16} color={T.textSecondary} />
+                  <Text style={s.viewIdText}>View ID</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-                  style={{ backgroundColor: '#10B981' }}
-                >
-                  <Ionicons name="checkmark" size={20} color="white" />
-                  <Text className="text-white font-bold ml-2">Approve</Text>
+                <TouchableOpacity style={s.approveBtn}>
+                  <Ionicons name="checkmark" size={16} color={T.white} />
+                  <Text style={s.approveBtnText}>Approve</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-                  style={{ backgroundColor: '#EF4444' }}
-                >
-                  <Ionicons name="close" size={20} color="white" />
-                  <Text className="text-white font-bold ml-2">Reject</Text>
+                <TouchableOpacity style={s.rejectBtn}>
+                  <Ionicons name="close" size={16} color={T.white} />
+                  <Text style={s.rejectBtnText}>Reject</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -226,111 +126,101 @@ export default function AdminDashboard() {
         </View>
 
         {/* Recent Activity */}
-        <View className="mb-6">
-          <Text className="text-white text-xl font-bold mb-4">Recent Activity</Text>
-          <View 
-            className="rounded-2xl p-5"
-            style={{
-              backgroundColor: '#1F2937',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            {RECENT_ACTIVITIES.map((activity, index) => (
-              <View
-                key={index}
-                className="flex-row items-start py-4"
-                style={{
-                  borderBottomWidth: index !== RECENT_ACTIVITIES.length - 1 ? 1 : 0,
-                  borderBottomColor: '#374151',
-                }}
-              >
-                <View
-                  className="w-10 h-10 rounded-xl items-center justify-center"
-                  style={{ backgroundColor: `${activity.color}20` }}
-                >
-                  <Ionicons name={activity.icon as any} size={20} color={activity.color} />
+        <View>
+          <Text style={s.sectionTitle}>Recent Activity</Text>
+          <View style={s.activityCard}>
+            {RECENT_ACTIVITIES.map((a, i) => (
+              <View key={i} style={[s.activityItem, i < RECENT_ACTIVITIES.length - 1 && s.activityBorder]}>
+                <View style={[s.activityIcon, { backgroundColor: `${a.color}15` }]}>
+                  <Ionicons name={a.icon} size={18} color={a.color} />
                 </View>
-                <View className="flex-1 ml-4">
-                  <Text className="text-gray-300 text-sm font-medium">{activity.message}</Text>
-                  <Text className="text-gray-500 text-xs mt-1 font-medium">{activity.time}</Text>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={s.activityMsg}>{a.message}</Text>
+                  <Text style={s.activityTime}>{a.time}</Text>
                 </View>
               </View>
             ))}
           </View>
         </View>
 
-        {/* System Health */}
-        <View className="mb-6">
-          <Text className="text-white text-xl font-bold mb-4">System Overview</Text>
-          <View className="flex-row space-x-3">
-            <View 
-              className="flex-1 rounded-2xl p-5"
-              style={{
-                backgroundColor: '#1F2937',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-gray-400 font-medium">Orders Today</Text>
-                <View className="flex-row items-center">
-                  <Ionicons name="trending-up" size={18} color="#10B981" />
-                  <Text className="text-green-500 ml-1 font-bold">+15%</Text>
+        {/* System Overview */}
+        <View style={{ marginBottom: 16 }}>
+          <Text style={s.sectionTitle}>System Overview</Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={s.sysCard}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={s.sysLabel}>Orders Today</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <Ionicons name="trending-up" size={14} color={T.success} />
+                  <Text style={s.sysTrend}>+15%</Text>
                 </View>
               </View>
-              <Text className="text-white text-3xl font-bold mb-3">89</Text>
-              <View 
-                className="h-2 rounded-full"
-                style={{ backgroundColor: '#374151' }}
-              >
-                <View 
-                  className="h-2 rounded-full"
-                  style={{ backgroundColor: '#10B981', width: '75%' }}
-                />
+              <Text style={s.sysValue}>89</Text>
+              <View style={s.progressTrack}>
+                <View style={[s.progressFill, { width: '75%', backgroundColor: T.success }]} />
               </View>
             </View>
-            <View 
-              className="flex-1 rounded-2xl p-5"
-              style={{
-                backgroundColor: '#1F2937',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-gray-400 font-medium">Active Drivers</Text>
-                <View className="flex-row items-center">
-                  <View 
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: '#10B981' }}
-                  />
-                  <Text className="text-green-500 ml-1 font-bold">Online</Text>
+            <View style={s.sysCard}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={s.sysLabel}>Active Drivers</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: T.success }} />
+                  <Text style={s.sysTrend}>Online</Text>
                 </View>
               </View>
-              <Text className="text-white text-3xl font-bold mb-3">24/30</Text>
-              <View 
-                className="h-2 rounded-full"
-                style={{ backgroundColor: '#374151' }}
-              >
-                <View 
-                  className="h-2 rounded-full"
-                  style={{ backgroundColor: '#F97316', width: '80%' }}
-                />
+              <Text style={s.sysValue}>24/30</Text>
+              <View style={s.progressTrack}>
+                <View style={[s.progressFill, { width: '80%', backgroundColor: T.amber }]} />
               </View>
             </View>
           </View>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
+
+const s = {
+  headerCard: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: T.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: T.border },
+  headerIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: T.navy, justifyContent: 'center' as const, alignItems: 'center' as const },
+  headerTitle: { fontSize: 20, fontWeight: '800' as const, color: T.text },
+  headerSub: { fontSize: 13, color: T.textSecondary, marginTop: 2 },
+  statsGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12 },
+  statCard: { width: '47%' as any, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border },
+  statIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center' as const, alignItems: 'center' as const, marginBottom: 10 },
+  statValue: { fontSize: 24, fontWeight: '800' as const, color: T.text, marginBottom: 2 },
+  statLabel: { fontSize: 13, fontWeight: '600' as const, color: T.textSecondary },
+  sectionTitle: { fontSize: 18, fontWeight: '800' as const, color: T.text, marginBottom: 14 },
+  sectionHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 14 },
+  viewAll: { fontSize: 13, fontWeight: '600' as const, color: T.amber },
+  primaryAction: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.navy, borderRadius: 14, paddingVertical: 14, gap: 8 },
+  primaryActionText: { fontSize: 14, fontWeight: '700' as const, color: T.white },
+  secondaryAction: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.surface, borderRadius: 14, paddingVertical: 14, gap: 8, borderWidth: 1, borderColor: T.border },
+  secondaryActionText: { fontSize: 14, fontWeight: '700' as const, color: T.navy },
+  verifyCard: { backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, borderLeftWidth: 4, borderLeftColor: '#F59E0B', marginBottom: 12 },
+  verifyAvatar: { width: 44, height: 44, borderRadius: 12, backgroundColor: T.bg, justifyContent: 'center' as const, alignItems: 'center' as const },
+  verifyName: { fontSize: 15, fontWeight: '700' as const, color: T.text },
+  verifyPhone: { fontSize: 12, color: T.textMuted, marginTop: 2 },
+  verifyMeta: { fontSize: 12, color: T.textMuted },
+  dot: { fontSize: 12, color: T.textMuted },
+  skillBadge: { backgroundColor: T.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  skillText: { fontSize: 11, fontWeight: '600' as const, color: T.textSecondary },
+  viewIdBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.bg, borderRadius: 10, paddingVertical: 10, gap: 6 },
+  viewIdText: { fontSize: 13, fontWeight: '700' as const, color: T.textSecondary },
+  approveBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.success, borderRadius: 10, paddingVertical: 10, gap: 4 },
+  approveBtnText: { fontSize: 13, fontWeight: '700' as const, color: T.white },
+  rejectBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: '#EF4444', borderRadius: 10, paddingVertical: 10, gap: 4 },
+  rejectBtnText: { fontSize: 13, fontWeight: '700' as const, color: T.white },
+  activityCard: { backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border },
+  activityItem: { flexDirection: 'row' as const, alignItems: 'flex-start' as const, paddingVertical: 12 },
+  activityBorder: { borderBottomWidth: 1, borderBottomColor: T.border },
+  activityIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center' as const, alignItems: 'center' as const },
+  activityMsg: { fontSize: 13, color: T.textSecondary, lineHeight: 18 },
+  activityTime: { fontSize: 11, color: T.textMuted, marginTop: 4 },
+  sysCard: { flex: 1, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border },
+  sysLabel: { fontSize: 13, color: T.textSecondary },
+  sysTrend: { fontSize: 11, fontWeight: '700' as const, color: T.success },
+  sysValue: { fontSize: 26, fontWeight: '800' as const, color: T.text, marginBottom: 10 },
+  progressTrack: { height: 6, borderRadius: 3, backgroundColor: T.bg },
+  progressFill: { height: 6, borderRadius: 3 },
+};

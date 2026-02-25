@@ -3,6 +3,9 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useWorkerStore, useWalletStore } from '../../store/useStore';
+import { LightTheme } from '../../theme/designSystem';
+
+const T = LightTheme;
 
 export default function WorkerDashboard() {
   const router = useRouter();
@@ -13,12 +16,6 @@ export default function WorkerDashboard() {
   const walletBalance = wallet?.balance ?? 12000;
   const totalEarned = wallet?.total_earned ?? 72000;
 
-  const handleToggle = () => {
-    setIsAvailable(!isAvailable);
-    toggleStatus();
-  };
-
-  // Mock worker profile data
   const workerProfile = {
     skills: ['Coolie', 'Helper'],
     rating: 4.5,
@@ -27,277 +24,193 @@ export default function WorkerDashboard() {
     dailyRate: 600,
   };
 
+  const handleToggle = () => {
+    setIsAvailable(!isAvailable);
+    toggleStatus();
+  };
+
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-      <View className="p-4">
+    <View style={{ flex: 1 }}>
+      <View style={{ padding: 16, gap: 20 }}>
         {/* Status Toggle Card */}
-        <View 
-          className="rounded-2xl p-6 mb-6"
-          style={{
-            backgroundColor: '#1F2937',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 12,
-            elevation: 8,
-          }}
-        >
-          <View className="flex-row justify-between items-center mb-4">
-            <View className="flex-1">
-              <Text className="text-gray-400 text-sm font-medium mb-1">Your Status</Text>
-              <Text 
-                className="text-2xl font-bold"
-                style={{ color: isAvailable ? '#10B981' : '#F97316' }}
-              >
+        <View style={s.statusCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.statusLabel}>Your Status</Text>
+              <Text style={[s.statusTitle, { color: isAvailable ? T.success : T.amber }]}>
                 {isAvailable ? 'Available for Work' : 'Currently Working'}
               </Text>
             </View>
-            <View className="items-center">
+            <View style={{ alignItems: 'center' }}>
               <Switch
                 value={isAvailable}
                 onValueChange={handleToggle}
-                trackColor={{ false: '#F97316', true: '#10B981' }}
-                thumbColor="white"
+                trackColor={{ false: T.amber, true: T.success }}
+                thumbColor={T.white}
               />
-              <Text className="text-gray-400 text-xs mt-2 font-medium">
-                {isAvailable ? 'Waiting' : 'Working'}
-              </Text>
+              <Text style={s.switchLabel}>{isAvailable ? 'Waiting' : 'Working'}</Text>
             </View>
           </View>
-
-          {/* Verification Badge */}
-          {workerProfile.isVerified ? (
-            <View 
-              className="flex-row items-center px-4 py-3 rounded-xl"
-              style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}
-            >
-              <Ionicons name="shield-checkmark" size={20} color="#10B981" />
-              <Text className="text-green-500 ml-2 font-bold">Verified Worker</Text>
+          {workerProfile.isVerified && (
+            <View style={s.verifiedBadge}>
+              <Ionicons name="shield-checkmark" size={16} color={T.success} />
+              <Text style={s.verifiedText}>Verified Worker</Text>
             </View>
-          ) : (
-            <TouchableOpacity 
-              className="flex-row items-center px-4 py-3 rounded-xl"
-              style={{ backgroundColor: 'rgba(234, 179, 8, 0.2)' }}
-              onPress={() => router.push('/(app)/(tabs)/verifications')}
-            >
-              <Ionicons name="warning" size={20} color="#F59E0B" />
-              <Text className="text-yellow-500 ml-2 font-semibold flex-1">
-                Complete verification to accept jobs
-              </Text>
-              <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
-            </TouchableOpacity>
           )}
         </View>
 
         {/* Earnings Card */}
-        <View 
-          className="rounded-2xl p-6 mb-6"
-          style={{
-            backgroundColor: '#F97316',
-            shadowColor: '#F97316',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 12,
-            elevation: 8,
-          }}
-        >
-          <View className="flex-row justify-between mb-4">
-            <View className="flex-1">
-              <Text className="text-orange-100 text-sm font-medium mb-1">Wallet Balance</Text>
-              <Text className="text-white text-4xl font-bold">
-                ₹{walletBalance.toLocaleString()}
-              </Text>
+        <View style={s.earningsCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+            <View>
+              <Text style={s.earningsLabel}>Wallet Balance</Text>
+              <Text style={s.earningsAmount}>Rs.{walletBalance.toLocaleString()}</Text>
             </View>
-            <View className="items-end">
-              <Text className="text-orange-100 text-sm font-medium mb-1">Total Earned</Text>
-              <Text className="text-white text-2xl font-bold">
-                ₹{totalEarned.toLocaleString()}
-              </Text>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={s.earningsLabel}>Total Earned</Text>
+              <Text style={s.totalEarned}>Rs.{totalEarned.toLocaleString()}</Text>
             </View>
           </View>
-          <TouchableOpacity
-            className="rounded-xl py-4 mt-4 flex-row items-center justify-center"
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-            onPress={() => router.push('/(app)/(tabs)/wallet')}
-          >
-            <Ionicons name="arrow-down" size={20} color="white" />
-            <Text className="text-white font-bold ml-2">Withdraw</Text>
+          <TouchableOpacity style={s.withdrawBtn} onPress={() => router.push('/(app)/(tabs)/wallet')}>
+            <Ionicons name="arrow-down" size={18} color={T.white} />
+            <Text style={s.withdrawText}>Withdraw</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Stats Grid */}
-        <View className="flex-row space-x-3 mb-6">
-          <View 
-            className="flex-1 rounded-2xl p-5 items-center"
-            style={{
-              backgroundColor: '#1F2937',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <Text className="text-4xl font-bold text-white mb-2">{workerProfile.totalJobs}</Text>
-            <Text className="text-gray-400 text-sm font-medium">Jobs Done</Text>
+        {/* Stats Row */}
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={s.miniStat}>
+            <Text style={s.miniStatValue}>{workerProfile.totalJobs}</Text>
+            <Text style={s.miniStatLabel}>Jobs Done</Text>
           </View>
-          <View 
-            className="flex-1 rounded-2xl p-5 items-center"
-            style={{
-              backgroundColor: '#1F2937',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <View className="flex-row items-center mb-2">
-              <Text className="text-4xl font-bold text-white">{workerProfile.rating}</Text>
-              <Ionicons name="star" size={24} color="#F59E0B" style={{ marginLeft: 4 }} />
+          <View style={s.miniStat}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={s.miniStatValue}>{workerProfile.rating}</Text>
+              <Ionicons name="star" size={18} color="#F59E0B" />
             </View>
-            <Text className="text-gray-400 text-sm font-medium">Rating</Text>
+            <Text style={s.miniStatLabel}>Rating</Text>
           </View>
-          <View 
-            className="flex-1 rounded-2xl p-5 items-center"
-            style={{
-              backgroundColor: '#1F2937',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <Text className="text-4xl font-bold text-white mb-2">₹{workerProfile.dailyRate}</Text>
-            <Text className="text-gray-400 text-sm font-medium">Daily Rate</Text>
+          <View style={s.miniStat}>
+            <Text style={s.miniStatValue}>Rs.{workerProfile.dailyRate}</Text>
+            <Text style={s.miniStatLabel}>Daily Rate</Text>
           </View>
         </View>
 
         {/* Skills */}
-        <View className="mb-6">
-          <Text className="text-white text-xl font-bold mb-4">Your Skills</Text>
-          <View className="flex-row flex-wrap">
-            {workerProfile.skills.map((skill, index) => (
-              <View
-                key={index}
-                className="px-4 py-2 rounded-xl mr-2 mb-2"
-                style={{ backgroundColor: 'rgba(249, 115, 22, 0.2)' }}
-              >
-                <Text className="text-orange-500 font-bold">{skill}</Text>
+        <View>
+          <Text style={s.sectionTitle}>Your Skills</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {workerProfile.skills.map((skill) => (
+              <View key={skill} style={s.skillBadge}>
+                <Text style={s.skillText}>{skill}</Text>
               </View>
             ))}
-            <TouchableOpacity 
-              className="px-4 py-2 rounded-xl flex-row items-center"
-              style={{
-                backgroundColor: '#1F2937',
-                borderWidth: 1,
-                borderColor: '#374151',
-              }}
-            >
-              <Ionicons name="add" size={18} color="#9CA3AF" />
-              <Text className="text-gray-400 ml-1 font-medium">Add Skill</Text>
+            <TouchableOpacity style={s.addSkillBtn}>
+              <Ionicons name="add" size={16} color={T.textMuted} />
+              <Text style={s.addSkillText}>Add Skill</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Job Requests */}
-        <View className="mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-white text-xl font-bold">Job Requests</Text>
+        <View>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionTitle}>Job Requests</Text>
             <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/jobs')}>
-              <Text className="text-orange-500 font-semibold">View All</Text>
+              <Text style={s.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Pending Job Request */}
-          <View 
-            className="rounded-2xl p-5 mb-3"
-            style={{
-              backgroundColor: '#1F2937',
-              borderLeftWidth: 4,
-              borderLeftColor: '#F97316',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1">
-                <View className="flex-row items-center mb-3">
-                  <View 
-                    className="px-3 py-1 rounded-xl mr-2"
-                    style={{ backgroundColor: 'rgba(249, 115, 22, 0.2)' }}
-                  >
-                    <Text className="text-orange-500 text-xs font-bold">NEW</Text>
-                  </View>
-                  <Text className="text-gray-400 text-sm font-medium">2 hours work</Text>
+          <View style={s.jobCard}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <View style={s.newBadge}><Text style={s.newBadgeText}>NEW</Text></View>
+                  <Text style={s.jobDuration}>2 hours work</Text>
                 </View>
-                <Text className="text-white font-bold text-base mb-2">Unload cement bags</Text>
-                <Text className="text-gray-400 text-sm mb-2">Koramangala, 2.3 km away</Text>
-                <Text className="text-orange-500 font-bold text-lg">₹200/hour</Text>
+                <Text style={s.jobTitle}>Unload cement bags</Text>
+                <Text style={s.jobLocation}>Koramangala, 2.3 km away</Text>
+                <Text style={s.jobRate}>Rs.200/hour</Text>
               </View>
-              <View className="space-y-2 ml-4">
-                <TouchableOpacity 
-                  className="px-5 py-3 rounded-xl"
-                  style={{ backgroundColor: '#10B981' }}
-                >
-                  <Text className="text-white font-bold">Accept</Text>
+              <View style={{ gap: 8, marginLeft: 12 }}>
+                <TouchableOpacity style={s.acceptBtn}>
+                  <Text style={s.acceptText}>Accept</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  className="px-5 py-3 rounded-xl"
-                  style={{ backgroundColor: '#374151' }}
-                >
-                  <Text className="text-gray-300 font-bold">Decline</Text>
+                <TouchableOpacity style={s.declineBtn}>
+                  <Text style={s.declineText}>Decline</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Active Agreements */}
-        <View className="mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-white text-xl font-bold">Active Contracts</Text>
+        {/* Active Contracts */}
+        <View style={{ marginBottom: 16 }}>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionTitle}>Active Contracts</Text>
             <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/agreements')}>
-              <Text className="text-orange-500 font-semibold">View All</Text>
+              <Text style={s.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
-
-          <TouchableOpacity 
-            className="rounded-2xl p-5"
-            style={{
-              backgroundColor: '#1F2937',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-            onPress={() => router.push('/(app)/(tabs)/agreements')}
-          >
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1">
-                <Text className="text-white font-bold text-base mb-1">Site Labor - Brigade Project</Text>
-                <Text className="text-gray-400 text-sm mb-2">Rajesh Constructions</Text>
-                <View className="flex-row items-center">
-                  <Text className="text-orange-500 font-bold">₹600/day</Text>
-                  <Text className="text-gray-500 mx-2">•</Text>
-                  <Text className="text-gray-400 text-sm">Ends Mar 15</Text>
-                </View>
+          <TouchableOpacity style={s.contractCard} onPress={() => router.push('/(app)/(tabs)/agreements')}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.contractTitle}>Site Labor - Brigade Project</Text>
+              <Text style={s.contractSub}>Rajesh Constructions</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                <Text style={s.contractRate}>Rs.600/day</Text>
+                <Text style={s.dot}> · </Text>
+                <Text style={s.contractEnd}>Ends Mar 15</Text>
               </View>
-              <View 
-                className="px-3 py-2 rounded-xl"
-                style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}
-              >
-                <Text className="text-green-500 text-xs font-bold">Active</Text>
-              </View>
+            </View>
+            <View style={s.activeBadge}>
+              <Text style={s.activeBadgeText}>Active</Text>
             </View>
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
+
+const s = {
+  statusCard: { backgroundColor: T.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: T.border },
+  statusLabel: { fontSize: 13, color: T.textMuted, fontWeight: '500' as const, marginBottom: 4 },
+  statusTitle: { fontSize: 20, fontWeight: '800' as const },
+  switchLabel: { fontSize: 11, color: T.textMuted, marginTop: 4 },
+  verifiedBadge: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: '#D1FAE5', borderRadius: 10, padding: 10, gap: 8 },
+  verifiedText: { fontSize: 13, fontWeight: '700' as const, color: T.success },
+  earningsCard: { backgroundColor: T.navy, borderRadius: 16, padding: 20, shadowColor: T.navy, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
+  earningsLabel: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: '500' as const, marginBottom: 4 },
+  earningsAmount: { fontSize: 28, fontWeight: '800' as const, color: T.white },
+  totalEarned: { fontSize: 20, fontWeight: '800' as const, color: T.amber },
+  withdrawBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, paddingVertical: 12, gap: 6 },
+  withdrawText: { fontSize: 14, fontWeight: '700' as const, color: T.white },
+  miniStat: { flex: 1, backgroundColor: T.surface, borderRadius: 14, padding: 16, alignItems: 'center' as const, borderWidth: 1, borderColor: T.border },
+  miniStatValue: { fontSize: 22, fontWeight: '800' as const, color: T.text, marginBottom: 4 },
+  miniStatLabel: { fontSize: 12, fontWeight: '600' as const, color: T.textSecondary },
+  sectionTitle: { fontSize: 18, fontWeight: '800' as const, color: T.text, marginBottom: 14 },
+  sectionHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 14 },
+  viewAll: { fontSize: 13, fontWeight: '600' as const, color: T.amber },
+  skillBadge: { backgroundColor: T.amberBg, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  skillText: { fontSize: 13, fontWeight: '700' as const, color: T.amber },
+  addSkillBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: T.surface, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: T.border, gap: 4 },
+  addSkillText: { fontSize: 13, fontWeight: '600' as const, color: T.textMuted },
+  jobCard: { backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, borderLeftWidth: 4, borderLeftColor: T.amber },
+  newBadge: { backgroundColor: T.amberBg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  newBadgeText: { fontSize: 10, fontWeight: '700' as const, color: T.amber, letterSpacing: 0.5 },
+  jobDuration: { fontSize: 12, color: T.textMuted },
+  jobTitle: { fontSize: 15, fontWeight: '700' as const, color: T.text, marginBottom: 4 },
+  jobLocation: { fontSize: 13, color: T.textSecondary, marginBottom: 6 },
+  jobRate: { fontSize: 17, fontWeight: '800' as const, color: T.amber },
+  acceptBtn: { backgroundColor: T.success, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
+  acceptText: { fontSize: 13, fontWeight: '700' as const, color: T.white },
+  declineBtn: { backgroundColor: T.bg, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
+  declineText: { fontSize: 13, fontWeight: '700' as const, color: T.textSecondary },
+  contractCard: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border },
+  contractTitle: { fontSize: 15, fontWeight: '700' as const, color: T.text },
+  contractSub: { fontSize: 13, color: T.textSecondary, marginTop: 2 },
+  contractRate: { fontSize: 14, fontWeight: '700' as const, color: T.amber },
+  dot: { fontSize: 12, color: T.textMuted },
+  contractEnd: { fontSize: 12, color: T.textMuted },
+  activeBadge: { backgroundColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  activeBadgeText: { fontSize: 11, fontWeight: '700' as const, color: '#10B981' },
+};

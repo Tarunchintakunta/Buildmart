@@ -3,6 +3,9 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useWalletStore } from '../../store/useStore';
+import { LightTheme } from '../../theme/designSystem';
+
+const T = LightTheme;
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -12,10 +15,8 @@ export default function DriverDashboard() {
   const walletBalance = wallet?.balance ?? 8000;
   const totalEarned = wallet?.total_earned ?? 50000;
 
-  // Mock driver profile
   const driverProfile = {
-    name: 'Krishna Driver',
-    type: 'shop_driver', // or 'freelance'
+    type: 'shop_driver',
     shopName: 'Anand Hardware',
     vehicleType: 'Mini Truck',
     vehicleNumber: 'KA01AB1234',
@@ -28,365 +29,196 @@ export default function DriverDashboard() {
   const isFreelance = driverProfile.type === 'freelance';
 
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-      <View className="p-4">
+    <View style={{ flex: 1 }}>
+      <View style={{ padding: 16, gap: 20 }}>
         {/* Online Status Card */}
-        <View 
-          className="rounded-2xl p-6 mb-6"
-          style={{
-            backgroundColor: '#1F2937',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 12,
-            elevation: 8,
-          }}
-        >
-          <View className="flex-row justify-between items-center mb-4">
-            <View className="flex-1">
-              <Text className="text-gray-400 text-sm font-medium mb-1">Driver Status</Text>
-              <Text 
-                className="text-2xl font-bold"
-                style={{ color: isOnline ? '#10B981' : '#EF4444' }}
-              >
+        <View style={s.statusCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.statusLabel}>Driver Status</Text>
+              <Text style={[s.statusTitle, { color: isOnline ? T.success : '#EF4444' }]}>
                 {isOnline ? 'Online - Ready' : 'Offline'}
               </Text>
             </View>
-            <View className="items-center">
-              <Switch
-                value={isOnline}
-                onValueChange={setIsOnline}
-                trackColor={{ false: '#EF4444', true: '#10B981' }}
-                thumbColor="white"
-              />
-              <Text className="text-gray-400 text-xs mt-2 font-medium">
-                {isOnline ? 'Go Offline' : 'Go Online'}
-              </Text>
+            <View style={{ alignItems: 'center' }}>
+              <Switch value={isOnline} onValueChange={setIsOnline} trackColor={{ false: '#EF4444', true: T.success }} thumbColor={T.white} />
+              <Text style={s.switchLabel}>{isOnline ? 'Go Offline' : 'Go Online'}</Text>
             </View>
           </View>
-
-          {/* Driver Type Badge */}
-          <View className="flex-row items-center mb-4">
-            <View 
-              className="px-4 py-2 rounded-xl"
-              style={{ 
-                backgroundColor: isFreelance ? 'rgba(139, 92, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)' 
-              }}
-            >
-              <Text 
-                className="font-bold"
-                style={{ color: isFreelance ? '#8B5CF6' : '#3B82F6' }}
-              >
-                {isFreelance ? 'Freelance Driver' : `Shop Driver - ${driverProfile.shopName}`}
-              </Text>
-            </View>
+          <View style={[s.typeBadge, { backgroundColor: isFreelance ? '#EDE9FE' : '#EFF6FF' }]}>
+            <Text style={[s.typeText, { color: isFreelance ? '#8B5CF6' : T.info }]}>
+              {isFreelance ? 'Freelance Driver' : `Shop Driver - ${driverProfile.shopName}`}
+            </Text>
           </View>
-
-          {/* Vehicle Info */}
-          <View 
-            className="flex-row items-center rounded-xl p-4"
-            style={{ backgroundColor: 'rgba(55, 65, 81, 0.5)' }}
-          >
-            <Ionicons name="car" size={28} color="#F97316" />
-            <View className="ml-4">
-              <Text className="text-white font-bold text-base">{driverProfile.vehicleType}</Text>
-              <Text className="text-gray-400 text-sm font-medium">{driverProfile.vehicleNumber}</Text>
+          <View style={s.vehicleRow}>
+            <Ionicons name="car" size={24} color={T.amber} />
+            <View style={{ marginLeft: 12 }}>
+              <Text style={s.vehicleType}>{driverProfile.vehicleType}</Text>
+              <Text style={s.vehicleNumber}>{driverProfile.vehicleNumber}</Text>
             </View>
           </View>
         </View>
 
         {/* Today's Stats */}
-        <View className="flex-row space-x-3 mb-6">
-          <View 
-            className="flex-1 rounded-2xl p-5"
-            style={{
-              backgroundColor: '#F97316',
-              shadowColor: '#F97316',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <Ionicons name="bicycle" size={28} color="white" />
-            <Text className="text-white text-3xl font-bold mt-3 mb-1">
-              {driverProfile.todayDeliveries}
-            </Text>
-            <Text className="text-orange-100 text-sm font-medium">Today's Deliveries</Text>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={[s.todayCard, { backgroundColor: T.navy }]}>
+            <Ionicons name="bicycle" size={24} color={T.white} />
+            <Text style={s.todayValue}>{driverProfile.todayDeliveries}</Text>
+            <Text style={s.todayLabel}>Today's Deliveries</Text>
           </View>
-          <View 
-            className="flex-1 rounded-2xl p-5"
-            style={{
-              backgroundColor: '#10B981',
-              shadowColor: '#10B981',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <Ionicons name="cash" size={28} color="white" />
-            <Text className="text-white text-3xl font-bold mt-3 mb-1">
-              ₹{driverProfile.todayEarnings}
-            </Text>
-            <Text className="text-green-100 text-sm font-medium">Today's Earnings</Text>
+          <View style={[s.todayCard, { backgroundColor: T.success }]}>
+            <Ionicons name="cash" size={24} color={T.white} />
+            <Text style={s.todayValue}>Rs.{driverProfile.todayEarnings}</Text>
+            <Text style={s.todayLabel}>Today's Earnings</Text>
           </View>
         </View>
 
         {/* Wallet Summary */}
-        <View 
-          className="rounded-2xl p-5 mb-6"
-          style={{
-            backgroundColor: '#1F2937',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 4,
-          }}
-        >
-          <View className="flex-row justify-between items-center mb-4">
+        <View style={s.walletCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
-              <Text className="text-gray-400 text-sm font-medium mb-1">Wallet Balance</Text>
-              <Text className="text-white text-3xl font-bold">
-                ₹{walletBalance.toLocaleString()}
-              </Text>
+              <Text style={s.walletLabel}>Wallet Balance</Text>
+              <Text style={s.walletAmount}>Rs.{walletBalance.toLocaleString()}</Text>
             </View>
-            <TouchableOpacity
-            className="bg-orange-500 px-4 py-2 rounded-full"
-            onPress={() => router.push('/(app)/(tabs)/wallet')}
-          >
-            <Text className="text-white font-medium">Withdraw</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={s.withdrawBtn} onPress={() => router.push('/(app)/(tabs)/wallet')}>
+              <Text style={s.withdrawText}>Withdraw</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={s.walletDivider} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="trending-up" size={16} color={T.success} />
+            <Text style={s.totalEarnedText}>Total Earned: Rs.{totalEarned.toLocaleString()}</Text>
+          </View>
         </View>
-        <View 
-          className="flex-row items-center mt-4 pt-4"
-          style={{ borderTopWidth: 1, borderTopColor: '#374151' }}
-        >
-          <Ionicons name="trending-up" size={20} color="#10B981" />
-          <Text className="text-green-500 ml-2 font-semibold">
-            Total Earned: ₹{totalEarned.toLocaleString()}
-          </Text>
-        </View>
-      </View>
 
         {/* Active Deliveries */}
-        <View className="mb-6 px-4">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-white text-xl font-bold">Active Deliveries</Text>
-            <View 
-              className="px-3 py-2 rounded-xl"
-              style={{ backgroundColor: 'rgba(249, 115, 22, 0.2)' }}
-            >
-              <Text className="text-orange-500 text-sm font-bold">2 Active</Text>
-            </View>
+        <View>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionTitle}>Active Deliveries</Text>
+            <View style={s.activeBadge}><Text style={s.activeBadgeText}>2 Active</Text></View>
           </View>
-
-        {[
-          {
-            id: 'ORD-2024-0002',
-            customer: 'Rajesh Constructions',
-            address: '100 Industrial Area, Bangalore',
-            items: '50x Cement bags',
-            distance: '5.2 km',
-            earnings: '₹200',
-            status: 'pickup',
-          },
-          {
-            id: 'ORD-2024-0005',
-            customer: 'Amit Kumar',
-            address: '78 Brigade Road, Bangalore',
-            items: '2x Wooden Doors',
-            distance: '3.8 km',
-            earnings: '₹150',
-            status: 'delivering',
-          },
-        ].map((delivery, index) => (
-          <TouchableOpacity
-            key={index}
-            className="rounded-2xl p-5 mb-4"
-            style={{
-              backgroundColor: '#1F2937',
-              borderLeftWidth: 4,
-              borderLeftColor: '#F97316',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-            onPress={() => router.push(`/(app)/order/${delivery.id}`)}
-          >
-            <View className="flex-row justify-between items-start mb-4">
-              <View className="flex-1">
-                <Text className="text-white font-bold text-base mb-1">{delivery.id}</Text>
-                <Text className="text-gray-400 text-sm font-medium">{delivery.customer}</Text>
+          {[
+            { id: 'ORD-2024-0002', customer: 'Rajesh Constructions', address: '100 Industrial Area, Bangalore', items: '50x Cement bags', distance: '5.2 km', earnings: 'Rs.200', status: 'pickup' },
+            { id: 'ORD-2024-0005', customer: 'Amit Kumar', address: '78 Brigade Road, Bangalore', items: '2x Wooden Doors', distance: '3.8 km', earnings: 'Rs.150', status: 'delivering' },
+          ].map((d, i) => (
+            <View key={i} style={s.deliveryCard}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.deliveryId}>{d.id}</Text>
+                  <Text style={s.deliveryCustomer}>{d.customer}</Text>
+                </View>
+                <View style={[s.deliveryBadge, { backgroundColor: d.status === 'pickup' ? '#EFF6FF' : '#D1FAE5' }]}>
+                  <Text style={[s.deliveryBadgeText, { color: d.status === 'pickup' ? T.info : T.success }]}>
+                    {d.status === 'pickup' ? 'Pickup' : 'Delivering'}
+                  </Text>
+                </View>
               </View>
-              <View 
-                className="px-3 py-2 rounded-xl"
-                style={{ 
-                  backgroundColor: delivery.status === 'pickup' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)' 
-                }}
-              >
-                <Text 
-                  className="font-bold text-sm"
-                  style={{ color: delivery.status === 'pickup' ? '#3B82F6' : '#10B981' }}
-                >
-                  {delivery.status === 'pickup' ? 'Pickup' : 'Delivering'}
-                </Text>
+              <View style={s.deliveryInfoRow}>
+                <Ionicons name="location" size={16} color={T.textMuted} />
+                <Text style={s.deliveryInfo} numberOfLines={1}>{d.address}</Text>
               </View>
-            </View>
-
-            <View className="flex-row items-center mb-3">
-              <Ionicons name="location" size={18} color="#9CA3AF" />
-              <Text className="text-gray-400 text-sm ml-2 flex-1 font-medium" numberOfLines={1}>
-                {delivery.address}
-              </Text>
-            </View>
-
-            <View className="flex-row items-center mb-4">
-              <Ionicons name="cube" size={18} color="#9CA3AF" />
-              <Text className="text-gray-400 text-sm ml-2 font-medium">{delivery.items}</Text>
-            </View>
-
-            <View 
-              className="flex-row justify-between items-center pt-4 mb-4"
-              style={{ borderTopWidth: 1, borderTopColor: '#374151' }}
-            >
-              <View className="flex-row items-center">
-                <Ionicons name="navigate" size={18} color="#F97316" />
-                <Text className="text-gray-400 ml-2 font-semibold">{delivery.distance}</Text>
+              <View style={s.deliveryInfoRow}>
+                <Ionicons name="cube" size={16} color={T.textMuted} />
+                <Text style={s.deliveryInfo}>{d.items}</Text>
               </View>
-              <Text className="text-green-500 font-bold text-lg">{delivery.earnings}</Text>
-            </View>
-
-            {/* Action Buttons */}
-            <View className="flex-row space-x-3">
-              <TouchableOpacity 
-                className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-                style={{ backgroundColor: '#3B82F6' }}
-              >
-                <Ionicons name="navigate" size={20} color="white" />
-                <Text className="text-white font-bold ml-2">Navigate</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-                style={{ backgroundColor: '#10B981' }}
-              >
-                <Ionicons name="checkmark-circle" size={20} color="white" />
-                <Text className="text-white font-bold ml-2">
-                  {delivery.status === 'pickup' ? 'Picked Up' : 'Delivered'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))}
-        </View>
-
-        {/* Concierge Tasks (for Freelance drivers) */}
-        {isFreelance && (
-          <View className="mb-6 px-4">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-white text-xl font-bold">Concierge Tasks</Text>
-              <View 
-                className="px-3 py-2 rounded-xl"
-                style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)' }}
-              >
-                <Text className="text-purple-500 text-sm font-bold">1 New</Text>
+              <View style={s.deliveryFooter}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="navigate" size={16} color={T.amber} />
+                  <Text style={s.deliveryDistance}>{d.distance}</Text>
+                </View>
+                <Text style={s.deliveryEarnings}>{d.earnings}</Text>
               </View>
-            </View>
-
-            <View 
-              className="rounded-2xl p-5"
-              style={{
-                backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                borderWidth: 1,
-                borderColor: 'rgba(139, 92, 246, 0.3)',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <View className="flex-row items-center mb-3">
-                <Ionicons name="flash" size={24} color="#8B5CF6" />
-                <Text className="text-purple-400 font-bold ml-2">Hybrid Fulfillment Task</Text>
-              </View>
-              <Text className="text-white font-bold text-base mb-2">
-                Pick up 5x UltraTech Cement from Sri Lakshmi Traders
-              </Text>
-              <Text className="text-gray-400 text-sm mb-4">
-                Original shop (Anand Hardware) out of stock
-              </Text>
-              <View className="flex-row justify-between items-center">
-                <Text className="text-green-500 font-bold text-lg">+₹100 bonus</Text>
-                <TouchableOpacity 
-                  className="px-5 py-3 rounded-xl"
-                  style={{ backgroundColor: '#8B5CF6' }}
-                >
-                  <Text className="text-white font-bold">Accept Task</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity style={s.navBtn}>
+                  <Ionicons name="navigate" size={16} color={T.white} />
+                  <Text style={s.navBtnText}>Navigate</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.completeBtn}>
+                  <Ionicons name="checkmark-circle" size={16} color={T.white} />
+                  <Text style={s.completeBtnText}>{d.status === 'pickup' ? 'Picked Up' : 'Delivered'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
-        )}
-
-        {/* Scan QR Code Button */}
-        <View className="px-4 mb-6">
-          <TouchableOpacity
-            className="rounded-2xl p-4 flex-row items-center justify-center"
-            style={{
-              backgroundColor: '#F97316',
-              shadowColor: '#F97316',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-            onPress={() => router.push('/(app)/scan?mode=delivery')}
-          >
-            <Ionicons name="scan" size={26} color="white" />
-            <Text className="text-white font-bold text-lg ml-3">Scan QR Code</Text>
-          </TouchableOpacity>
+          ))}
         </View>
 
+        {/* Scan QR */}
+        <TouchableOpacity style={s.scanBtn} onPress={() => router.push('/(app)/scan?mode=delivery')}>
+          <Ionicons name="scan" size={24} color={T.white} />
+          <Text style={s.scanText}>Scan QR Code</Text>
+        </TouchableOpacity>
+
         {/* Performance Stats */}
-        <View className="mb-6 px-4">
-          <Text className="text-white text-xl font-bold mb-4">Your Performance</Text>
-          <View 
-            className="rounded-2xl p-5"
-            style={{
-              backgroundColor: '#1F2937',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <View className="flex-row justify-between">
-              <View className="items-center flex-1">
-                <Text className="text-3xl font-bold text-white mb-1">{driverProfile.totalDeliveries}</Text>
-                <Text className="text-gray-400 text-sm font-medium">Total Deliveries</Text>
+        <View style={{ marginBottom: 16 }}>
+          <Text style={s.sectionTitle}>Your Performance</Text>
+          <View style={s.perfCard}>
+            <View style={s.perfItem}>
+              <Text style={s.perfValue}>{driverProfile.totalDeliveries}</Text>
+              <Text style={s.perfLabel}>Total Deliveries</Text>
+            </View>
+            <View style={s.perfDivider} />
+            <View style={s.perfItem}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={s.perfValue}>{driverProfile.rating}</Text>
+                <Ionicons name="star" size={16} color="#F59E0B" />
               </View>
-              <View className="w-px" style={{ backgroundColor: '#374151' }} />
-              <View className="items-center flex-1">
-                <View className="flex-row items-center mb-1">
-                  <Text className="text-3xl font-bold text-white">{driverProfile.rating}</Text>
-                  <Ionicons name="star" size={20} color="#F59E0B" style={{ marginLeft: 4 }} />
-                </View>
-                <Text className="text-gray-400 text-sm font-medium">Rating</Text>
-              </View>
-              <View className="w-px" style={{ backgroundColor: '#374151' }} />
-              <View className="items-center flex-1">
-                <Text className="text-3xl font-bold text-green-500 mb-1">98%</Text>
-                <Text className="text-gray-400 text-sm font-medium">On Time</Text>
-              </View>
+              <Text style={s.perfLabel}>Rating</Text>
+            </View>
+            <View style={s.perfDivider} />
+            <View style={s.perfItem}>
+              <Text style={[s.perfValue, { color: T.success }]}>98%</Text>
+              <Text style={s.perfLabel}>On Time</Text>
             </View>
           </View>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
+
+const s = {
+  statusCard: { backgroundColor: T.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: T.border },
+  statusLabel: { fontSize: 13, color: T.textMuted, fontWeight: '500' as const, marginBottom: 4 },
+  statusTitle: { fontSize: 20, fontWeight: '800' as const },
+  switchLabel: { fontSize: 11, color: T.textMuted, marginTop: 4 },
+  typeBadge: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 12, alignSelf: 'flex-start' as const },
+  typeText: { fontSize: 13, fontWeight: '700' as const },
+  vehicleRow: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: T.bg, borderRadius: 12, padding: 14 },
+  vehicleType: { fontSize: 15, fontWeight: '700' as const, color: T.text },
+  vehicleNumber: { fontSize: 13, color: T.textSecondary, marginTop: 2 },
+  todayCard: { flex: 1, borderRadius: 16, padding: 18, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  todayValue: { fontSize: 26, fontWeight: '800' as const, color: T.white, marginTop: 10, marginBottom: 2 },
+  todayLabel: { fontSize: 12, fontWeight: '600' as const, color: 'rgba(255,255,255,0.7)' },
+  walletCard: { backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border },
+  walletLabel: { fontSize: 12, color: T.textMuted, marginBottom: 4 },
+  walletAmount: { fontSize: 24, fontWeight: '800' as const, color: T.text },
+  withdrawBtn: { backgroundColor: T.amber, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },
+  withdrawText: { fontSize: 13, fontWeight: '700' as const, color: T.white },
+  walletDivider: { height: 1, backgroundColor: T.border, marginVertical: 12 },
+  totalEarnedText: { fontSize: 13, fontWeight: '600' as const, color: T.success },
+  sectionTitle: { fontSize: 18, fontWeight: '800' as const, color: T.text, marginBottom: 14 },
+  sectionHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 14 },
+  activeBadge: { backgroundColor: T.amberBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  activeBadgeText: { fontSize: 12, fontWeight: '700' as const, color: T.amber },
+  deliveryCard: { backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, borderLeftWidth: 4, borderLeftColor: T.amber, marginBottom: 12 },
+  deliveryId: { fontSize: 14, fontWeight: '700' as const, color: T.text },
+  deliveryCustomer: { fontSize: 13, color: T.textSecondary, marginTop: 2 },
+  deliveryBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  deliveryBadgeText: { fontSize: 12, fontWeight: '700' as const },
+  deliveryInfoRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, marginBottom: 6 },
+  deliveryInfo: { flex: 1, fontSize: 13, color: T.textSecondary },
+  deliveryFooter: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, paddingTop: 12, marginTop: 6, marginBottom: 12, borderTopWidth: 1, borderTopColor: T.border },
+  deliveryDistance: { fontSize: 13, fontWeight: '600' as const, color: T.textSecondary },
+  deliveryEarnings: { fontSize: 17, fontWeight: '800' as const, color: T.success },
+  navBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.info, borderRadius: 10, paddingVertical: 12, gap: 6 },
+  navBtnText: { fontSize: 13, fontWeight: '700' as const, color: T.white },
+  completeBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.success, borderRadius: 10, paddingVertical: 12, gap: 6 },
+  completeBtnText: { fontSize: 13, fontWeight: '700' as const, color: T.white },
+  scanBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.navy, borderRadius: 14, paddingVertical: 16, gap: 10, shadowColor: T.navy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
+  scanText: { fontSize: 16, fontWeight: '700' as const, color: T.white },
+  perfCard: { flexDirection: 'row' as const, backgroundColor: T.surface, borderRadius: 14, padding: 20, borderWidth: 1, borderColor: T.border },
+  perfItem: { flex: 1, alignItems: 'center' as const },
+  perfValue: { fontSize: 24, fontWeight: '800' as const, color: T.text, marginBottom: 4 },
+  perfLabel: { fontSize: 12, fontWeight: '600' as const, color: T.textSecondary },
+  perfDivider: { width: 1, backgroundColor: T.border },
+};
