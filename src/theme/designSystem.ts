@@ -132,6 +132,24 @@ export const Shadows = {
   },
 };
 
+// Light Theme (matching Stitch onboarding designs)
+export const LightTheme = {
+  bg: '#F5F6FA',
+  surface: '#FFFFFF',
+  navy: '#1A1D2E',
+  navyLight: '#252838',
+  amber: '#F2960D',
+  amberBg: '#FEF3C7',
+  text: '#1A1D2E',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E5E7EB',
+  borderSelected: '#1A1D2E',
+  success: '#10B981',
+  info: '#3B82F6',
+  white: '#FFFFFF',
+};
+
 // Component Styles
 export const ComponentStyles = {
   // Buttons
