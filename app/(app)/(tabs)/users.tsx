@@ -3,6 +3,9 @@ import { View, Text, TouchableOpacity, FlatList, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { UserRole } from '../../../src/types/database';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const USER_TABS: (UserRole | 'all')[] = ['all', 'customer', 'contractor', 'worker', 'shopkeeper', 'driver'];
 
@@ -23,17 +26,17 @@ const MOCK_USERS = [
 const getRoleStyle = (role: string) => {
   switch (role) {
     case 'customer':
-      return { bg: 'bg-blue-500/20', text: 'text-blue-500', icon: 'person' };
+      return { bg: 'rgba(59,130,246,0.15)', color: '#3B82F6', icon: 'person' };
     case 'contractor':
-      return { bg: 'bg-purple-500/20', text: 'text-purple-500', icon: 'business' };
+      return { bg: 'rgba(139,92,246,0.15)', color: '#8B5CF6', icon: 'business' };
     case 'worker':
-      return { bg: 'bg-green-500/20', text: 'text-green-500', icon: 'hammer' };
+      return { bg: 'rgba(16,185,129,0.15)', color: '#10B981', icon: 'hammer' };
     case 'shopkeeper':
-      return { bg: 'bg-orange-500/20', text: 'text-orange-500', icon: 'storefront' };
+      return { bg: 'rgba(242,150,13,0.15)', color: '#F2960D', icon: 'storefront' };
     case 'driver':
-      return { bg: 'bg-cyan-500/20', text: 'text-cyan-500', icon: 'car' };
+      return { bg: 'rgba(6,182,212,0.15)', color: '#06B6D4', icon: 'car' };
     default:
-      return { bg: 'bg-gray-500/20', text: 'text-gray-500', icon: 'person' };
+      return { bg: 'rgba(107,114,128,0.15)', color: '#6B7280', icon: 'person' };
   }
 };
 
@@ -80,35 +83,40 @@ export default function UsersScreen() {
     const isWorker = user.role === 'worker';
 
     return (
-      <View className="bg-gray-800 rounded-xl p-4 mb-3">
-        <View className="flex-row items-center">
-          <View className="w-14 h-14 bg-gray-700 rounded-full items-center justify-center">
-            <Ionicons name={roleStyle.icon as any} size={28} color="#6B7280" />
+      <View style={s.userCard}>
+        <View style={s.userRow}>
+          <View style={s.avatar}>
+            <Ionicons name={roleStyle.icon as any} size={28} color={T.textMuted} />
           </View>
 
-          <View className="flex-1 ml-4">
-            <View className="flex-row items-center">
-              <Text className="text-white font-semibold text-lg">{user.name}</Text>
+          <View style={s.userInfo}>
+            <View style={s.nameRow}>
+              <Text style={s.userName}>{user.name}</Text>
               {!user.isActive && (
-                <View className="bg-red-500/20 px-2 py-0.5 rounded ml-2">
-                  <Text className="text-red-500 text-xs">Inactive</Text>
+                <View style={s.inactiveBadge}>
+                  <Text style={s.inactiveText}>Inactive</Text>
                 </View>
               )}
             </View>
-            <Text className="text-gray-400">{user.phone}</Text>
-            <View className="flex-row items-center mt-1">
-              <View className={`px-2 py-0.5 rounded ${roleStyle.bg}`}>
-                <Text className={`text-xs font-medium ${roleStyle.text}`}>
+            <Text style={s.userPhone}>{user.phone}</Text>
+            <View style={s.badgeRow}>
+              <View style={{ backgroundColor: roleStyle.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: roleStyle.color }}>
                   {getRoleLabel(user.role)}
                 </Text>
               </View>
               {isWorker && (
-                <View className={`ml-2 px-2 py-0.5 rounded ${
-                  (user as any).isVerified ? 'bg-green-500/20' : 'bg-yellow-500/20'
-                }`}>
-                  <Text className={`text-xs ${
-                    (user as any).isVerified ? 'text-green-500' : 'text-yellow-500'
-                  }`}>
+                <View style={{
+                  marginLeft: 8,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 6,
+                  backgroundColor: (user as any).isVerified ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
+                }}>
+                  <Text style={{
+                    fontSize: 12,
+                    color: (user as any).isVerified ? '#10B981' : '#F59E0B',
+                  }}>
                     {(user as any).isVerified ? 'Verified' : 'Unverified'}
                   </Text>
                 </View>
@@ -116,31 +124,32 @@ export default function UsersScreen() {
             </View>
           </View>
 
-          <View className="items-end">
-            <Text className="text-gray-500 text-xs">Joined</Text>
-            <Text className="text-gray-400 text-sm">{user.joinedAt}</Text>
+          <View style={s.joinedCol}>
+            <Text style={s.joinedLabel}>Joined</Text>
+            <Text style={s.joinedDate}>{user.joinedAt}</Text>
           </View>
         </View>
 
         {/* Actions */}
-        <View className="flex-row space-x-2 mt-4 pt-3 border-t border-gray-700">
-          <TouchableOpacity className="flex-1 bg-gray-700 py-2 rounded-lg flex-row items-center justify-center">
-            <Ionicons name="eye" size={16} color="#9CA3AF" />
-            <Text className="text-gray-300 ml-2 text-sm">View</Text>
+        <View style={s.actionsRow}>
+          <TouchableOpacity style={s.actionBtnView}>
+            <Ionicons name="eye" size={16} color={T.textMuted} />
+            <Text style={s.actionTextView}>View</Text>
           </TouchableOpacity>
-          <TouchableOpacity className="flex-1 bg-gray-700 py-2 rounded-lg flex-row items-center justify-center">
-            <Ionicons name="create" size={16} color="#F97316" />
-            <Text className="text-orange-500 ml-2 text-sm">Edit</Text>
+          <TouchableOpacity style={s.actionBtnEdit}>
+            <Ionicons name="create" size={16} color={T.amber} />
+            <Text style={s.actionTextEdit}>Edit</Text>
           </TouchableOpacity>
-          <TouchableOpacity className={`flex-1 py-2 rounded-lg flex-row items-center justify-center ${
-            user.isActive ? 'bg-red-500/20' : 'bg-green-500/20'
-          }`}>
+          <TouchableOpacity style={[
+            s.actionBtnToggle,
+            { backgroundColor: user.isActive ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)' },
+          ]}>
             <Ionicons
               name={user.isActive ? 'ban' : 'checkmark-circle'}
               size={16}
               color={user.isActive ? '#EF4444' : '#22C55E'}
             />
-            <Text className={`ml-2 text-sm ${user.isActive ? 'text-red-500' : 'text-green-500'}`}>
+            <Text style={{ marginLeft: 8, fontSize: 14, color: user.isActive ? '#EF4444' : '#22C55E' }}>
               {user.isActive ? 'Disable' : 'Enable'}
             </Text>
           </TouchableOpacity>
@@ -150,31 +159,31 @@ export default function UsersScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.container}>
       {/* Header */}
-      <View className="px-4 py-3 border-b border-gray-800">
-        <Text className="text-white text-2xl font-bold">User Management</Text>
+      <View style={s.header}>
+        <Text style={s.headerTitle}>User Management</Text>
 
         {/* Search */}
-        <View className="flex-row items-center bg-gray-800 rounded-xl px-4 mt-3">
-          <Ionicons name="search" size={20} color="#6B7280" />
+        <View style={s.searchBar}>
+          <Ionicons name="search" size={20} color={T.textMuted} />
           <TextInput
-            className="flex-1 text-white py-3 ml-2"
+            style={s.searchInput}
             placeholder="Search by name or phone..."
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={T.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#6B7280" />
+              <Ionicons name="close-circle" size={20} color={T.textMuted} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Role Filters */}
-      <View className="py-3 border-b border-gray-800">
+      <View style={s.filtersWrapper}>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -183,14 +192,13 @@ export default function UsersScreen() {
           keyExtractor={(item) => item}
           renderItem={({ item: tab }) => (
             <TouchableOpacity
-              className={`px-4 py-2 rounded-full mr-2 ${
-                selectedTab === tab ? 'bg-orange-500' : 'bg-gray-800'
-              }`}
+              style={[
+                s.filterPill,
+                selectedTab === tab ? s.filterPillActive : s.filterPillInactive,
+              ]}
               onPress={() => setSelectedTab(tab)}
             >
-              <Text className={`font-medium ${
-                selectedTab === tab ? 'text-white' : 'text-gray-400'
-              }`}>
+              <Text style={selectedTab === tab ? s.filterTextActive : s.filterTextInactive}>
                 {tab === 'all' ? 'All' : getRoleLabel(tab)} ({counts[tab]})
               </Text>
             </TouchableOpacity>
@@ -199,28 +207,28 @@ export default function UsersScreen() {
       </View>
 
       {/* Stats Summary */}
-      <View className="flex-row px-4 py-3 space-x-2">
-        <View className="flex-1 bg-gray-800 rounded-lg p-3 items-center">
-          <Text className="text-white font-bold text-xl">{MOCK_USERS.length}</Text>
-          <Text className="text-gray-400 text-xs">Total Users</Text>
+      <View style={s.statsRow}>
+        <View style={s.statCard}>
+          <Text style={s.statValueDefault}>{MOCK_USERS.length}</Text>
+          <Text style={s.statLabel}>Total Users</Text>
         </View>
-        <View className="flex-1 bg-gray-800 rounded-lg p-3 items-center">
-          <Text className="text-green-500 font-bold text-xl">
+        <View style={s.statCard}>
+          <Text style={s.statValueGreen}>
             {MOCK_USERS.filter((u) => u.isActive).length}
           </Text>
-          <Text className="text-gray-400 text-xs">Active</Text>
+          <Text style={s.statLabel}>Active</Text>
         </View>
-        <View className="flex-1 bg-gray-800 rounded-lg p-3 items-center">
-          <Text className="text-red-500 font-bold text-xl">
+        <View style={s.statCard}>
+          <Text style={s.statValueRed}>
             {MOCK_USERS.filter((u) => !u.isActive).length}
           </Text>
-          <Text className="text-gray-400 text-xs">Inactive</Text>
+          <Text style={s.statLabel}>Inactive</Text>
         </View>
-        <View className="flex-1 bg-gray-800 rounded-lg p-3 items-center">
-          <Text className="text-yellow-500 font-bold text-xl">
+        <View style={s.statCard}>
+          <Text style={s.statValueYellow}>
             {MOCK_USERS.filter((u) => u.role === 'worker' && !(u as any).isVerified).length}
           </Text>
-          <Text className="text-gray-400 text-xs">Unverified</Text>
+          <Text style={s.statLabel}>Unverified</Text>
         </View>
       </View>
 
@@ -232,12 +240,245 @@ export default function UsersScreen() {
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View className="items-center justify-center py-12">
-            <Ionicons name="people" size={48} color="#6B7280" />
-            <Text className="text-gray-400 mt-4">No users found</Text>
+          <View style={s.emptyState}>
+            <Ionicons name="people" size={48} color={T.textMuted} />
+            <Text style={s.emptyText}>No users found</Text>
           </View>
         }
       />
     </SafeAreaView>
   );
 }
+
+const s = {
+  container: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  // Header
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  } as const,
+  headerTitle: {
+    color: T.text,
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+
+  // Search
+  searchBar: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: T.surface,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  searchInput: {
+    flex: 1,
+    color: T.text,
+    paddingVertical: 12,
+    marginLeft: 8,
+    fontSize: 15,
+  },
+
+  // Role Filters
+  filtersWrapper: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  } as const,
+  filterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 9999,
+    marginRight: 8,
+  } as const,
+  filterPillActive: {
+    backgroundColor: T.navy,
+  },
+  filterPillInactive: {
+    backgroundColor: T.bg,
+  },
+  filterTextActive: {
+    fontWeight: '500' as const,
+    color: T.white,
+  },
+  filterTextInactive: {
+    fontWeight: '500' as const,
+    color: T.textSecondary,
+  },
+
+  // Stats
+  statsRow: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: T.surface,
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  statValueDefault: {
+    color: T.text,
+    fontWeight: '700' as const,
+    fontSize: 20,
+  },
+  statValueGreen: {
+    color: '#10B981',
+    fontWeight: '700' as const,
+    fontSize: 20,
+  },
+  statValueRed: {
+    color: '#EF4444',
+    fontWeight: '700' as const,
+    fontSize: 20,
+  },
+  statValueYellow: {
+    color: '#F59E0B',
+    fontWeight: '700' as const,
+    fontSize: 20,
+  },
+  statLabel: {
+    color: T.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  // User Card
+  userCard: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: T.border,
+  } as const,
+  userRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    backgroundColor: T.bg,
+    borderRadius: 28,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  userInfo: {
+    flex: 1,
+    marginLeft: 16,
+  } as const,
+  nameRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  userName: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 17,
+  },
+  inactiveBadge: {
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 8,
+  } as const,
+  inactiveText: {
+    color: '#EF4444',
+    fontSize: 12,
+  },
+  userPhone: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+  badgeRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 4,
+  },
+  joinedCol: {
+    alignItems: 'flex-end' as const,
+  },
+  joinedLabel: {
+    color: T.textMuted,
+    fontSize: 12,
+  },
+  joinedDate: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  // Actions
+  actionsRow: {
+    flexDirection: 'row' as const,
+    gap: 8,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  actionBtnView: {
+    flex: 1,
+    backgroundColor: T.bg,
+    paddingVertical: 8,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  actionTextView: {
+    color: T.textSecondary,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  actionBtnEdit: {
+    flex: 1,
+    backgroundColor: T.bg,
+    paddingVertical: 8,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  actionTextEdit: {
+    color: T.amber,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  actionBtnToggle: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  // Empty State
+  emptyState: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 48,
+  },
+  emptyText: {
+    color: T.textSecondary,
+    marginTop: 16,
+    fontSize: 15,
+  },
+};

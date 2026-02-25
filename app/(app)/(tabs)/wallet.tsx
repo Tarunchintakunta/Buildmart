@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/context/AuthContext';
 import { useWalletStore } from '../../../src/store/useStore';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const TRANSACTION_TABS = ['All', 'Credits', 'Debits', 'Held'];
 
@@ -138,34 +141,41 @@ export default function WalletScreen() {
 
   const renderTransaction = ({ item: tx }: { item: typeof MOCK_TRANSACTIONS[0] }) => {
     const iconInfo = getTransactionIcon(tx.type);
+    const isLast = filteredTransactions[filteredTransactions.length - 1]?.id === tx.id;
 
     return (
-      <View className="flex-row items-center py-4 border-b border-gray-700">
+      <View style={[s.txRow, !isLast && s.txRowBorder]}>
         <View
-          className="w-12 h-12 rounded-full items-center justify-center"
-          style={{ backgroundColor: `${iconInfo.color}20` }}
+          style={[s.txIconWrap, { backgroundColor: `${iconInfo.color}20` }]}
         >
           <Ionicons name={iconInfo.icon as any} size={24} color={iconInfo.color} />
         </View>
 
-        <View className="flex-1 ml-4">
-          <Text className="text-white font-medium" numberOfLines={1}>
+        <View style={s.txContent}>
+          <Text style={s.txDescription} numberOfLines={1}>
             {tx.description}
           </Text>
-          <View className="flex-row items-center mt-1">
-            <Text className="text-gray-500 text-sm">{tx.date}</Text>
+          <View style={s.txMeta}>
+            <Text style={s.txDate}>{tx.date}</Text>
             {tx.status === 'held' && (
-              <View className="ml-2 bg-yellow-500/20 px-2 py-0.5 rounded">
-                <Text className="text-yellow-500 text-xs">Held</Text>
+              <View style={s.heldBadge}>
+                <Text style={s.heldBadgeText}>Held</Text>
               </View>
             )}
           </View>
         </View>
 
         <Text
-          className={`font-bold text-lg ${
-            tx.isCredit ? 'text-green-500' : tx.status === 'held' ? 'text-yellow-500' : 'text-white'
-          }`}
+          style={[
+            s.txAmount,
+            {
+              color: tx.isCredit
+                ? T.success
+                : tx.status === 'held'
+                  ? T.amber
+                  : T.text,
+            },
+          ]}
         >
           {tx.isCredit ? '+' : '-'}₹{tx.amount.toLocaleString()}
         </Text>
@@ -174,59 +184,40 @@ export default function WalletScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={s.safeArea}>
+      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View 
-          className="px-5 py-4 border-b"
-          style={{ borderBottomColor: '#374151' }}
-        >
-          <Text className="text-white text-3xl font-bold">Wallet</Text>
+        <View style={s.header}>
+          <Text style={s.headerTitle}>Wallet</Text>
         </View>
 
         {/* Balance Card */}
-        <View className="px-4 mt-4">
-          <View 
-            className="rounded-2xl p-6"
-            style={{
-              backgroundColor: '#F97316',
-              shadowColor: '#F97316',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.3,
-              shadowRadius: 12,
-              elevation: 8,
-            }}
-          >
-            <Text className="text-orange-100 text-sm font-medium mb-2">Available Balance</Text>
-            <Text className="text-white text-5xl font-bold">
+        <View style={s.sectionPad}>
+          <View style={s.balanceCard}>
+            <Text style={s.balanceLabel}>Available Balance</Text>
+            <Text style={s.balanceAmount}>
               ₹{balance.toLocaleString()}
             </Text>
 
             {heldBalance > 0 && (
-              <View className="flex-row items-center mt-3 bg-white/10 px-3 py-2 rounded-lg">
-                <Ionicons name="lock-closed" size={16} color="white" />
-                <Text className="text-white/80 ml-2">
+              <View style={s.escrowBadge}>
+                <Ionicons name="lock-closed" size={16} color={T.amber} />
+                <Text style={s.escrowText}>
                   ₹{heldBalance.toLocaleString()} held in escrow
                 </Text>
               </View>
             )}
 
             {/* Action Buttons */}
-            <View className="flex-row mt-6 space-x-3">
-              <TouchableOpacity 
-                className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-              >
-                <Ionicons name="add" size={22} color="white" />
-                <Text className="text-white font-bold ml-2">Add Money</Text>
+            <View style={s.actionRow}>
+              <TouchableOpacity style={s.actionBtn}>
+                <Ionicons name="add" size={22} color="#FFFFFF" />
+                <Text style={s.actionBtnText}>Add Money</Text>
               </TouchableOpacity>
               {isEarner && (
-                <TouchableOpacity 
-                  className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-                >
-                  <Ionicons name="arrow-up" size={22} color="white" />
-                  <Text className="text-white font-bold ml-2">Withdraw</Text>
+                <TouchableOpacity style={[s.actionBtn, { marginLeft: 12 }]}>
+                  <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
+                  <Text style={s.actionBtnText}>Withdraw</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -234,53 +225,32 @@ export default function WalletScreen() {
         </View>
 
         {/* Stats Cards */}
-        <View className="flex-row px-4 mt-4 space-x-3">
-          <View 
-            className="flex-1 rounded-2xl p-5"
-            style={{
-              backgroundColor: '#1F2937',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <View className="flex-row items-center mb-3">
+        <View style={s.statsRow}>
+          <View style={s.statCard}>
+            <View style={s.statHeader}>
               <Ionicons
                 name={isEarner ? 'trending-up' : 'cart'}
                 size={22}
-                color={isEarner ? '#10B981' : '#3B82F6'}
+                color={isEarner ? T.success : T.info}
               />
-              <Text className="text-gray-400 ml-2 font-medium">
+              <Text style={s.statLabel}>
                 {isEarner ? 'Total Earned' : 'Total Spent'}
               </Text>
             </View>
-            <Text 
-              className="text-2xl font-bold"
-              style={{ color: isEarner ? '#10B981' : '#FFFFFF' }}
+            <Text
+              style={[s.statValue, { color: isEarner ? T.success : T.text }]}
             >
               ₹{(isEarner ? totalEarned : totalSpent).toLocaleString()}
             </Text>
           </View>
 
           {heldBalance > 0 && (
-            <View 
-              className="flex-1 rounded-2xl p-5"
-              style={{
-                backgroundColor: '#1F2937',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <View className="flex-row items-center mb-3">
-                <Ionicons name="lock-closed" size={22} color="#F59E0B" />
-                <Text className="text-gray-400 ml-2 font-medium">In Escrow</Text>
+            <View style={[s.statCard, { marginLeft: 12 }]}>
+              <View style={s.statHeader}>
+                <Ionicons name="lock-closed" size={22} color={T.amber} />
+                <Text style={s.statLabel}>In Escrow</Text>
               </View>
-              <Text className="text-yellow-500 text-2xl font-bold">
+              <Text style={[s.statValue, { color: T.amber }]}>
                 ₹{heldBalance.toLocaleString()}
               </Text>
             </View>
@@ -288,19 +258,25 @@ export default function WalletScreen() {
         </View>
 
         {/* Transaction Tabs */}
-        <View className="flex-row px-4 mt-6 mb-4">
+        <View style={s.tabsRow}>
           {TRANSACTION_TABS.map((tab) => (
             <TouchableOpacity
               key={tab}
-              className={`flex-1 py-2 rounded-lg mr-2 ${
-                selectedTab === tab ? 'bg-orange-500' : 'bg-gray-800'
-              }`}
+              style={[
+                s.tab,
+                {
+                  backgroundColor: selectedTab === tab ? T.navy : T.bg,
+                },
+              ]}
               onPress={() => setSelectedTab(tab)}
             >
               <Text
-                className={`text-center font-medium ${
-                  selectedTab === tab ? 'text-white' : 'text-gray-400'
-                }`}
+                style={[
+                  s.tabText,
+                  {
+                    color: selectedTab === tab ? '#FFFFFF' : T.textSecondary,
+                  },
+                ]}
               >
                 {tab}
               </Text>
@@ -309,9 +285,9 @@ export default function WalletScreen() {
         </View>
 
         {/* Transactions List */}
-        <View className="px-4 mt-4 mb-8">
-          <Text className="text-white text-lg font-semibold mb-3">Recent Transactions</Text>
-          <View className="bg-gray-800 rounded-xl px-4">
+        <View style={s.txSection}>
+          <Text style={s.txSectionTitle}>Recent Transactions</Text>
+          <View style={s.txListContainer}>
             {filteredTransactions.length > 0 ? (
               filteredTransactions.map((tx) => (
                 <View key={tx.id}>
@@ -319,9 +295,9 @@ export default function WalletScreen() {
                 </View>
               ))
             ) : (
-              <View className="py-12 items-center">
-                <Ionicons name="receipt" size={48} color="#6B7280" />
-                <Text className="text-gray-400 mt-4">No transactions found</Text>
+              <View style={s.emptyState}>
+                <Ionicons name="receipt" size={48} color={T.textMuted} />
+                <Text style={s.emptyText}>No transactions found</Text>
               </View>
             )}
           </View>
@@ -330,3 +306,247 @@ export default function WalletScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  safeArea: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  scroll: {
+    flex: 1,
+  } as const,
+
+  /* Header */
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  } as const,
+
+  headerTitle: {
+    fontSize: 30,
+    fontWeight: '700' as const,
+    color: T.text,
+  },
+
+  /* Balance Card */
+  sectionPad: {
+    paddingHorizontal: 16,
+    marginTop: 16,
+  } as const,
+
+  balanceCard: {
+    borderRadius: 16,
+    padding: 24,
+    backgroundColor: T.navy,
+    shadowColor: T.navy,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  } as const,
+
+  balanceLabel: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 8,
+  },
+
+  balanceAmount: {
+    fontSize: 42,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+  },
+
+  escrowBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 12,
+    backgroundColor: 'rgba(242,150,13,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+
+  escrowText: {
+    color: T.amber,
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+
+  actionRow: {
+    flexDirection: 'row' as const,
+    marginTop: 24,
+  },
+
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700' as const,
+    marginLeft: 8,
+    fontSize: 15,
+  },
+
+  /* Stats Cards */
+  statsRow: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+
+  statCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 20,
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+  } as const,
+
+  statHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 12,
+  },
+
+  statLabel: {
+    color: T.textSecondary,
+    marginLeft: 8,
+    fontWeight: '500' as const,
+    fontSize: 14,
+  },
+
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+
+  /* Transaction Tabs */
+  tabsRow: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+  } as const,
+
+  tabText: {
+    textAlign: 'center' as const,
+    fontWeight: '500' as const,
+    fontSize: 14,
+  },
+
+  /* Transaction List */
+  txSection: {
+    paddingHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 32,
+  } as const,
+
+  txSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: T.text,
+    marginBottom: 12,
+  },
+
+  txListContainer: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    paddingHorizontal: 16,
+  } as const,
+
+  txRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingVertical: 16,
+  },
+
+  txRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  } as const,
+
+  txIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  txContent: {
+    flex: 1,
+    marginLeft: 16,
+  } as const,
+
+  txDescription: {
+    color: T.text,
+    fontWeight: '500' as const,
+    fontSize: 15,
+  },
+
+  txMeta: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 4,
+  },
+
+  txDate: {
+    color: T.textMuted,
+    fontSize: 13,
+  },
+
+  heldBadge: {
+    marginLeft: 8,
+    backgroundColor: 'rgba(242,150,13,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+
+  heldBadgeText: {
+    color: T.amber,
+    fontSize: 11,
+    fontWeight: '600' as const,
+  },
+
+  txAmount: {
+    fontWeight: '700' as const,
+    fontSize: 17,
+  },
+
+  /* Empty State */
+  emptyState: {
+    paddingVertical: 48,
+    alignItems: 'center' as const,
+  },
+
+  emptyText: {
+    color: T.textSecondary,
+    marginTop: 16,
+    fontSize: 15,
+  },
+};

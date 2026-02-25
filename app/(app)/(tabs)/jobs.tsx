@@ -3,6 +3,9 @@ import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const JOB_TABS = ['Requests', 'Active', 'Completed'];
 
@@ -84,17 +87,17 @@ const MOCK_JOBS = [
 const getStatusStyle = (status: string) => {
   switch (status) {
     case 'pending':
-      return { bg: 'bg-orange-500/20', text: 'text-orange-500', label: 'New Request' };
+      return { bg: 'rgba(242,150,13,0.15)', color: '#F2960D', label: 'New Request' };
     case 'accepted':
-      return { bg: 'bg-blue-500/20', text: 'text-blue-500', label: 'Accepted' };
+      return { bg: 'rgba(59,130,246,0.15)', color: '#3B82F6', label: 'Accepted' };
     case 'in_progress':
-      return { bg: 'bg-purple-500/20', text: 'text-purple-500', label: 'In Progress' };
+      return { bg: 'rgba(139,92,246,0.15)', color: '#8B5CF6', label: 'In Progress' };
     case 'completed':
-      return { bg: 'bg-green-500/20', text: 'text-green-500', label: 'Completed' };
+      return { bg: 'rgba(16,185,129,0.15)', color: '#10B981', label: 'Completed' };
     case 'cancelled':
-      return { bg: 'bg-red-500/20', text: 'text-red-500', label: 'Cancelled' };
+      return { bg: 'rgba(239,68,68,0.15)', color: '#EF4444', label: 'Cancelled' };
     default:
-      return { bg: 'bg-gray-500/20', text: 'text-gray-500', label: status };
+      return { bg: 'rgba(107,114,128,0.15)', color: '#6B7280', label: status };
   }
 };
 
@@ -117,74 +120,79 @@ export default function JobsScreen() {
     const isActive = ['accepted', 'in_progress'].includes(job.status);
 
     return (
-      <View className={`bg-gray-800 rounded-xl p-4 mb-3 ${isPending ? 'border-l-4 border-orange-500' : ''}`}>
-        <View className="flex-row justify-between items-start mb-3">
-          <View className="flex-1">
-            <View className="flex-row items-center">
+      <View
+        style={[
+          s.card,
+          isPending && s.cardPending,
+        ]}
+      >
+        <View style={s.cardHeader}>
+          <View style={{ flex: 1 }}>
+            <View style={s.rowCenter}>
               {isPending && (
-                <View className="bg-orange-500 px-2 py-0.5 rounded mr-2">
-                  <Text className="text-white text-xs font-bold">NEW</Text>
+                <View style={s.newBadge}>
+                  <Text style={s.newBadgeText}>NEW</Text>
                 </View>
               )}
-              <Text className="text-gray-400 text-sm">{job.requestNumber}</Text>
+              <Text style={s.requestNumber}>{job.requestNumber}</Text>
             </View>
-            <Text className="text-white font-semibold text-lg mt-1">{job.description}</Text>
+            <Text style={s.description}>{job.description}</Text>
           </View>
-          <View className={`px-2 py-1 rounded ${statusStyle.bg}`}>
-            <Text className={`text-xs font-medium ${statusStyle.text}`}>
+          <View style={[s.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <Text style={[s.statusText, { color: statusStyle.color }]}>
               {statusStyle.label}
             </Text>
           </View>
         </View>
 
         {/* Customer & Skill */}
-        <View className="flex-row items-center mb-2">
-          <Ionicons name="person" size={16} color="#9CA3AF" />
-          <Text className="text-gray-300 ml-2">{job.customer}</Text>
-          <View className="bg-gray-700 px-2 py-0.5 rounded ml-3">
-            <Text className="text-gray-300 text-xs">{job.skill}</Text>
+        <View style={s.infoRow}>
+          <Ionicons name="person" size={16} color={T.textMuted} />
+          <Text style={s.customerText}>{job.customer}</Text>
+          <View style={s.skillBadge}>
+            <Text style={s.skillText}>{job.skill}</Text>
           </View>
         </View>
 
         {/* Location */}
-        <View className="flex-row items-center mb-2">
-          <Ionicons name="location" size={16} color="#9CA3AF" />
-          <Text className="text-gray-400 ml-2 flex-1" numberOfLines={1}>
+        <View style={s.infoRow}>
+          <Ionicons name="location" size={16} color={T.textMuted} />
+          <Text style={s.addressText} numberOfLines={1}>
             {job.address}
           </Text>
-          <Text className="text-orange-500">{job.distance}</Text>
+          <Text style={s.distanceText}>{job.distance}</Text>
         </View>
 
         {/* Date & Time */}
-        <View className="flex-row items-center mb-3">
-          <Ionicons name="calendar" size={16} color="#9CA3AF" />
-          <Text className="text-gray-400 ml-2">
+        <View style={s.infoRowBottom}>
+          <Ionicons name="calendar" size={16} color={T.textMuted} />
+          <Text style={s.dateText}>
             {job.date} at {job.time}
           </Text>
-          <Text className="text-gray-500 mx-2">•</Text>
-          <Ionicons name="time" size={16} color="#9CA3AF" />
-          <Text className="text-gray-400 ml-1">{job.duration} hours</Text>
+          <Text style={s.dotSeparator}>•</Text>
+          <Ionicons name="time" size={16} color={T.textMuted} />
+          <Text style={s.dateText}>{job.duration} hours</Text>
         </View>
 
         {/* Rate */}
-        <View className="flex-row items-center justify-between py-3 border-t border-gray-700">
+        <View style={s.rateSection}>
           <View>
-            <Text className="text-gray-500 text-xs">Rate</Text>
-            <Text className="text-orange-500 font-bold text-lg">₹{job.rate}/hour</Text>
+            <Text style={s.rateLabel}>Rate</Text>
+            <Text style={s.rateValue}>{'\u20B9'}{job.rate}/hour</Text>
           </View>
-          <View className="items-end">
-            <Text className="text-gray-500 text-xs">Total Earning</Text>
-            <Text className="text-white font-bold text-lg">
-              ₹{(job.rate * job.duration).toLocaleString()}
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={s.rateLabel}>Total Earning</Text>
+            <Text style={s.totalValue}>
+              {'\u20B9'}{(job.rate * job.duration).toLocaleString()}
             </Text>
           </View>
         </View>
 
         {/* Rating for completed jobs */}
         {job.status === 'completed' && job.rating && (
-          <View className="flex-row items-center pt-3 border-t border-gray-700">
-            <Text className="text-gray-400">Customer Rating:</Text>
-            <View className="flex-row items-center ml-2">
+          <View style={s.ratingSection}>
+            <Text style={s.ratingLabel}>Customer Rating:</Text>
+            <View style={s.starsRow}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <Ionicons
                   key={star}
@@ -199,27 +207,27 @@ export default function JobsScreen() {
 
         {/* Actions */}
         {isPending && (
-          <View className="flex-row space-x-3 mt-3 pt-3 border-t border-gray-700">
-            <TouchableOpacity className="flex-1 bg-green-500 py-3 rounded-lg flex-row items-center justify-center">
-              <Ionicons name="checkmark-circle" size={18} color="white" />
-              <Text className="text-white font-semibold ml-2">Accept Job</Text>
+          <View style={s.actionsRow}>
+            <TouchableOpacity style={[s.actionBtn, s.acceptBtn]}>
+              <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+              <Text style={s.actionBtnTextWhite}>Accept Job</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="flex-1 bg-gray-700 py-3 rounded-lg flex-row items-center justify-center">
-              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-              <Text className="text-gray-300 font-semibold ml-2">Decline</Text>
+            <TouchableOpacity style={[s.actionBtn, s.declineBtn]}>
+              <Ionicons name="close-circle" size={18} color={T.textMuted} />
+              <Text style={s.actionBtnTextMuted}>Decline</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {isActive && (
-          <View className="flex-row space-x-3 mt-3 pt-3 border-t border-gray-700">
-            <TouchableOpacity className="flex-1 bg-blue-500 py-3 rounded-lg flex-row items-center justify-center">
-              <Ionicons name="navigate" size={18} color="white" />
-              <Text className="text-white font-semibold ml-2">Navigate</Text>
+          <View style={s.actionsRow}>
+            <TouchableOpacity style={[s.actionBtn, s.navigateBtn]}>
+              <Ionicons name="navigate" size={18} color="#FFFFFF" />
+              <Text style={s.actionBtnTextWhite}>Navigate</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="flex-1 bg-green-500 py-3 rounded-lg flex-row items-center justify-center">
-              <Ionicons name="checkmark-done-circle" size={18} color="white" />
-              <Text className="text-white font-semibold ml-2">
+            <TouchableOpacity style={[s.actionBtn, s.startBtn]}>
+              <Ionicons name="checkmark-done-circle" size={18} color="#FFFFFF" />
+              <Text style={s.actionBtnTextWhite}>
                 {job.status === 'accepted' ? 'Start Work' : 'Complete'}
               </Text>
             </TouchableOpacity>
@@ -230,42 +238,35 @@ export default function JobsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.container}>
       {/* Header */}
-      <View className="px-4 py-3 border-b border-gray-800">
-        <Text className="text-white text-2xl font-bold">Jobs</Text>
+      <View style={s.header}>
+        <Text style={s.headerTitle}>Jobs</Text>
       </View>
 
       {/* Tabs */}
-      <View className="flex-row px-4 py-3 border-b border-gray-800">
-        {JOB_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            className={`flex-1 py-2 rounded-lg mr-2 flex-row items-center justify-center ${
-              selectedTab === tab ? 'bg-orange-500' : 'bg-gray-800'
-            }`}
-            onPress={() => setSelectedTab(tab)}
-          >
-            <Text
-              className={`font-medium ${
-                selectedTab === tab ? 'text-white' : 'text-gray-400'
-              }`}
+      <View style={s.tabBar}>
+        {JOB_TABS.map((tab) => {
+          const isActive = selectedTab === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={[s.tab, isActive ? s.tabActive : s.tabInactive]}
+              onPress={() => setSelectedTab(tab)}
             >
-              {tab}
-            </Text>
-            {tab === 'Requests' && pendingCount > 0 && (
-              <View className={`ml-2 w-5 h-5 rounded-full items-center justify-center ${
-                selectedTab === tab ? 'bg-white' : 'bg-orange-500'
-              }`}>
-                <Text className={`text-xs font-bold ${
-                  selectedTab === tab ? 'text-orange-500' : 'text-white'
-                }`}>
-                  {pendingCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+              <Text style={isActive ? s.tabTextActive : s.tabTextInactive}>
+                {tab}
+              </Text>
+              {tab === 'Requests' && pendingCount > 0 && (
+                <View style={[s.badge, isActive ? s.badgeActive : s.badgeInactive]}>
+                  <Text style={isActive ? s.badgeTextActive : s.badgeTextInactive}>
+                    {pendingCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Jobs List */}
@@ -276,9 +277,9 @@ export default function JobsScreen() {
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View className="items-center justify-center py-12">
-            <Ionicons name="briefcase" size={48} color="#6B7280" />
-            <Text className="text-gray-400 mt-4">
+          <View style={s.emptyContainer}>
+            <Ionicons name="briefcase" size={48} color={T.textSecondary} />
+            <Text style={s.emptyText}>
               {selectedTab === 'Requests'
                 ? 'No new job requests'
                 : selectedTab === 'Active'
@@ -291,3 +292,315 @@ export default function JobsScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  container: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+    backgroundColor: T.surface,
+  } as const,
+
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: T.text,
+  },
+
+  tabBar: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+    backgroundColor: T.surface,
+    gap: 8,
+  },
+
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  tabActive: {
+    backgroundColor: T.navy,
+  },
+
+  tabInactive: {
+    backgroundColor: T.bg,
+  },
+
+  tabTextActive: {
+    fontWeight: '500' as const,
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+
+  tabTextInactive: {
+    fontWeight: '500' as const,
+    fontSize: 14,
+    color: T.textSecondary,
+  },
+
+  badge: {
+    marginLeft: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  badgeActive: {
+    backgroundColor: '#FFFFFF',
+  },
+
+  badgeInactive: {
+    backgroundColor: T.amber,
+  },
+
+  badgeTextActive: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: T.navy,
+  },
+
+  badgeTextInactive: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+  },
+
+  card: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 16,
+    marginBottom: 12,
+  } as const,
+
+  cardPending: {
+    borderLeftWidth: 4,
+    borderLeftColor: T.amber,
+  },
+
+  cardHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'flex-start' as const,
+    marginBottom: 12,
+  },
+
+  rowCenter: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  newBadge: {
+    backgroundColor: T.amber,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+
+  newBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+
+  requestNumber: {
+    color: T.textMuted,
+    fontSize: 13,
+  },
+
+  description: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 17,
+    marginTop: 4,
+  },
+
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+
+  statusText: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+
+  infoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 8,
+  },
+
+  infoRowBottom: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 12,
+  },
+
+  customerText: {
+    color: T.text,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+
+  skillBadge: {
+    backgroundColor: T.bg,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 12,
+  },
+
+  skillText: {
+    color: T.textSecondary,
+    fontSize: 12,
+  },
+
+  addressText: {
+    color: T.textSecondary,
+    marginLeft: 8,
+    flex: 1,
+    fontSize: 14,
+  },
+
+  distanceText: {
+    color: T.amber,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+
+  dateText: {
+    color: T.textSecondary,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+
+  dotSeparator: {
+    color: T.textMuted,
+    marginHorizontal: 8,
+  },
+
+  rateSection: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  rateLabel: {
+    color: T.textMuted,
+    fontSize: 12,
+  },
+
+  rateValue: {
+    color: T.amber,
+    fontWeight: '700' as const,
+    fontSize: 17,
+  },
+
+  totalValue: {
+    color: T.text,
+    fontWeight: '700' as const,
+    fontSize: 17,
+  },
+
+  ratingSection: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  ratingLabel: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  starsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginLeft: 8,
+  },
+
+  actionsRow: {
+    flexDirection: 'row' as const,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+    gap: 12,
+  },
+
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  acceptBtn: {
+    backgroundColor: T.success,
+  },
+
+  declineBtn: {
+    backgroundColor: T.bg,
+  },
+
+  navigateBtn: {
+    backgroundColor: T.info,
+  },
+
+  startBtn: {
+    backgroundColor: T.success,
+  },
+
+  actionBtnTextWhite: {
+    color: '#FFFFFF',
+    fontWeight: '600' as const,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+
+  actionBtnTextMuted: {
+    color: T.textSecondary,
+    fontWeight: '600' as const,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+
+  emptyContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 48,
+  },
+
+  emptyText: {
+    color: T.textSecondary,
+    marginTop: 16,
+    fontSize: 15,
+  },
+};

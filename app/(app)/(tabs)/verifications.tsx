@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const VERIFICATION_TABS = ['Pending', 'Approved', 'Rejected'];
 
@@ -147,77 +150,63 @@ export default function VerificationsScreen() {
     const isRejected = verification.status === 'rejected';
 
     return (
-      <View 
-        className="rounded-2xl p-5 mb-4"
-        style={{
-          backgroundColor: '#1F2937',
-          borderLeftWidth: isPending ? 4 : 0,
-          borderLeftColor: isPending ? '#F59E0B' : 'transparent',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 4,
-        }}
+      <View
+        style={[
+          s.card,
+          isPending && { borderLeftWidth: 4, borderLeftColor: T.amber },
+        ]}
       >
         {/* Header */}
-        <View className="flex-row items-start mb-4">
-          <View 
-            className="w-16 h-16 rounded-xl items-center justify-center"
-            style={{ backgroundColor: '#374151' }}
-          >
-            <Ionicons name="person" size={36} color="#6B7280" />
+        <View style={s.cardHeader}>
+          <View style={s.avatar}>
+            <Ionicons name="person" size={36} color={T.textMuted} />
           </View>
-          <View className="flex-1 ml-4">
-            <Text className="text-white font-bold text-lg mb-1">{verification.workerName}</Text>
-            <Text className="text-gray-400 font-medium mb-2">{verification.phone}</Text>
-            <View className="flex-row flex-wrap">
+          <View style={s.cardHeaderInfo}>
+            <Text style={s.workerName}>{verification.workerName}</Text>
+            <Text style={s.workerPhone}>{verification.phone}</Text>
+            <View style={s.skillsRow}>
               {verification.skills.map((skill, index) => (
-                <View 
-                  key={index} 
-                  className="px-3 py-1 rounded-xl mr-2 mb-1"
-                  style={{ backgroundColor: '#374151' }}
-                >
-                  <Text className="text-gray-300 text-xs font-semibold">{skill}</Text>
+                <View key={index} style={s.skillBadge}>
+                  <Text style={s.skillText}>{skill}</Text>
                 </View>
               ))}
             </View>
           </View>
-          <View className="items-end">
-            <Text className="text-gray-500 text-xs font-medium mb-1">Experience</Text>
-            <Text className="text-white font-bold">{verification.experience} years</Text>
-            <Text className="text-orange-500 font-bold text-base mt-1">₹{verification.dailyRate}/day</Text>
+          <View style={s.cardHeaderRight}>
+            <Text style={s.experienceLabel}>Experience</Text>
+            <Text style={s.experienceValue}>{verification.experience} years</Text>
+            <Text style={s.rateValue}>₹{verification.dailyRate}/day</Text>
           </View>
         </View>
 
         {/* ID Document Info */}
-        <View className="bg-gray-700/50 rounded-lg p-3 mb-4">
-          <View className="flex-row items-center mb-2">
-            <Ionicons name="card" size={18} color="#F97316" />
-            <Text className="text-white font-medium ml-2">{verification.idType}</Text>
+        <View style={s.idSection}>
+          <View style={s.idHeader}>
+            <Ionicons name="card" size={18} color={T.amber} />
+            <Text style={s.idType}>{verification.idType}</Text>
           </View>
-          <Text className="text-gray-400 text-sm">ID Number: {verification.idNumber}</Text>
-          <Text className="text-gray-500 text-xs mt-1">Submitted: {verification.submittedAt}</Text>
+          <Text style={s.idNumber}>ID Number: {verification.idNumber}</Text>
+          <Text style={s.submittedAt}>Submitted: {verification.submittedAt}</Text>
         </View>
 
         {/* Document Previews */}
-        <View className="mb-4">
-          <Text className="text-gray-400 text-sm mb-2">Documents</Text>
-          <View className="flex-row space-x-3">
-            <TouchableOpacity className="flex-1 h-24 bg-gray-700 rounded-lg items-center justify-center">
-              <Ionicons name="image" size={24} color="#6B7280" />
-              <Text className="text-gray-400 text-xs mt-1">ID Front</Text>
+        <View style={s.documentsSection}>
+          <Text style={s.documentsLabel}>Documents</Text>
+          <View style={s.documentsRow}>
+            <TouchableOpacity style={s.documentBox}>
+              <Ionicons name="image" size={24} color={T.textMuted} />
+              <Text style={s.documentBoxLabel}>ID Front</Text>
             </TouchableOpacity>
             {verification.idBackUrl && (
-              <TouchableOpacity className="flex-1 h-24 bg-gray-700 rounded-lg items-center justify-center">
-                <Ionicons name="image" size={24} color="#6B7280" />
-                <Text className="text-gray-400 text-xs mt-1">ID Back</Text>
+              <TouchableOpacity style={s.documentBox}>
+                <Ionicons name="image" size={24} color={T.textMuted} />
+                <Text style={s.documentBoxLabel}>ID Back</Text>
               </TouchableOpacity>
             )}
             {verification.selfieUrl && (
-              <TouchableOpacity className="flex-1 h-24 bg-gray-700 rounded-lg items-center justify-center">
-                <Ionicons name="person-circle" size={24} color="#6B7280" />
-                <Text className="text-gray-400 text-xs mt-1">Selfie</Text>
+              <TouchableOpacity style={s.documentBox}>
+                <Ionicons name="person-circle" size={24} color={T.textMuted} />
+                <Text style={s.documentBoxLabel}>Selfie</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -225,24 +214,24 @@ export default function VerificationsScreen() {
 
         {/* Rejection Reason */}
         {isRejected && (verification as any).rejectionReason && (
-          <View className="bg-red-500/10 rounded-lg p-3 mb-4 border border-red-500/30">
-            <View className="flex-row items-center mb-1">
+          <View style={s.rejectionBox}>
+            <View style={s.rejectionHeader}>
               <Ionicons name="close-circle" size={16} color="#EF4444" />
-              <Text className="text-red-500 font-medium ml-2">Rejection Reason</Text>
+              <Text style={s.rejectionTitle}>Rejection Reason</Text>
             </View>
-            <Text className="text-gray-400 text-sm">{(verification as any).rejectionReason}</Text>
+            <Text style={s.rejectionText}>{(verification as any).rejectionReason}</Text>
           </View>
         )}
 
         {/* Review Info */}
         {!isPending && (
-          <View className="flex-row items-center py-3 border-t border-gray-700">
+          <View style={s.reviewInfo}>
             <Ionicons
               name={verification.status === 'approved' ? 'checkmark-circle' : 'close-circle'}
               size={16}
-              color={verification.status === 'approved' ? '#22C55E' : '#EF4444'}
+              color={verification.status === 'approved' ? T.success : '#EF4444'}
             />
-            <Text className="text-gray-400 ml-2 text-sm">
+            <Text style={s.reviewText}>
               {verification.status === 'approved' ? 'Approved' : 'Rejected'} by {(verification as any).reviewedBy} on {(verification as any).reviewedAt}
             </Text>
           </View>
@@ -250,37 +239,27 @@ export default function VerificationsScreen() {
 
         {/* Actions for Pending */}
         {isPending && (
-          <View 
-            className="flex-row space-x-3 pt-4"
-            style={{ borderTopWidth: 1, borderTopColor: '#374151' }}
-          >
+          <View style={s.actionsRow}>
             <TouchableOpacity
-              className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-              style={{
-                backgroundColor: '#374151',
-                borderWidth: 1,
-                borderColor: '#4B5563',
-              }}
+              style={s.viewDetailsBtn}
               onPress={() => setSelectedVerification(verification)}
             >
-              <Ionicons name="eye" size={20} color="#9CA3AF" />
-              <Text className="text-gray-300 font-bold ml-2">View Details</Text>
+              <Ionicons name="eye" size={20} color={T.textSecondary} />
+              <Text style={s.viewDetailsBtnText}>View Details</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-              style={{ backgroundColor: '#10B981' }}
+              style={s.approveBtn}
               onPress={() => handleApprove(verification)}
             >
-              <Ionicons name="checkmark" size={20} color="white" />
-              <Text className="text-white font-bold ml-2">Approve</Text>
+              <Ionicons name="checkmark" size={20} color={T.white} />
+              <Text style={s.actionBtnTextWhite}>Approve</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 py-3 rounded-xl flex-row items-center justify-center"
-              style={{ backgroundColor: '#EF4444' }}
+              style={s.rejectBtn}
               onPress={() => handleReject(verification)}
             >
-              <Ionicons name="close" size={20} color="white" />
-              <Text className="text-white font-bold ml-2">Reject</Text>
+              <Ionicons name="close" size={20} color={T.white} />
+              <Text style={s.actionBtnTextWhite}>Reject</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -289,45 +268,35 @@ export default function VerificationsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.container}>
       {/* Header */}
-      <View 
-        className="px-5 py-4 border-b"
-        style={{ borderBottomColor: '#374151' }}
-      >
-        <View className="flex-row items-center justify-between">
-          <Text className="text-white text-3xl font-bold">Verifications</Text>
+      <View style={s.header}>
+        <View style={s.headerRow}>
+          <Text style={s.headerTitle}>Verifications</Text>
           {pendingCount > 0 && (
-            <View 
-              className="px-4 py-2 rounded-xl"
-              style={{ backgroundColor: '#F59E0B' }}
-            >
-              <Text className="text-black font-bold">{pendingCount} Pending</Text>
+            <View style={s.pendingBadge}>
+              <Text style={s.pendingBadgeText}>{pendingCount} Pending</Text>
             </View>
           )}
         </View>
       </View>
 
       {/* Tabs */}
-      <View 
-        className="flex-row px-4 py-4 border-b"
-        style={{ borderBottomColor: '#374151' }}
-      >
+      <View style={s.tabBar}>
         {VERIFICATION_TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
-            className="flex-1 py-3 rounded-xl mr-2"
-            style={{
-              backgroundColor: selectedTab === tab ? '#F97316' : '#1F2937',
-            }}
+            style={[
+              s.tab,
+              selectedTab === tab ? s.tabActive : s.tabInactive,
+            ]}
             onPress={() => setSelectedTab(tab)}
           >
             <Text
-              className="text-center font-semibold"
-              style={{
-                color: selectedTab === tab ? '#FFFFFF' : '#9CA3AF',
-                fontSize: 14,
-              }}
+              style={[
+                s.tabText,
+                selectedTab === tab ? s.tabTextActive : s.tabTextInactive,
+              ]}
             >
               {tab}
             </Text>
@@ -343,9 +312,9 @@ export default function VerificationsScreen() {
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View className="items-center justify-center py-12">
-            <Ionicons name="shield-checkmark" size={48} color="#6B7280" />
-            <Text className="text-gray-400 mt-4">
+          <View style={s.emptyContainer}>
+            <Ionicons name="shield-checkmark" size={48} color={T.textMuted} />
+            <Text style={s.emptyText}>
               {selectedTab === 'Pending'
                 ? 'No pending verifications'
                 : selectedTab === 'Approved'
@@ -358,3 +327,314 @@ export default function VerificationsScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  container: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  // Header
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  } as const,
+  headerRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  headerTitle: {
+    color: T.text,
+    fontSize: 30,
+    fontWeight: '700' as const,
+  },
+  pendingBadge: {
+    backgroundColor: T.amber,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 14,
+  },
+  pendingBadgeText: {
+    color: '#1A1D2E',
+    fontWeight: '700' as const,
+    fontSize: 14,
+  },
+
+  // Tabs
+  tabBar: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+    gap: 8,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  tabActive: {
+    backgroundColor: T.navy,
+  },
+  tabInactive: {
+    backgroundColor: T.bg,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+  },
+  tabTextActive: {
+    color: T.white,
+  },
+  tabTextInactive: {
+    color: T.textSecondary,
+  },
+
+  // Card
+  card: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  } as const,
+
+  // Card Header
+  cardHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    backgroundColor: T.bg,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  cardHeaderInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  workerName: {
+    color: T.text,
+    fontWeight: '700' as const,
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  workerPhone: {
+    color: T.textSecondary,
+    fontWeight: '500' as const,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  skillsRow: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+  },
+  skillBadge: {
+    backgroundColor: T.bg,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 14,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  skillText: {
+    color: T.textSecondary,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  cardHeaderRight: {
+    alignItems: 'flex-end' as const,
+  },
+  experienceLabel: {
+    color: T.textMuted,
+    fontSize: 12,
+    fontWeight: '500' as const,
+    marginBottom: 4,
+  },
+  experienceValue: {
+    color: T.text,
+    fontWeight: '700' as const,
+    fontSize: 14,
+  },
+  rateValue: {
+    color: T.amber,
+    fontWeight: '700' as const,
+    fontSize: 16,
+    marginTop: 4,
+  },
+
+  // ID Section
+  idSection: {
+    backgroundColor: T.bg,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  idHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 8,
+  },
+  idType: {
+    color: T.text,
+    fontWeight: '500' as const,
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  idNumber: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+  submittedAt: {
+    color: T.textMuted,
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  // Documents Section
+  documentsSection: {
+    marginBottom: 16,
+  },
+  documentsLabel: {
+    color: T.textSecondary,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  documentsRow: {
+    flexDirection: 'row' as const,
+    gap: 12,
+  },
+  documentBox: {
+    flex: 1,
+    height: 96,
+    backgroundColor: T.bg,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  documentBoxLabel: {
+    color: T.textSecondary,
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  // Rejection
+  rejectionBox: {
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+  },
+  rejectionHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 4,
+  },
+  rejectionTitle: {
+    color: '#EF4444',
+    fontWeight: '500' as const,
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  rejectionText: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  // Review Info
+  reviewInfo: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  reviewText: {
+    color: T.textSecondary,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+
+  // Action Buttons
+  actionsRow: {
+    flexDirection: 'row' as const,
+    gap: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  viewDetailsBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: T.bg,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  viewDetailsBtnText: {
+    color: T.textSecondary,
+    fontWeight: '700' as const,
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  approveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: T.success,
+  },
+  rejectBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: '#EF4444',
+  },
+  actionBtnTextWhite: {
+    color: T.white,
+    fontWeight: '700' as const,
+    fontSize: 14,
+    marginLeft: 8,
+  },
+
+  // Empty State
+  emptyContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 48,
+  },
+  emptyText: {
+    color: T.textSecondary,
+    fontSize: 16,
+    marginTop: 16,
+  },
+};

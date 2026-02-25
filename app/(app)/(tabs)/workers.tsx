@@ -11,6 +11,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/context/AuthContext';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const SKILLS = [
   { id: 'all', name: 'All', icon: 'people' },
@@ -113,32 +116,37 @@ export default function WorkersScreen() {
 
   const renderWorker = ({ item: worker }: { item: typeof WORKERS[0] }) => (
     <TouchableOpacity
-      className="bg-gray-800 rounded-xl p-4 mb-3"
+      style={s.card}
       onPress={() => router.push(`/(app)/worker/${worker.id}`)}
     >
-      <View className="flex-row">
+      <View style={s.cardRow}>
         {/* Avatar */}
-        <View className="w-16 h-16 bg-gray-700 rounded-full items-center justify-center">
-          <Ionicons name="person" size={32} color="#6B7280" />
+        <View style={s.avatar}>
+          <Ionicons name="person" size={32} color={T.textMuted} />
           {worker.isVerified && (
-            <View className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
-              <Ionicons name="checkmark" size={12} color="white" />
+            <View style={s.verifiedBadge}>
+              <Ionicons name="checkmark" size={12} color={T.white} />
             </View>
           )}
         </View>
 
         {/* Info */}
-        <View className="flex-1 ml-4">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-white font-semibold text-lg">{worker.name}</Text>
+        <View style={s.cardInfo}>
+          <View style={s.nameRow}>
+            <Text style={s.workerName}>{worker.name}</Text>
             <View
-              className={`px-2 py-1 rounded ${
-                worker.status === 'waiting' ? 'bg-green-500/20' : 'bg-orange-500/20'
-              }`}
+              style={[
+                s.statusBadge,
+                worker.status === 'waiting'
+                  ? s.statusAvailable
+                  : s.statusWorking,
+              ]}
             >
               <Text
-                className={
-                  worker.status === 'waiting' ? 'text-green-500' : 'text-orange-500'
+                style={
+                  worker.status === 'waiting'
+                    ? s.statusAvailableText
+                    : s.statusWorkingText
                 }
               >
                 {worker.status === 'waiting' ? 'Available' : 'Working'}
@@ -147,56 +155,56 @@ export default function WorkersScreen() {
           </View>
 
           {/* Skills */}
-          <View className="flex-row flex-wrap mt-2">
+          <View style={s.skillsRow}>
             {worker.skills.map((skill, index) => (
-              <View key={index} className="bg-gray-700 px-2 py-1 rounded mr-2 mb-1">
-                <Text className="text-gray-300 text-xs">{skill}</Text>
+              <View key={index} style={s.skillChip}>
+                <Text style={s.skillChipText}>{skill}</Text>
               </View>
             ))}
           </View>
 
           {/* Stats */}
-          <View className="flex-row items-center mt-2">
-            <Ionicons name="star" size={14} color="#F59E0B" />
-            <Text className="text-white ml-1">{worker.rating}</Text>
-            <Text className="text-gray-500 mx-2">•</Text>
-            <Text className="text-gray-400">{worker.totalJobs} jobs</Text>
-            <Text className="text-gray-500 mx-2">•</Text>
-            <Text className="text-gray-400">{worker.experience}y exp</Text>
+          <View style={s.statsRow}>
+            <Ionicons name="star" size={14} color={T.amber} />
+            <Text style={s.ratingText}>{worker.rating}</Text>
+            <Text style={s.statDot}>•</Text>
+            <Text style={s.statText}>{worker.totalJobs} jobs</Text>
+            <Text style={s.statDot}>•</Text>
+            <Text style={s.statText}>{worker.experience}y exp</Text>
           </View>
 
           {/* Rate & Distance */}
-          <View className="flex-row items-center justify-between mt-3">
+          <View style={s.rateDistanceRow}>
             <View>
-              <Text className="text-orange-500 font-bold">₹{worker.dailyRate}/day</Text>
-              <Text className="text-gray-500 text-xs">₹{worker.hourlyRate}/hr</Text>
+              <Text style={s.dailyRate}>₹{worker.dailyRate}/day</Text>
+              <Text style={s.hourlyRate}>₹{worker.hourlyRate}/hr</Text>
             </View>
-            <View className="flex-row items-center">
-              <Ionicons name="location" size={14} color="#9CA3AF" />
-              <Text className="text-gray-400 ml-1">{worker.distance}</Text>
+            <View style={s.distanceRow}>
+              <Ionicons name="location" size={14} color={T.textMuted} />
+              <Text style={s.distanceText}>{worker.distance}</Text>
             </View>
           </View>
         </View>
       </View>
 
       {/* Action Buttons */}
-      <View className="flex-row space-x-3 mt-4 pt-4 border-t border-gray-700">
+      <View style={s.actionRow}>
         <TouchableOpacity
-          className="flex-1 bg-gray-700 py-3 rounded-lg flex-row items-center justify-center"
+          style={s.viewProfileBtn}
           onPress={() => router.push(`/(app)/worker/${worker.id}`)}
         >
-          <Ionicons name="person" size={18} color="#9CA3AF" />
-          <Text className="text-gray-300 font-medium ml-2">View Profile</Text>
+          <Ionicons name="person" size={18} color={T.textSecondary} />
+          <Text style={s.viewProfileText}>View Profile</Text>
         </TouchableOpacity>
 
         {worker.status === 'waiting' && worker.isVerified && (
           <>
             <TouchableOpacity
-              className="flex-1 bg-green-500 py-3 rounded-lg flex-row items-center justify-center"
+              style={s.hireBtn}
               onPress={() => router.push(`/(app)/hire?workerId=${worker.id}`)}
             >
-              <Ionicons name="calendar" size={18} color="white" />
-              <Text className="text-white font-medium ml-2">
+              <Ionicons name="calendar" size={18} color={T.white} />
+              <Text style={s.hireBtnText}>
                 {isContractor ? 'Hire Long-term' : 'Book Now'}
               </Text>
             </TouchableOpacity>
@@ -204,9 +212,9 @@ export default function WorkersScreen() {
         )}
 
         {!worker.isVerified && (
-          <View className="flex-1 bg-yellow-500/20 py-3 rounded-lg flex-row items-center justify-center">
+          <View style={s.notVerifiedBadge}>
             <Ionicons name="warning" size={18} color="#EAB308" />
-            <Text className="text-yellow-500 font-medium ml-2">Not Verified</Text>
+            <Text style={s.notVerifiedText}>Not Verified</Text>
           </View>
         )}
       </View>
@@ -214,110 +222,103 @@ export default function WorkersScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.safeArea}>
       {/* Header */}
-      <View 
-        className="px-5 py-4 border-b"
-        style={{ borderBottomColor: '#374151' }}
-      >
-        <Text className="text-white text-3xl font-bold mb-4">
+      <View style={s.header}>
+        <Text style={s.headerTitle}>
           {isContractor ? 'Hire Workers' : 'Find Workers'}
         </Text>
 
         {/* Search Bar */}
-        <View 
-          className="flex-row items-center rounded-2xl px-4"
-          style={{
-            backgroundColor: '#1F2937',
-            borderWidth: 1,
-            borderColor: '#374151',
-          }}
-        >
-          <Ionicons name="search" size={22} color="#6B7280" />
+        <View style={s.searchBar}>
+          <Ionicons name="search" size={22} color={T.textMuted} />
           <TextInput
-            className="flex-1 text-white py-4 ml-3 text-base"
+            style={s.searchInput}
             placeholder="Search workers..."
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={T.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} className="ml-2">
-              <Ionicons name="close-circle" size={22} color="#6B7280" />
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ marginLeft: 8 }}>
+              <Ionicons name="close-circle" size={22} color={T.textMuted} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Skills Filter */}
-      <View className="py-4 border-b" style={{ borderBottomColor: '#374151' }}>
+      <View style={s.skillsFilterContainer}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         >
-          {SKILLS.map((skill) => (
-            <TouchableOpacity
-              key={skill.id}
-              className="flex-row items-center px-5 py-3 rounded-xl mr-3"
-              style={{
-                backgroundColor: selectedSkill === skill.id ? '#F97316' : '#1F2937',
-              }}
-              onPress={() => setSelectedSkill(skill.id)}
-            >
-              <Ionicons
-                name={skill.icon as any}
-                size={18}
-                color={selectedSkill === skill.id ? 'white' : '#9CA3AF'}
-              />
-              <Text
-                className="ml-2 font-semibold"
-                style={{
-                  color: selectedSkill === skill.id ? '#FFFFFF' : '#9CA3AF',
-                  fontSize: 14,
-                }}
+          {SKILLS.map((skill) => {
+            const isActive = selectedSkill === skill.id;
+            return (
+              <TouchableOpacity
+                key={skill.id}
+                style={[
+                  s.filterPill,
+                  isActive ? s.filterPillActive : s.filterPillInactive,
+                ]}
+                onPress={() => setSelectedSkill(skill.id)}
               >
-                {skill.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Ionicons
+                  name={skill.icon as any}
+                  size={18}
+                  color={isActive ? T.white : T.textSecondary}
+                />
+                <Text
+                  style={[
+                    s.filterPillText,
+                    isActive ? s.filterPillTextActive : s.filterPillTextInactive,
+                  ]}
+                >
+                  {skill.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
       {/* Available Filter */}
-      <View className="px-4 py-3 flex-row items-center justify-between">
-        <Text className="text-gray-400">{filteredWorkers.length} workers found</Text>
+      <View style={s.availableFilterRow}>
+        <Text style={s.workerCountText}>{filteredWorkers.length} workers found</Text>
         <TouchableOpacity
-          className="flex-row items-center"
+          style={s.checkboxRow}
           onPress={() => setShowAvailableOnly(!showAvailableOnly)}
         >
           <View
-            className={`w-5 h-5 rounded border mr-2 items-center justify-center ${
-              showAvailableOnly ? 'bg-orange-500 border-orange-500' : 'border-gray-600'
-            }`}
+            style={[
+              s.checkbox,
+              showAvailableOnly ? s.checkboxActive : s.checkboxInactive,
+            ]}
           >
             {showAvailableOnly && (
-              <Ionicons name="checkmark" size={14} color="white" />
+              <Ionicons name="checkmark" size={14} color={T.white} />
             )}
           </View>
-          <Text className="text-gray-400">Available only</Text>
+          <Text style={s.checkboxLabel}>Available only</Text>
         </TouchableOpacity>
       </View>
 
       {/* Contractor Banner */}
       {isContractor && (
         <TouchableOpacity
-          className="mx-4 mb-3 bg-purple-500/10 rounded-xl p-4 flex-row items-center border border-purple-500/30"
+          style={s.contractorBanner}
           onPress={() => router.push('/(app)/agreement/create')}
         >
-          <Ionicons name="document-text" size={24} color="#A855F7" />
-          <View className="ml-3 flex-1">
-            <Text className="text-purple-400 font-semibold">Create Long-term Agreement</Text>
-            <Text className="text-gray-400 text-sm">
+          <Ionicons name="document-text" size={24} color={T.amber} />
+          <View style={s.contractorBannerContent}>
+            <Text style={s.contractorBannerTitle}>Create Long-term Agreement</Text>
+            <Text style={s.contractorBannerSubtitle}>
               Hire workers for weeks or months with digital contracts
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#A855F7" />
+          <Ionicons name="chevron-forward" size={20} color={T.amber} />
         </TouchableOpacity>
       )}
 
@@ -329,12 +330,354 @@ export default function WorkersScreen() {
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View className="items-center justify-center py-12">
-            <Ionicons name="people" size={48} color="#6B7280" />
-            <Text className="text-gray-400 mt-4">No workers found</Text>
+          <View style={s.emptyContainer}>
+            <Ionicons name="people" size={48} color={T.textMuted} />
+            <Text style={s.emptyText}>No workers found</Text>
           </View>
         }
       />
     </SafeAreaView>
   );
 }
+
+const s = {
+  safeArea: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  /* ---- Header ---- */
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  } as const,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    color: T.text,
+    marginBottom: 16,
+  },
+
+  /* ---- Search ---- */
+  searchBar: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  searchInput: {
+    flex: 1,
+    color: T.text,
+    paddingVertical: 14,
+    marginLeft: 12,
+    fontSize: 16,
+  },
+
+  /* ---- Skills Filter ---- */
+  skillsFilterContainer: {
+    paddingVertical: 14,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  } as const,
+  filterPill: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 50,
+    marginRight: 10,
+  },
+  filterPillActive: {
+    backgroundColor: T.navy,
+  },
+  filterPillInactive: {
+    backgroundColor: T.bg,
+  },
+  filterPillText: {
+    marginLeft: 8,
+    fontWeight: '600' as const,
+    fontSize: 14,
+  },
+  filterPillTextActive: {
+    color: T.white,
+  },
+  filterPillTextInactive: {
+    color: T.textSecondary,
+  },
+
+  /* ---- Available Filter Row ---- */
+  availableFilterRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  workerCountText: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+  checkboxRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    marginRight: 8,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  checkboxActive: {
+    backgroundColor: T.amber,
+    borderColor: T.amber,
+  },
+  checkboxInactive: {
+    borderColor: T.border,
+    backgroundColor: 'transparent',
+  },
+  checkboxLabel: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  /* ---- Contractor Banner ---- */
+  contractorBanner: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: 'rgba(242, 150, 13, 0.1)',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: 'rgba(242, 150, 13, 0.3)',
+  },
+  contractorBannerContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  contractorBannerTitle: {
+    color: T.amber,
+    fontWeight: '600' as const,
+    fontSize: 15,
+  },
+  contractorBannerSubtitle: {
+    color: T.textSecondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+
+  /* ---- Worker Card ---- */
+  card: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 16,
+    marginBottom: 12,
+  },
+  cardRow: {
+    flexDirection: 'row' as const,
+  },
+
+  /* Avatar */
+  avatar: {
+    width: 64,
+    height: 64,
+    backgroundColor: T.bg,
+    borderRadius: 32,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  verifiedBadge: {
+    position: 'absolute' as const,
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#10B981',
+    borderRadius: 10,
+    padding: 3,
+  },
+
+  /* Card Info */
+  cardInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  nameRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  workerName: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 17,
+  },
+
+  /* Status Badge */
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusAvailable: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  statusWorking: {
+    backgroundColor: 'rgba(249, 115, 22, 0.15)',
+  },
+  statusAvailableText: {
+    color: '#10B981',
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  statusWorkingText: {
+    color: '#F97316',
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+
+  /* Skills Chips */
+  skillsRow: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    marginTop: 8,
+  },
+  skillChip: {
+    backgroundColor: T.bg,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  skillChipText: {
+    color: T.textSecondary,
+    fontSize: 12,
+  },
+
+  /* Stats */
+  statsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 8,
+  },
+  ratingText: {
+    color: T.text,
+    marginLeft: 4,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  statDot: {
+    color: T.textMuted,
+    marginHorizontal: 8,
+  },
+  statText: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  /* Rate & Distance */
+  rateDistanceRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    marginTop: 12,
+  },
+  dailyRate: {
+    color: T.amber,
+    fontWeight: '700' as const,
+    fontSize: 15,
+  },
+  hourlyRate: {
+    color: T.textMuted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  distanceRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  distanceText: {
+    color: T.textSecondary,
+    marginLeft: 4,
+    fontSize: 14,
+  },
+
+  /* Action Buttons */
+  actionRow: {
+    flexDirection: 'row' as const,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+    gap: 10,
+  },
+  viewProfileBtn: {
+    flex: 1,
+    backgroundColor: T.bg,
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  viewProfileText: {
+    color: T.textSecondary,
+    fontWeight: '500' as const,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  hireBtn: {
+    flex: 1,
+    backgroundColor: '#10B981',
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  hireBtnText: {
+    color: T.white,
+    fontWeight: '500' as const,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  notVerifiedBadge: {
+    flex: 1,
+    backgroundColor: 'rgba(234, 179, 8, 0.15)',
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  notVerifiedText: {
+    color: '#EAB308',
+    fontWeight: '500' as const,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+
+  /* Empty State */
+  emptyContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 48,
+  },
+  emptyText: {
+    color: T.textSecondary,
+    marginTop: 16,
+    fontSize: 16,
+  },
+};

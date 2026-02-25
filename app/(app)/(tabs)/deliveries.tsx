@@ -3,6 +3,9 @@ import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const DELIVERY_TABS = ['Active', 'Available', 'Completed'];
 
@@ -84,15 +87,15 @@ const MOCK_DELIVERIES = [
 const getStatusStyle = (status: string) => {
   switch (status) {
     case 'pickup':
-      return { bg: 'bg-blue-500/20', text: 'text-blue-500', label: 'Pickup' };
+      return { bg: 'rgba(59,130,246,0.15)', color: '#3B82F6', label: 'Pickup' };
     case 'delivering':
-      return { bg: 'bg-green-500/20', text: 'text-green-500', label: 'Delivering' };
+      return { bg: 'rgba(16,185,129,0.15)', color: '#10B981', label: 'Delivering' };
     case 'available':
-      return { bg: 'bg-orange-500/20', text: 'text-orange-500', label: 'Available' };
+      return { bg: 'rgba(242,150,13,0.15)', color: '#F2960D', label: 'Available' };
     case 'completed':
-      return { bg: 'bg-gray-500/20', text: 'text-gray-400', label: 'Completed' };
+      return { bg: 'rgba(156,163,175,0.15)', color: '#9CA3AF', label: 'Completed' };
     default:
-      return { bg: 'bg-gray-500/20', text: 'text-gray-500', label: status };
+      return { bg: 'rgba(156,163,175,0.15)', color: '#9CA3AF', label: status };
   }
 };
 
@@ -117,91 +120,99 @@ export default function DeliveriesScreen() {
     const isAvailable = delivery.status === 'available';
 
     return (
-      <View className={`bg-gray-800 rounded-xl p-4 mb-3 ${
-        isConcierge ? 'border-l-4 border-purple-500' : isActive ? 'border-l-4 border-green-500' : ''
-      }`}>
+      <View
+        style={[
+          s.card,
+          isConcierge
+            ? { borderLeftWidth: 4, borderLeftColor: '#A855F7' }
+            : isActive
+            ? { borderLeftWidth: 4, borderLeftColor: T.success }
+            : null,
+        ]}
+      >
         {/* Header */}
-        <View className="flex-row justify-between items-start mb-3">
-          <View className="flex-1">
-            <View className="flex-row items-center">
+        <View style={s.cardHeader}>
+          <View style={{ flex: 1 }}>
+            <View style={s.row}>
               {isConcierge && (
-                <View className="bg-purple-500/20 px-2 py-0.5 rounded mr-2 flex-row items-center">
+                <View style={s.conciergeBadge}>
                   <Ionicons name="flash" size={12} color="#A855F7" />
-                  <Text className="text-purple-500 text-xs font-bold ml-1">CONCIERGE</Text>
+                  <Text style={s.conciergeBadgeText}>CONCIERGE</Text>
                 </View>
               )}
-              <Text className="text-gray-400 text-sm">{delivery.orderNumber}</Text>
+              <Text style={s.orderNumber}>{delivery.orderNumber}</Text>
             </View>
-            <Text className="text-white font-semibold mt-1">{delivery.customer}</Text>
+            <Text style={s.customerName}>{delivery.customer}</Text>
           </View>
-          <View className={`px-2 py-1 rounded ${statusStyle.bg}`}>
-            <Text className={`text-xs font-medium ${statusStyle.text}`}>
+          <View style={[s.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <Text style={[s.statusBadgeText, { color: statusStyle.color }]}>
               {statusStyle.label}
             </Text>
           </View>
         </View>
 
         {/* Pickup Location */}
-        <View className="flex-row items-start mb-2">
-          <View className="w-6 items-center">
-            <View className="w-3 h-3 bg-blue-500 rounded-full" />
-            <View className="w-0.5 h-8 bg-gray-600 my-1" />
+        <View style={s.locationRow}>
+          <View style={s.dotColumn}>
+            <View style={s.pickupDot} />
+            <View style={s.connectorLine} />
           </View>
-          <View className="flex-1 ml-2">
-            <Text className="text-gray-500 text-xs">PICKUP</Text>
-            <Text className="text-white">{delivery.shop}</Text>
-            <Text className="text-gray-400 text-sm" numberOfLines={1}>
+          <View style={s.locationInfo}>
+            <Text style={s.locationLabel}>PICKUP</Text>
+            <Text style={s.locationPrimary}>{delivery.shop}</Text>
+            <Text style={s.locationSecondary} numberOfLines={1}>
               {delivery.pickupAddress}
             </Text>
           </View>
         </View>
 
         {/* Delivery Location */}
-        <View className="flex-row items-start mb-3">
-          <View className="w-6 items-center">
-            <View className="w-3 h-3 bg-green-500 rounded-full" />
+        <View style={[s.locationRow, { marginBottom: 12 }]}>
+          <View style={s.dotColumn}>
+            <View style={s.deliveryDot} />
           </View>
-          <View className="flex-1 ml-2">
-            <Text className="text-gray-500 text-xs">DELIVER TO</Text>
-            <Text className="text-white">{delivery.customer}</Text>
-            <Text className="text-gray-400 text-sm" numberOfLines={1}>
+          <View style={s.locationInfo}>
+            <Text style={s.locationLabel}>DELIVER TO</Text>
+            <Text style={s.locationPrimary}>{delivery.customer}</Text>
+            <Text style={s.locationSecondary} numberOfLines={1}>
               {delivery.deliveryAddress}
             </Text>
           </View>
         </View>
 
         {/* Items */}
-        <View className="flex-row items-center mb-3 bg-gray-700/50 p-2 rounded-lg">
-          <Ionicons name="cube" size={16} color="#9CA3AF" />
-          <Text className="text-gray-300 ml-2 text-sm flex-1" numberOfLines={1}>
+        <View style={s.itemsRow}>
+          <Ionicons name="cube" size={16} color={T.textMuted} />
+          <Text style={s.itemsText} numberOfLines={1}>
             {delivery.items}
           </Text>
         </View>
 
         {/* Stats */}
-        <View className="flex-row items-center justify-between py-3 border-t border-gray-700">
-          <View className="flex-row items-center">
-            <Ionicons name="navigate" size={16} color="#F97316" />
-            <Text className="text-gray-400 ml-2">{delivery.distance}</Text>
+        <View style={s.statsRow}>
+          <View style={s.row}>
+            <Ionicons name="navigate" size={16} color={T.amber} />
+            <Text style={s.distanceText}>{delivery.distance}</Text>
           </View>
-          <View className="items-end">
-            <Text className="text-green-500 font-bold text-lg">₹{delivery.earnings}</Text>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={s.earningsText}>₹{delivery.earnings}</Text>
             {isConcierge && (delivery as any).bonusEarnings && (
-              <Text className="text-purple-500 text-xs">+₹{(delivery as any).bonusEarnings} bonus</Text>
+              <Text style={s.bonusText}>+₹{(delivery as any).bonusEarnings} bonus</Text>
             )}
           </View>
         </View>
 
         {/* Actions for Active */}
         {isActive && (
-          <View className="flex-row space-x-3 pt-3 border-t border-gray-700">
-            <TouchableOpacity className="flex-1 bg-blue-500 py-3 rounded-lg flex-row items-center justify-center">
-              <Ionicons name="navigate" size={18} color="white" />
-              <Text className="text-white font-semibold ml-2">Navigate</Text>
+          <View style={s.actionsRow}>
+            <TouchableOpacity style={[s.actionBtn, { backgroundColor: T.info }]}>
+              <Ionicons name="navigate" size={18} color="#FFFFFF" />
+              <Text style={s.actionBtnText}>Navigate</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="flex-1 bg-green-500 py-3 rounded-lg flex-row items-center justify-center">
-              <Ionicons name="checkmark-circle" size={18} color="white" />
-              <Text className="text-white font-semibold ml-2">
+            <View style={{ width: 12 }} />
+            <TouchableOpacity style={[s.actionBtn, { backgroundColor: T.success }]}>
+              <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+              <Text style={s.actionBtnText}>
                 {delivery.status === 'pickup' ? 'Picked Up' : 'Delivered'}
               </Text>
             </TouchableOpacity>
@@ -210,21 +221,24 @@ export default function DeliveriesScreen() {
 
         {/* Actions for Available */}
         {isAvailable && (
-          <View className="pt-3 border-t border-gray-700">
-            <TouchableOpacity className={`py-3 rounded-lg flex-row items-center justify-center ${
-              isConcierge ? 'bg-purple-500' : 'bg-orange-500'
-            }`}>
-              <Ionicons name="hand-right" size={18} color="white" />
-              <Text className="text-white font-semibold ml-2">Accept Delivery</Text>
+          <View style={s.actionsRowSingle}>
+            <TouchableOpacity
+              style={[
+                s.actionBtnFull,
+                { backgroundColor: isConcierge ? '#A855F7' : T.amber },
+              ]}
+            >
+              <Ionicons name="hand-right" size={18} color="#FFFFFF" />
+              <Text style={s.actionBtnText}>Accept Delivery</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Completed Info */}
         {delivery.status === 'completed' && (
-          <View className="flex-row items-center pt-3 border-t border-gray-700">
+          <View style={s.completedRow}>
             <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
-            <Text className="text-gray-400 ml-2">Completed at {(delivery as any).completedAt}</Text>
+            <Text style={s.completedText}>Completed at {(delivery as any).completedAt}</Text>
           </View>
         )}
       </View>
@@ -232,44 +246,47 @@ export default function DeliveriesScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.safeArea}>
       {/* Header */}
-      <View className="px-4 py-3 border-b border-gray-800">
-        <Text className="text-white text-2xl font-bold">Deliveries</Text>
+      <View style={s.header}>
+        <Text style={s.headerTitle}>Deliveries</Text>
       </View>
 
       {/* Stats */}
-      <View className="flex-row px-4 py-3 space-x-3">
-        <View className="flex-1 bg-green-500/10 rounded-xl p-4 border border-green-500/30">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-green-500 font-bold text-2xl">{activeCount}</Text>
+      <View style={s.statsContainer}>
+        <View style={s.statCardActive}>
+          <View style={s.statCardInner}>
+            <Text style={s.statNumberGreen}>{activeCount}</Text>
             <Ionicons name="car" size={24} color="#22C55E" />
           </View>
-          <Text className="text-gray-400 text-sm mt-1">Active Now</Text>
+          <Text style={s.statLabel}>Active Now</Text>
         </View>
-        <View className="flex-1 bg-orange-500/10 rounded-xl p-4 border border-orange-500/30">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-orange-500 font-bold text-2xl">{availableCount}</Text>
-            <Ionicons name="list" size={24} color="#F97316" />
+        <View style={{ width: 12 }} />
+        <View style={s.statCardAvailable}>
+          <View style={s.statCardInner}>
+            <Text style={s.statNumberAmber}>{availableCount}</Text>
+            <Ionicons name="list" size={24} color={T.amber} />
           </View>
-          <Text className="text-gray-400 text-sm mt-1">Available</Text>
+          <Text style={s.statLabel}>Available</Text>
         </View>
       </View>
 
       {/* Tabs */}
-      <View className="flex-row px-4 pb-3 border-b border-gray-800">
+      <View style={s.tabsContainer}>
         {DELIVERY_TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
-            className={`flex-1 py-2 rounded-lg mr-2 ${
-              selectedTab === tab ? 'bg-orange-500' : 'bg-gray-800'
-            }`}
+            style={[
+              s.tab,
+              selectedTab === tab ? s.tabActive : s.tabInactive,
+            ]}
             onPress={() => setSelectedTab(tab)}
           >
             <Text
-              className={`text-center font-medium ${
-                selectedTab === tab ? 'text-white' : 'text-gray-400'
-              }`}
+              style={[
+                s.tabText,
+                selectedTab === tab ? s.tabTextActive : s.tabTextInactive,
+              ]}
             >
               {tab}
             </Text>
@@ -285,9 +302,9 @@ export default function DeliveriesScreen() {
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View className="items-center justify-center py-12">
-            <Ionicons name="car" size={48} color="#6B7280" />
-            <Text className="text-gray-400 mt-4">
+          <View style={s.emptyContainer}>
+            <Ionicons name="car" size={48} color={T.textMuted} />
+            <Text style={s.emptyText}>
               {selectedTab === 'Active'
                 ? 'No active deliveries'
                 : selectedTab === 'Available'
@@ -300,3 +317,327 @@ export default function DeliveriesScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  safeArea: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+    backgroundColor: T.surface,
+  } as const,
+
+  headerTitle: {
+    color: T.text,
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+
+  statsContainer: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+
+  statCardActive: {
+    flex: 1,
+    backgroundColor: 'rgba(16,185,129,0.08)',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.3)',
+  } as const,
+
+  statCardAvailable: {
+    flex: 1,
+    backgroundColor: 'rgba(242,150,13,0.08)',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(242,150,13,0.3)',
+  } as const,
+
+  statCardInner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+
+  statNumberGreen: {
+    color: T.success,
+    fontWeight: '700' as const,
+    fontSize: 24,
+  },
+
+  statNumberAmber: {
+    color: T.amber,
+    fontWeight: '700' as const,
+    fontSize: 24,
+  },
+
+  statLabel: {
+    color: T.textSecondary,
+    fontSize: 14,
+    marginTop: 4,
+  },
+
+  tabsContainer: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+  } as const,
+
+  tabActive: {
+    backgroundColor: T.navy,
+  },
+
+  tabInactive: {
+    backgroundColor: T.bg,
+  },
+
+  tabText: {
+    textAlign: 'center' as const,
+    fontWeight: '500' as const,
+  },
+
+  tabTextActive: {
+    color: T.white,
+  },
+
+  tabTextInactive: {
+    color: T.textSecondary,
+  },
+
+  card: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: T.border,
+  } as const,
+
+  cardHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'flex-start' as const,
+    marginBottom: 12,
+  },
+
+  row: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  conciergeBadge: {
+    backgroundColor: 'rgba(168,85,247,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginRight: 8,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  conciergeBadgeText: {
+    color: '#A855F7',
+    fontSize: 12,
+    fontWeight: '700' as const,
+    marginLeft: 4,
+  },
+
+  orderNumber: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  customerName: {
+    color: T.text,
+    fontWeight: '600' as const,
+    marginTop: 4,
+    fontSize: 16,
+  },
+
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  } as const,
+
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+
+  locationRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    marginBottom: 8,
+  },
+
+  dotColumn: {
+    width: 24,
+    alignItems: 'center' as const,
+  },
+
+  pickupDot: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#3B82F6',
+    borderRadius: 6,
+  },
+
+  connectorLine: {
+    width: 2,
+    height: 32,
+    backgroundColor: T.border,
+    marginVertical: 4,
+  },
+
+  deliveryDot: {
+    width: 12,
+    height: 12,
+    backgroundColor: T.success,
+    borderRadius: 6,
+  },
+
+  locationInfo: {
+    flex: 1,
+    marginLeft: 8,
+  } as const,
+
+  locationLabel: {
+    color: T.textMuted,
+    fontSize: 12,
+  },
+
+  locationPrimary: {
+    color: T.text,
+    fontSize: 15,
+  },
+
+  locationSecondary: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  itemsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 12,
+    backgroundColor: T.bg,
+    padding: 8,
+    borderRadius: 10,
+  },
+
+  itemsText: {
+    color: T.textSecondary,
+    marginLeft: 8,
+    fontSize: 14,
+    flex: 1,
+  } as const,
+
+  statsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  distanceText: {
+    color: T.amber,
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+
+  earningsText: {
+    color: T.success,
+    fontWeight: '700' as const,
+    fontSize: 18,
+  },
+
+  bonusText: {
+    color: '#A855F7',
+    fontSize: 12,
+  },
+
+  actionsRow: {
+    flexDirection: 'row' as const,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  actionsRowSingle: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  } as const,
+
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  actionBtnFull: {
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '600' as const,
+    marginLeft: 8,
+    fontSize: 15,
+  },
+
+  completedRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  completedText: {
+    color: T.textSecondary,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+
+  emptyContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 48,
+  },
+
+  emptyText: {
+    color: T.textSecondary,
+    marginTop: 16,
+    fontSize: 15,
+  },
+};
