@@ -2,14 +2,15 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/context/AuthContext';
 import { View, Text } from 'react-native';
-import { useCartStore, useNotificationStore } from '../../../src/store/useStore';
+import { useCartStore } from '../../../src/store/useStore';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 export default function TabsLayout() {
   const { user } = useAuth();
   const itemCount = useCartStore((state) => state.getItemCount());
-  const unreadCount = useNotificationStore((state) => state.unreadCount);
 
-  // Role-specific tab configurations
   const getTabsForRole = () => {
     switch (user?.role) {
       case 'customer':
@@ -34,21 +35,13 @@ export default function TabsLayout() {
               }}
             />
             <Tabs.Screen
-              name="workers"
-              options={{
-                title: 'Workers',
-                tabBarIcon: ({ color, size }) => (
-                  <Ionicons name="people" size={size} color={color} />
-                ),
-              }}
-            />
-            <Tabs.Screen
               name="orders"
               options={{
                 title: 'Orders',
                 tabBarIcon: ({ color, size }) => (
                   <Ionicons name="receipt" size={size} color={color} />
                 ),
+                tabBarBadge: itemCount > 0 ? itemCount : undefined,
               }}
             />
             <Tabs.Screen
@@ -310,8 +303,8 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1F2937',
-          borderTopColor: '#374151',
+          backgroundColor: T.surface,
+          borderTopColor: T.border,
           borderTopWidth: 1,
           height: 70,
           paddingBottom: 8,
@@ -319,15 +312,17 @@ export default function TabsLayout() {
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
+          shadowOpacity: 0.06,
           shadowRadius: 8,
         },
-        tabBarActiveTintColor: '#F97316',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarActiveTintColor: T.navy,
+        tabBarInactiveTintColor: T.textMuted,
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginTop: 4,
+          fontSize: 10,
+          fontWeight: '700',
+          marginTop: 2,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
         },
         tabBarIconStyle: {
           marginTop: 4,

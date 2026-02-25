@@ -8,7 +8,7 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#111827' },
+        contentStyle: { backgroundColor: '#F5F6FA' },
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -52,6 +52,34 @@ export default function AppLayout() {
         options={{
           headerShown: false,
           presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name="search"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen
+        name="wishlist"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen
+        name="order-success"
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name="order-tracking"
+        options={{
+          headerShown: false,
+          presentation: 'card',
         }}
       />
       <Stack.Screen

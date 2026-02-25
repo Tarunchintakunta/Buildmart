@@ -18,7 +18,7 @@ function RootLayoutNav() {
 
     if (!isAuthenticated && !inAuthGroup) {
       // Redirect to login if not authenticated
-      router.replace('/(auth)/login');
+      router.replace('/(auth)');
     } else if (isAuthenticated && inAuthGroup) {
       // Redirect to app if authenticated but still in auth screens
       router.replace('/(app)');
@@ -35,7 +35,7 @@ function RootLayoutNav() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(app)" options={{ headerShown: false }} />
