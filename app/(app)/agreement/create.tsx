@@ -10,6 +10,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const RATE_TYPES = [
   { id: 'daily', label: 'Daily', multiplier: 1 },
@@ -96,23 +99,34 @@ export default function CreateAgreementScreen() {
   };
 
   const renderStepIndicator = () => (
-    <View className="flex-row items-center justify-center py-4">
-      {[1, 2, 3].map((s) => (
-        <View key={s} className="flex-row items-center">
+    <View style={s.stepRow}>
+      {[1, 2, 3].map((n) => (
+        <View key={n} style={s.stepItem}>
           <View
-            className={`w-8 h-8 rounded-full items-center justify-center ${
-              step >= s ? 'bg-orange-500' : 'bg-gray-700'
-            }`}
+            style={[
+              s.stepCircle,
+              { backgroundColor: step >= n ? T.amber : T.bg },
+            ]}
           >
-            {step > s ? (
-              <Ionicons name="checkmark" size={18} color="white" />
+            {step > n ? (
+              <Ionicons name="checkmark" size={18} color={T.white} />
             ) : (
-              <Text className="text-white font-bold">{s}</Text>
+              <Text
+                style={{
+                  color: step >= n ? T.white : T.textSecondary,
+                  fontWeight: '700',
+                }}
+              >
+                {n}
+              </Text>
             )}
           </View>
-          {s < 3 && (
+          {n < 3 && (
             <View
-              className={`w-12 h-1 ${step > s ? 'bg-orange-500' : 'bg-gray-700'}`}
+              style={[
+                s.stepConnector,
+                { backgroundColor: step > n ? T.amber : T.bg },
+              ]}
             />
           )}
         </View>
@@ -121,67 +135,75 @@ export default function CreateAgreementScreen() {
   );
 
   const renderStep1 = () => (
-    <View className="px-4">
-      <Text className="text-white text-lg font-semibold mb-4">Select Worker</Text>
+    <View style={s.sectionPadding}>
+      <Text style={s.sectionTitle}>Select Worker</Text>
 
-      {MOCK_WORKERS.map((worker) => (
-        <TouchableOpacity
-          key={worker.id}
-          className={`bg-gray-800 rounded-xl p-4 mb-3 border-2 ${
-            selectedWorker?.id === worker.id ? 'border-orange-500' : 'border-transparent'
-          }`}
-          onPress={() => setSelectedWorker(worker)}
-        >
-          <View className="flex-row items-center">
-            <View className="w-14 h-14 bg-gray-700 rounded-full items-center justify-center">
-              <Ionicons name="person" size={28} color="#6B7280" />
-            </View>
-            <View className="flex-1 ml-4">
-              <Text className="text-white font-semibold text-lg">{worker.name}</Text>
-              <View className="flex-row flex-wrap mt-1">
-                {worker.skills.map((skill, index) => (
-                  <View key={index} className="bg-gray-700 px-2 py-0.5 rounded mr-2">
-                    <Text className="text-gray-300 text-xs">{skill}</Text>
-                  </View>
-                ))}
+      {MOCK_WORKERS.map((worker) => {
+        const isSelected = selectedWorker?.id === worker.id;
+        return (
+          <TouchableOpacity
+            key={worker.id}
+            style={[
+              s.workerCard,
+              {
+                borderColor: isSelected ? T.amber : T.border,
+              },
+            ]}
+            onPress={() => setSelectedWorker(worker)}
+          >
+            <View style={s.workerRow}>
+              <View style={s.workerAvatar}>
+                <Ionicons name="person" size={28} color={T.textSecondary} />
               </View>
-              <View className="flex-row items-center mt-2">
-                <Ionicons name="star" size={14} color="#F59E0B" />
-                <Text className="text-white ml-1">{worker.rating}</Text>
-                <Text className="text-gray-500 mx-2">•</Text>
-                <Text className="text-orange-500 font-medium">₹{worker.dailyRate}/day</Text>
+              <View style={{ flex: 1, marginLeft: 16 }}>
+                <Text style={s.workerName}>{worker.name}</Text>
+                <View style={s.skillsRow}>
+                  {worker.skills.map((skill, index) => (
+                    <View key={index} style={s.skillBadge}>
+                      <Text style={s.skillText}>{skill}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={s.ratingRow}>
+                  <Ionicons name="star" size={14} color={T.amber} />
+                  <Text style={s.ratingText}>{worker.rating}</Text>
+                  <Text style={{ color: T.textMuted, marginHorizontal: 8 }}>
+                    •
+                  </Text>
+                  <Text style={s.rateText}>₹{worker.dailyRate}/day</Text>
+                </View>
               </View>
+              {isSelected && (
+                <Ionicons name="checkmark-circle" size={24} color={T.amber} />
+              )}
             </View>
-            {selectedWorker?.id === worker.id && (
-              <Ionicons name="checkmark-circle" size={24} color="#F97316" />
-            )}
-          </View>
-        </TouchableOpacity>
-      ))}
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 
   const renderStep2 = () => (
-    <View className="px-4">
-      <Text className="text-white text-lg font-semibold mb-4">Agreement Details</Text>
+    <View style={s.sectionPadding}>
+      <Text style={s.sectionTitle}>Agreement Details</Text>
 
-      <View className="mb-4">
-        <Text className="text-gray-400 mb-2">Title *</Text>
+      <View style={s.fieldGroup}>
+        <Text style={s.label}>Title *</Text>
         <TextInput
-          className="bg-gray-800 text-white rounded-xl px-4 py-3"
+          style={s.input}
           placeholder="e.g., Mason Work for Villa Project"
-          placeholderTextColor="#6B7280"
+          placeholderTextColor={T.textMuted}
           value={title}
           onChangeText={setTitle}
         />
       </View>
 
-      <View className="mb-4">
-        <Text className="text-gray-400 mb-2">Scope of Work *</Text>
+      <View style={s.fieldGroup}>
+        <Text style={s.label}>Scope of Work *</Text>
         <TextInput
-          className="bg-gray-800 text-white rounded-xl px-4 py-3"
+          style={[s.input, { minHeight: 100, textAlignVertical: 'top' }]}
           placeholder="Describe the work to be done..."
-          placeholderTextColor="#6B7280"
+          placeholderTextColor={T.textMuted}
           value={scopeOfWork}
           onChangeText={setScopeOfWork}
           multiline
@@ -190,93 +212,103 @@ export default function CreateAgreementScreen() {
         />
       </View>
 
-      <View className="flex-row space-x-3 mb-4">
-        <View className="flex-1">
-          <Text className="text-gray-400 mb-2">Start Date *</Text>
+      <View style={s.dateRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.label}>Start Date *</Text>
           <TextInput
-            className="bg-gray-800 text-white rounded-xl px-4 py-3"
+            style={s.input}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={T.textMuted}
             value={startDate}
             onChangeText={setStartDate}
           />
         </View>
-        <View className="flex-1">
-          <Text className="text-gray-400 mb-2">End Date *</Text>
+        <View style={{ width: 12 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={s.label}>End Date *</Text>
           <TextInput
-            className="bg-gray-800 text-white rounded-xl px-4 py-3"
+            style={s.input}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={T.textMuted}
             value={endDate}
             onChangeText={setEndDate}
           />
         </View>
       </View>
 
-      <View className="mb-4">
-        <Text className="text-gray-400 mb-2">Rate Type *</Text>
-        <View className="flex-row space-x-2">
-          {RATE_TYPES.map((type) => (
-            <TouchableOpacity
-              key={type.id}
-              className={`flex-1 py-3 rounded-xl ${
-                rateType === type.id ? 'bg-orange-500' : 'bg-gray-800'
-              }`}
-              onPress={() => setRateType(type.id)}
-            >
-              <Text
-                className={`text-center font-medium ${
-                  rateType === type.id ? 'text-white' : 'text-gray-400'
-                }`}
+      <View style={s.fieldGroup}>
+        <Text style={s.label}>Rate Type *</Text>
+        <View style={s.rateTypeRow}>
+          {RATE_TYPES.map((type) => {
+            const isActive = rateType === type.id;
+            return (
+              <TouchableOpacity
+                key={type.id}
+                style={[
+                  s.rateTypeTab,
+                  {
+                    backgroundColor: isActive ? T.navy : T.bg,
+                  },
+                ]}
+                onPress={() => setRateType(type.id)}
               >
-                {type.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    fontWeight: '500',
+                    color: isActive ? T.white : T.textSecondary,
+                  }}
+                >
+                  {type.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
-      <View className="mb-4">
-        <Text className="text-gray-400 mb-2">Rate Amount (₹) *</Text>
+      <View style={s.fieldGroup}>
+        <Text style={s.label}>Rate Amount (₹) *</Text>
         <TextInput
-          className="bg-gray-800 text-white rounded-xl px-4 py-3"
+          style={s.input}
           placeholder={`Amount per ${rateType}`}
-          placeholderTextColor="#6B7280"
+          placeholderTextColor={T.textMuted}
           value={rateAmount}
           onChangeText={setRateAmount}
           keyboardType="numeric"
         />
       </View>
 
-      <View className="mb-4">
-        <Text className="text-gray-400 mb-2">Work Location</Text>
+      <View style={s.fieldGroup}>
+        <Text style={s.label}>Work Location</Text>
         <TextInput
-          className="bg-gray-800 text-white rounded-xl px-4 py-3"
+          style={s.input}
           placeholder="Address of work site"
-          placeholderTextColor="#6B7280"
+          placeholderTextColor={T.textMuted}
           value={workLocation}
           onChangeText={setWorkLocation}
         />
       </View>
 
-      <View className="flex-row space-x-3 mb-4">
-        <View className="flex-1">
-          <Text className="text-gray-400 mb-2">Working Hours/Day</Text>
+      <View style={s.dateRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.label}>Working Hours/Day</Text>
           <TextInput
-            className="bg-gray-800 text-white rounded-xl px-4 py-3"
+            style={s.input}
             placeholder="8"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={T.textMuted}
             value={workingHours}
             onChangeText={setWorkingHours}
             keyboardType="numeric"
           />
         </View>
-        <View className="flex-1">
-          <Text className="text-gray-400 mb-2">Notice Period (Days)</Text>
+        <View style={{ width: 12 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={s.label}>Notice Period (Days)</Text>
           <TextInput
-            className="bg-gray-800 text-white rounded-xl px-4 py-3"
+            style={s.input}
             placeholder="7"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={T.textMuted}
             value={terminationNoticeDays}
             onChangeText={setTerminationNoticeDays}
             keyboardType="numeric"
@@ -287,15 +319,15 @@ export default function CreateAgreementScreen() {
   );
 
   const renderStep3 = () => (
-    <View className="px-4">
-      <Text className="text-white text-lg font-semibold mb-4">Terms & Review</Text>
+    <View style={s.sectionPadding}>
+      <Text style={s.sectionTitle}>Terms & Review</Text>
 
-      <View className="mb-4">
-        <Text className="text-gray-400 mb-2">Termination Terms</Text>
+      <View style={s.fieldGroup}>
+        <Text style={s.label}>Termination Terms</Text>
         <TextInput
-          className="bg-gray-800 text-white rounded-xl px-4 py-3"
+          style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]}
           placeholder="Conditions for termination..."
-          placeholderTextColor="#6B7280"
+          placeholderTextColor={T.textMuted}
           value={terminationTerms}
           onChangeText={setTerminationTerms}
           multiline
@@ -304,12 +336,12 @@ export default function CreateAgreementScreen() {
         />
       </View>
 
-      <View className="mb-4">
-        <Text className="text-gray-400 mb-2">Additional Terms (Optional)</Text>
+      <View style={s.fieldGroup}>
+        <Text style={s.label}>Additional Terms (Optional)</Text>
         <TextInput
-          className="bg-gray-800 text-white rounded-xl px-4 py-3"
+          style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]}
           placeholder="Any other terms or conditions..."
-          placeholderTextColor="#6B7280"
+          placeholderTextColor={T.textMuted}
           value={additionalTerms}
           onChangeText={setAdditionalTerms}
           multiline
@@ -319,44 +351,49 @@ export default function CreateAgreementScreen() {
       </View>
 
       {/* Agreement Summary */}
-      <View className="bg-gray-800 rounded-xl p-4 mb-4">
-        <Text className="text-white font-semibold text-lg mb-3">Agreement Summary</Text>
+      <View style={s.summaryCard}>
+        <Text style={s.summaryTitle}>Agreement Summary</Text>
 
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-gray-400">Worker</Text>
-          <Text className="text-white">{selectedWorker?.name}</Text>
+        <View style={s.summaryRow}>
+          <Text style={s.summaryLabel}>Worker</Text>
+          <Text style={s.summaryValue}>{selectedWorker?.name}</Text>
         </View>
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-gray-400">Title</Text>
-          <Text className="text-white" numberOfLines={1}>{title || '-'}</Text>
+        <View style={s.summaryRow}>
+          <Text style={s.summaryLabel}>Title</Text>
+          <Text style={s.summaryValue} numberOfLines={1}>
+            {title || '-'}
+          </Text>
         </View>
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-gray-400">Duration</Text>
-          <Text className="text-white">{startDate} to {endDate}</Text>
+        <View style={s.summaryRow}>
+          <Text style={s.summaryLabel}>Duration</Text>
+          <Text style={s.summaryValue}>
+            {startDate} to {endDate}
+          </Text>
         </View>
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-gray-400">Rate</Text>
-          <Text className="text-orange-500 font-medium">
+        <View style={s.summaryRow}>
+          <Text style={s.summaryLabel}>Rate</Text>
+          <Text style={s.summaryAmber}>
             ₹{rateAmount || 0}/{rateType}
           </Text>
         </View>
-        <View className="flex-row justify-between pt-3 border-t border-gray-700">
-          <Text className="text-white font-semibold">Total Contract Value</Text>
-          <Text className="text-orange-500 font-bold text-xl">
+        <View style={s.summaryTotalRow}>
+          <Text style={s.summaryTotalLabel}>Total Contract Value</Text>
+          <Text style={s.summaryTotalValue}>
             ₹{calculateTotalValue().toLocaleString()}
           </Text>
         </View>
       </View>
 
       {/* Info Box */}
-      <View className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/30">
-        <View className="flex-row items-start">
+      <View style={s.infoBox}>
+        <View style={s.infoRow}>
           <Ionicons name="information-circle" size={20} color="#3B82F6" />
-          <View className="ml-3 flex-1">
-            <Text className="text-blue-400 font-medium">How it works</Text>
-            <Text className="text-gray-400 text-sm mt-1">
-              Once you create this agreement, it will be sent to the worker for review and signature.
-              Funds will be held in escrow until work is completed.
+          <View style={{ marginLeft: 12, flex: 1 }}>
+            <Text style={s.infoTitle}>How it works</Text>
+            <Text style={s.infoBody}>
+              Once you create this agreement, it will be sent to the worker for
+              review and signature. Funds will be held in escrow until work is
+              completed.
             </Text>
           </View>
         </View>
@@ -364,43 +401,46 @@ export default function CreateAgreementScreen() {
     </View>
   );
 
+  const isNextDisabled = (step === 1 && !selectedWorker) || isSubmitting;
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.safeArea}>
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 border-b border-gray-800">
+      <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color="white" />
+          <Ionicons name="close" size={24} color={T.text} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-bold ml-4">Create Agreement</Text>
+        <Text style={s.headerTitle}>Create Agreement</Text>
       </View>
 
       {/* Step Indicator */}
       {renderStepIndicator()}
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
       </ScrollView>
 
       {/* Navigation Buttons */}
-      <View className="px-4 py-4 border-t border-gray-800">
-        <View className="flex-row space-x-3">
+      <View style={s.footer}>
+        <View style={s.footerRow}>
           {step > 1 && (
             <TouchableOpacity
-              className="flex-1 bg-gray-700 py-4 rounded-xl"
+              style={s.backButton}
               onPress={() => setStep(step - 1)}
             >
-              <Text className="text-white text-center font-semibold">Back</Text>
+              <Text style={s.backButtonText}>Back</Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
-            className={`flex-1 py-4 rounded-xl ${
-              (step === 1 && !selectedWorker) || isSubmitting
-                ? 'bg-gray-600'
-                : 'bg-orange-500'
-            }`}
+            style={[
+              s.continueButton,
+              {
+                backgroundColor: isNextDisabled ? T.textMuted : T.amber,
+              },
+            ]}
             onPress={() => {
               if (step < 3) {
                 setStep(step + 1);
@@ -408,9 +448,9 @@ export default function CreateAgreementScreen() {
                 handleSubmit();
               }
             }}
-            disabled={(step === 1 && !selectedWorker) || isSubmitting}
+            disabled={isNextDisabled}
           >
-            <Text className="text-white text-center font-semibold">
+            <Text style={s.continueButtonText}>
               {isSubmitting
                 ? 'Creating...'
                 : step === 3
@@ -423,3 +463,261 @@ export default function CreateAgreementScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  /* Root */
+  safeArea: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  /* Header */
+  header: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+  headerTitle: {
+    color: T.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginLeft: 16,
+  },
+
+  /* Step Indicator */
+  stepRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 16,
+  },
+  stepItem: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  stepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  stepConnector: {
+    width: 48,
+    height: 4,
+  },
+
+  /* General */
+  sectionPadding: {
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
+    color: T.text,
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginBottom: 16,
+  },
+  fieldGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    color: T.textSecondary,
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  input: {
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: T.text,
+    fontSize: 15,
+  },
+
+  /* Step 1 - Worker cards */
+  workerCard: {
+    backgroundColor: T.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+  },
+  workerRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  workerAvatar: {
+    width: 56,
+    height: 56,
+    backgroundColor: T.bg,
+    borderRadius: 28,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  workerName: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 18,
+  },
+  skillsRow: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    marginTop: 4,
+  },
+  skillBadge: {
+    backgroundColor: T.bg,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  skillText: {
+    color: T.textSecondary,
+    fontSize: 12,
+  },
+  ratingRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 8,
+  },
+  ratingText: {
+    color: T.text,
+    marginLeft: 4,
+  },
+  rateText: {
+    color: T.amber,
+    fontWeight: '500' as const,
+  },
+
+  /* Step 2 - Date row */
+  dateRow: {
+    flexDirection: 'row' as const,
+    marginBottom: 16,
+  },
+  rateTypeRow: {
+    flexDirection: 'row' as const,
+    gap: 8,
+  },
+  rateTypeTab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+
+  /* Step 3 - Summary */
+  summaryCard: {
+    backgroundColor: T.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  summaryTitle: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 18,
+    marginBottom: 12,
+  },
+  summaryRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    color: T.textSecondary,
+  },
+  summaryValue: {
+    color: T.text,
+  },
+  summaryAmber: {
+    color: T.amber,
+    fontWeight: '500' as const,
+  },
+  summaryTotalRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  summaryTotalLabel: {
+    color: T.text,
+    fontWeight: '600' as const,
+  },
+  summaryTotalValue: {
+    color: T.amber,
+    fontWeight: '700' as const,
+    fontSize: 20,
+  },
+
+  /* Info box */
+  infoBox: {
+    backgroundColor: 'rgba(59,130,246,0.08)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.3)',
+  },
+  infoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+  },
+  infoTitle: {
+    color: '#3B82F6',
+    fontWeight: '500' as const,
+    fontSize: 15,
+  },
+  infoBody: {
+    color: T.textSecondary,
+    fontSize: 13,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+
+  /* Footer / Nav buttons */
+  footer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  footerRow: {
+    flexDirection: 'row' as const,
+    gap: 12,
+  },
+  backButton: {
+    flex: 1,
+    backgroundColor: T.bg,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  backButtonText: {
+    color: T.text,
+    textAlign: 'center' as const,
+    fontWeight: '600' as const,
+    fontSize: 15,
+  },
+  continueButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  continueButtonText: {
+    color: T.white,
+    textAlign: 'center' as const,
+    fontWeight: '600' as const,
+    fontSize: 15,
+  },
+};
