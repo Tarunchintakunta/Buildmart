@@ -4,6 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/context/AuthContext';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const AGREEMENT_TABS = ['All', 'Active', 'Pending', 'Completed'];
 
@@ -83,17 +86,17 @@ const MOCK_AGREEMENTS = [
 const getStatusStyle = (status: string) => {
   switch (status) {
     case 'active':
-      return { bg: 'bg-green-500/20', text: 'text-green-500', label: 'Active' };
+      return { bg: 'rgba(16,185,129,0.15)', color: T.success, label: 'Active' };
     case 'pending_signature':
-      return { bg: 'bg-yellow-500/20', text: 'text-yellow-500', label: 'Pending Signature' };
+      return { bg: 'rgba(242,150,13,0.15)', color: T.amber, label: 'Pending Signature' };
     case 'completed':
-      return { bg: 'bg-blue-500/20', text: 'text-blue-500', label: 'Completed' };
+      return { bg: 'rgba(59,130,246,0.15)', color: T.info, label: 'Completed' };
     case 'terminated':
-      return { bg: 'bg-red-500/20', text: 'text-red-500', label: 'Terminated' };
+      return { bg: 'rgba(239,68,68,0.15)', color: '#EF4444', label: 'Terminated' };
     case 'draft':
-      return { bg: 'bg-gray-500/20', text: 'text-gray-500', label: 'Draft' };
+      return { bg: 'rgba(107,114,128,0.15)', color: T.textSecondary, label: 'Draft' };
     default:
-      return { bg: 'bg-gray-500/20', text: 'text-gray-500', label: status };
+      return { bg: 'rgba(107,114,128,0.15)', color: T.textSecondary, label: status };
   }
 };
 
@@ -132,71 +135,77 @@ export default function AgreementsScreen() {
 
     return (
       <TouchableOpacity
-        className={`bg-gray-800 rounded-xl p-4 mb-3 ${isPending ? 'border-l-4 border-yellow-500' : ''}`}
+        style={[
+          s.card,
+          isPending && { borderLeftWidth: 4, borderLeftColor: T.amber },
+        ]}
         onPress={() => router.push(`/(app)/agreement/${agreement.id}`)}
+        activeOpacity={0.7}
       >
-        <View className="flex-row justify-between items-start mb-3">
-          <View className="flex-1">
-            <Text className="text-white font-semibold text-lg">{agreement.title}</Text>
-            <Text className="text-gray-400 text-sm">{agreement.agreementNumber}</Text>
+        {/* Title Row */}
+        <View style={s.cardHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.cardTitle}>{agreement.title}</Text>
+            <Text style={s.cardSubtitle}>{agreement.agreementNumber}</Text>
           </View>
-          <View className={`px-3 py-1 rounded-full ${statusStyle.bg}`}>
-            <Text className={`text-sm font-medium ${statusStyle.text}`}>
+          <View style={[s.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <Text style={[s.statusText, { color: statusStyle.color }]}>
               {statusStyle.label}
             </Text>
           </View>
         </View>
 
         {/* Parties */}
-        <View className="flex-row items-center mb-2">
-          <Ionicons name="business" size={16} color="#9CA3AF" />
-          <Text className="text-gray-300 ml-2">
+        <View style={s.infoRow}>
+          <Ionicons name="business" size={16} color={T.textMuted} />
+          <Text style={s.infoText}>
             {isWorker ? agreement.contractor : agreement.worker}
           </Text>
         </View>
 
         {/* Location */}
-        <View className="flex-row items-center mb-3">
-          <Ionicons name="location" size={16} color="#9CA3AF" />
-          <Text className="text-gray-400 ml-2" numberOfLines={1}>
+        <View style={[s.infoRow, { marginBottom: 14 }]}>
+          <Ionicons name="location" size={16} color={T.textMuted} />
+          <Text style={s.infoTextMuted} numberOfLines={1}>
             {agreement.workLocation}
           </Text>
         </View>
 
         {/* Duration & Rate */}
-        <View className="flex-row items-center justify-between py-3 border-t border-gray-700">
+        <View style={s.dividerRow}>
           <View>
-            <Text className="text-gray-500 text-xs">Duration</Text>
-            <Text className="text-white">
+            <Text style={s.labelSmall}>Duration</Text>
+            <Text style={s.valueText}>
               {agreement.startDate} - {agreement.endDate}
             </Text>
           </View>
-          <View className="items-end">
-            <Text className="text-gray-500 text-xs">Rate</Text>
-            <Text className="text-orange-500 font-bold">
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={s.labelSmall}>Rate</Text>
+            <Text style={s.rateText}>
               {getRateLabel(agreement.rateType, agreement.rateAmount)}
             </Text>
           </View>
         </View>
 
         {/* Total Value */}
-        <View className="flex-row items-center justify-between pt-3 border-t border-gray-700">
-          <Text className="text-gray-400">Total Contract Value</Text>
-          <Text className="text-white font-bold text-lg">
+        <View style={s.totalRow}>
+          <Text style={s.totalLabel}>Total Contract Value</Text>
+          <Text style={s.totalValue}>
             ₹{agreement.totalValue.toLocaleString()}
           </Text>
         </View>
 
         {/* Actions for pending agreements */}
         {isPending && isWorker && (
-          <View className="flex-row space-x-3 mt-4 pt-3 border-t border-gray-700">
-            <TouchableOpacity className="flex-1 bg-green-500 py-3 rounded-lg flex-row items-center justify-center">
-              <Ionicons name="checkmark-circle" size={18} color="white" />
-              <Text className="text-white font-semibold ml-2">Sign Agreement</Text>
+          <View style={s.actionsRow}>
+            <TouchableOpacity style={s.signButton} activeOpacity={0.7}>
+              <Ionicons name="checkmark-circle" size={18} color={T.white} />
+              <Text style={s.signButtonText}>Sign Agreement</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="flex-1 bg-gray-700 py-3 rounded-lg flex-row items-center justify-center">
-              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-              <Text className="text-gray-300 font-semibold ml-2">Decline</Text>
+            <View style={{ width: 12 }} />
+            <TouchableOpacity style={s.declineButton} activeOpacity={0.7}>
+              <Ionicons name="close-circle" size={18} color={T.textMuted} />
+              <Text style={s.declineButtonText}>Decline</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -205,51 +214,58 @@ export default function AgreementsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.container}>
       {/* Header */}
-      <View className="px-4 py-3 border-b border-gray-800 flex-row items-center justify-between">
-        <Text className="text-white text-2xl font-bold">
+      <View style={s.header}>
+        <Text style={s.headerTitle}>
           {isContractor ? 'My Contracts' : 'Agreements'}
         </Text>
         {isContractor && (
           <TouchableOpacity
-            className="bg-orange-500 px-4 py-2 rounded-full flex-row items-center"
+            style={s.newButton}
             onPress={() => router.push('/(app)/agreement/create')}
+            activeOpacity={0.7}
           >
-            <Ionicons name="add" size={18} color="white" />
-            <Text className="text-white font-medium ml-1">New</Text>
+            <Ionicons name="add" size={18} color={T.white} />
+            <Text style={s.newButtonText}>New</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Tabs */}
-      <View className="flex-row px-4 py-3 border-b border-gray-800">
-        {AGREEMENT_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            className={`flex-1 py-2 rounded-lg mr-2 ${
-              selectedTab === tab ? 'bg-orange-500' : 'bg-gray-800'
-            }`}
-            onPress={() => setSelectedTab(tab)}
-          >
-            <Text
-              className={`text-center font-medium ${
-                selectedTab === tab ? 'text-white' : 'text-gray-400'
-              }`}
+      <View style={s.tabBar}>
+        {AGREEMENT_TABS.map((tab) => {
+          const isActive = selectedTab === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                s.tab,
+                isActive ? s.tabActive : s.tabInactive,
+              ]}
+              onPress={() => setSelectedTab(tab)}
+              activeOpacity={0.7}
             >
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  s.tabText,
+                  isActive ? s.tabTextActive : s.tabTextInactive,
+                ]}
+              >
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Pending Notification for Workers */}
       {isWorker && selectedTab === 'All' && MOCK_AGREEMENTS.some(a => a.status === 'pending_signature') && (
-        <View className="mx-4 mt-3 bg-yellow-500/10 rounded-xl p-4 flex-row items-center border border-yellow-500/30">
-          <Ionicons name="alert-circle" size={24} color="#EAB308" />
-          <View className="ml-3 flex-1">
-            <Text className="text-yellow-500 font-semibold">Action Required</Text>
-            <Text className="text-gray-400 text-sm">
+        <View style={s.alertBanner}>
+          <Ionicons name="alert-circle" size={24} color={T.amber} />
+          <View style={{ marginLeft: 12, flex: 1 }}>
+            <Text style={s.alertTitle}>Action Required</Text>
+            <Text style={s.alertSubtitle}>
               You have pending agreements to sign
             </Text>
           </View>
@@ -264,15 +280,16 @@ export default function AgreementsScreen() {
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View className="items-center justify-center py-12">
-            <Ionicons name="document-text" size={48} color="#6B7280" />
-            <Text className="text-gray-400 mt-4">No agreements found</Text>
+          <View style={s.emptyContainer}>
+            <Ionicons name="document-text" size={48} color={T.textSecondary} />
+            <Text style={s.emptyText}>No agreements found</Text>
             {isContractor && (
               <TouchableOpacity
-                className="bg-orange-500 px-6 py-3 rounded-full mt-4"
+                style={s.emptyButton}
                 onPress={() => router.push('/(app)/agreement/create')}
+                activeOpacity={0.7}
               >
-                <Text className="text-white font-semibold">Create Agreement</Text>
+                <Text style={s.emptyButtonText}>Create Agreement</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -281,3 +298,272 @@ export default function AgreementsScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  container: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  // Header
+  header: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800' as const,
+    color: T.text,
+  },
+  newButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: T.amber,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 9999,
+  },
+  newButtonText: {
+    color: T.white,
+    fontWeight: '600' as const,
+    fontSize: 14,
+    marginLeft: 4,
+  },
+
+  // Tabs
+  tabBar: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+    gap: 8,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 9999,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  tabActive: {
+    backgroundColor: T.navy,
+  },
+  tabInactive: {
+    backgroundColor: T.bg,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  tabTextActive: {
+    color: T.white,
+  },
+  tabTextInactive: {
+    color: T.textSecondary,
+  },
+
+  // Alert Banner
+  alertBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: 'rgba(242,150,13,0.1)',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: 'rgba(242,150,13,0.3)',
+  },
+  alertTitle: {
+    color: T.amber,
+    fontWeight: '700' as const,
+    fontSize: 15,
+  },
+  alertSubtitle: {
+    color: T.textSecondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+
+  // Card
+  card: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'flex-start' as const,
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: T.text,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: T.textMuted,
+    marginTop: 2,
+  },
+
+  // Status Badge
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 9999,
+    marginLeft: 10,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+
+  // Info Rows
+  infoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 6,
+  },
+  infoText: {
+    color: T.textSecondary,
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  infoTextMuted: {
+    color: T.textMuted,
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
+
+  // Duration & Rate
+  dividerRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  labelSmall: {
+    fontSize: 11,
+    color: T.textMuted,
+    fontWeight: '500' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  valueText: {
+    fontSize: 14,
+    color: T.text,
+    fontWeight: '500' as const,
+    marginTop: 2,
+  },
+  rateText: {
+    fontSize: 15,
+    color: T.amber,
+    fontWeight: '700' as const,
+    marginTop: 2,
+  },
+
+  // Total Row
+  totalRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: T.textSecondary,
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: T.text,
+  },
+
+  // Actions
+  actionsRow: {
+    flexDirection: 'row' as const,
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  signButton: {
+    flex: 1,
+    backgroundColor: T.success,
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  signButtonText: {
+    color: T.white,
+    fontWeight: '700' as const,
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  declineButton: {
+    flex: 1,
+    backgroundColor: T.bg,
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  declineButtonText: {
+    color: T.textSecondary,
+    fontWeight: '700' as const,
+    fontSize: 14,
+    marginLeft: 8,
+  },
+
+  // Empty State
+  emptyContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 48,
+  },
+  emptyText: {
+    color: T.textSecondary,
+    fontSize: 15,
+    marginTop: 16,
+  },
+  emptyButton: {
+    backgroundColor: T.amber,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 9999,
+    marginTop: 16,
+  },
+  emptyButtonText: {
+    color: T.white,
+    fontWeight: '700' as const,
+    fontSize: 15,
+  },
+};

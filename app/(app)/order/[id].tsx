@@ -1,216 +1,178 @@
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LightTheme } from '../../../src/theme/designSystem';
+import { getProductImage } from '../../../src/constants/images';
 
-// Mock order data
-const MOCK_ORDER = {
-  id: 'o1',
-  orderNumber: 'ORD-2024-0001',
+const T = LightTheme;
+
+const ORDER = {
+  number: 'BM-98234',
+  date: 'Oct 28, 2023',
   status: 'delivered',
-  shop: {
-    name: 'Anand Hardware & Building Materials',
-    phone: '9876543401',
-    address: '10 KR Market, Bangalore',
-  },
-  customer: {
-    name: 'Rahul Sharma',
-    phone: '9876543101',
-    address: '123 MG Road, Koramangala, Bangalore',
-  },
-  driver: {
-    name: 'Krishna Driver',
-    phone: '9876543501',
-    vehicle: 'Mini Truck - KA01AB1234',
-  },
+  address: { name: 'Skyline Construction Site', line: '45-B, Industrial Area, Sector 62,', city: 'Noida, Uttar Pradesh - 201301' },
   items: [
-    { name: 'UltraTech Cement 50kg', quantity: 10, price: 380, total: 3800 },
-    { name: 'Cement Nails 3 inch', quantity: 5, price: 120, total: 600 },
+    { name: 'Premium Portland Cement', spec: '50kg Bag . UltraTech', unitPrice: 370, qty: 5 },
+    { name: 'TMT Steel Bars', spec: '12mm Fe500D . Tata Tiscon', unitPrice: 1240, qty: 10 },
+    { name: 'Ceramic Floor Tiles', spec: '2x2 ft . Kajaria Marble Finish', unitPrice: 850, qty: 8 },
   ],
-  subtotal: 4400,
-  deliveryFee: 150,
-  tax: 792,
-  total: 5342,
-  createdAt: '2024-02-10 09:30 AM',
-  deliveredAt: '2024-02-10 10:15 AM',
-  estimatedDelivery: '45 mins',
-};
-
-const getStatusInfo = (status: string) => {
-  const statusMap: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-    pending: { label: 'Pending', color: '#EAB308', bg: 'bg-yellow-500/20', icon: 'time' },
-    accepted: { label: 'Accepted', color: '#F97316', bg: 'bg-orange-500/20', icon: 'checkmark' },
-    processing: { label: 'Processing', color: '#8B5CF6', bg: 'bg-purple-500/20', icon: 'cube' },
-    out_for_delivery: { label: 'Out for Delivery', color: '#3B82F6', bg: 'bg-blue-500/20', icon: 'car' },
-    delivered: { label: 'Delivered', color: '#22C55E', bg: 'bg-green-500/20', icon: 'checkmark-circle' },
-    cancelled: { label: 'Cancelled', color: '#EF4444', bg: 'bg-red-500/20', icon: 'close-circle' },
-  };
-  return statusMap[status] || statusMap.pending;
+  deliveryFee: 0,
+  gstin: '09AAACH7409R1ZZ',
+  paymentMode: 'Credit Card (**** 4421)',
 };
 
 export default function OrderDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const order = MOCK_ORDER;
-  const statusInfo = getStatusInfo(order.status);
+
+  const itemsTotal = ORDER.items.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
+  const cgst = Math.round(itemsTotal * 0.09);
+  const sgst = cgst;
+  const grandTotal = itemsTotal + ORDER.deliveryFee + cgst + sgst;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 border-b border-gray-800">
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.headerBtn}>
+          <Ionicons name="arrow-back" size={22} color={T.text} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-bold ml-4">Order Details</Text>
+        <Text style={s.headerTitle}>Order Details</Text>
+        <TouchableOpacity style={s.headerBtn}>
+          <Ionicons name="share-outline" size={20} color={T.text} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Order Header */}
-        <View className="px-4 py-4">
-          <View className="bg-gray-800 rounded-xl p-4">
-            <View className="flex-row justify-between items-start mb-3">
-              <View>
-                <Text className="text-white text-xl font-bold">{order.orderNumber}</Text>
-                <Text className="text-gray-400 text-sm">{order.createdAt}</Text>
-              </View>
-              <View className={`flex-row items-center px-3 py-2 rounded-full ${statusInfo.bg}`}>
-                <Ionicons name={statusInfo.icon as any} size={16} color={statusInfo.color} />
-                <Text style={{ color: statusInfo.color }} className="ml-2 font-medium">
-                  {statusInfo.label}
-                </Text>
-              </View>
-            </View>
-
-            {order.status === 'delivered' && (
-              <View className="flex-row items-center bg-green-500/10 px-3 py-2 rounded-lg">
-                <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
-                <Text className="text-green-500 ml-2">Delivered at {order.deliveredAt}</Text>
-              </View>
-            )}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Status Banner */}
+        <View style={s.statusBanner}>
+          <View style={s.statusIcon}>
+            <Ionicons name="checkmark-circle" size={28} color={T.white} />
+          </View>
+          <View>
+            <Text style={s.statusTitle}>Order Delivered</Text>
+            <Text style={s.statusSub}>Order #{ORDER.number} . {ORDER.date}</Text>
           </View>
         </View>
 
-        {/* Delivery Timeline */}
-        <View className="px-4 pb-4">
-          <Text className="text-white text-lg font-semibold mb-3">Delivery Details</Text>
-          <View className="bg-gray-800 rounded-xl p-4">
-            {/* Pickup */}
-            <View className="flex-row items-start mb-4">
-              <View className="items-center">
-                <View className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center">
-                  <Ionicons name="storefront" size={16} color="white" />
-                </View>
-                <View className="w-0.5 h-12 bg-gray-600 my-1" />
-              </View>
-              <View className="ml-4 flex-1">
-                <Text className="text-gray-400 text-xs">PICKUP FROM</Text>
-                <Text className="text-white font-medium">{order.shop.name}</Text>
-                <Text className="text-gray-400 text-sm">{order.shop.address}</Text>
-                <TouchableOpacity className="flex-row items-center mt-2">
-                  <Ionicons name="call" size={14} color="#F97316" />
-                  <Text className="text-orange-500 ml-1">{order.shop.phone}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+        <View style={s.divider} />
 
-            {/* Delivery */}
-            <View className="flex-row items-start">
-              <View className="items-center">
-                <View className="w-8 h-8 bg-green-500 rounded-full items-center justify-center">
-                  <Ionicons name="location" size={16} color="white" />
-                </View>
-              </View>
-              <View className="ml-4 flex-1">
-                <Text className="text-gray-400 text-xs">DELIVER TO</Text>
-                <Text className="text-white font-medium">{order.customer.name}</Text>
-                <Text className="text-gray-400 text-sm">{order.customer.address}</Text>
-              </View>
+        {/* Delivery Address */}
+        <View style={s.section}>
+          <Text style={s.sectionLabel}>DELIVERY ADDRESS</Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+            <Ionicons name="location-outline" size={18} color={T.textMuted} />
+            <View>
+              <Text style={s.addressName}>{ORDER.address.name}</Text>
+              <Text style={s.addressLine}>{ORDER.address.line}</Text>
+              <Text style={s.addressLine}>{ORDER.address.city}</Text>
             </View>
           </View>
         </View>
 
-        {/* Driver Info */}
-        {order.driver && (
-          <View className="px-4 pb-4">
-            <Text className="text-white text-lg font-semibold mb-3">Driver</Text>
-            <View className="bg-gray-800 rounded-xl p-4 flex-row items-center">
-              <View className="w-14 h-14 bg-gray-700 rounded-full items-center justify-center">
-                <Ionicons name="person" size={28} color="#6B7280" />
-              </View>
-              <View className="flex-1 ml-4">
-                <Text className="text-white font-medium">{order.driver.name}</Text>
-                <Text className="text-gray-400 text-sm">{order.driver.vehicle}</Text>
-              </View>
-              <TouchableOpacity className="bg-green-500 p-3 rounded-full">
-                <Ionicons name="call" size={20} color="white" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+        <View style={s.divider} />
 
-        {/* Order Items */}
-        <View className="px-4 pb-4">
-          <Text className="text-white text-lg font-semibold mb-3">
-            Items ({order.items.length})
-          </Text>
-          <View className="bg-gray-800 rounded-xl p-4">
-            {order.items.map((item, index) => (
-              <View
-                key={index}
-                className={`flex-row items-center py-3 ${
-                  index !== order.items.length - 1 ? 'border-b border-gray-700' : ''
-                }`}
-              >
-                <View className="w-12 h-12 bg-gray-700 rounded-lg items-center justify-center">
-                  <Ionicons name="cube" size={24} color="#6B7280" />
-                </View>
-                <View className="flex-1 ml-3">
-                  <Text className="text-white font-medium">{item.name}</Text>
-                  <Text className="text-gray-400 text-sm">
-                    ₹{item.price} × {item.quantity}
-                  </Text>
-                </View>
-                <Text className="text-white font-bold">₹{item.total.toLocaleString()}</Text>
+        {/* Items */}
+        <View style={s.section}>
+          <Text style={s.sectionLabel}>ITEMS BREAKDOWN ({ORDER.items.length})</Text>
+          {ORDER.items.map((item, i) => (
+            <View key={i} style={s.itemRow}>
+              <View style={s.itemThumb}>
+                <Image source={getProductImage(item.name)} style={{ width: '100%', height: '100%', borderRadius: 10 }} resizeMode="cover" />
               </View>
-            ))}
-          </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.itemName}>{item.name}</Text>
+                <Text style={s.itemSpec}>{item.spec}</Text>
+                <View style={s.itemPriceRow}>
+                  <Text style={s.itemCalc}>Rs.{item.unitPrice} x {item.qty} Units</Text>
+                  <Text style={s.itemTotal}>Rs.{(item.unitPrice * item.qty).toLocaleString()}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
         </View>
+
+        <View style={s.divider} />
 
         {/* Payment Summary */}
-        <View className="px-4 pb-8">
-          <Text className="text-white text-lg font-semibold mb-3">Payment Summary</Text>
-          <View className="bg-gray-800 rounded-xl p-4">
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-gray-400">Subtotal</Text>
-              <Text className="text-white">₹{order.subtotal.toLocaleString()}</Text>
+        <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+          <View style={s.summaryCard}>
+            <Text style={s.summaryTitle}>Payment Summary</Text>
+            <View style={s.summaryRow}><Text style={s.summaryLabel}>Items Total</Text><Text style={s.summaryValue}>Rs.{itemsTotal.toLocaleString()}</Text></View>
+            <View style={s.summaryRow}><Text style={s.summaryLabel}>Delivery Fee</Text><Text style={[s.summaryValue, { color: T.success }]}>FREE</Text></View>
+            <View style={s.summaryRow}><Text style={s.summaryLabel}>CGST (9%)</Text><Text style={s.summaryValue}>Rs.{cgst.toLocaleString()}</Text></View>
+            <View style={s.summaryRow}><Text style={s.summaryLabel}>SGST (9%)</Text><Text style={s.summaryValue}>Rs.{sgst.toLocaleString()}</Text></View>
+            <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
+            <View style={s.summaryRow}><Text style={s.grandLabel}>Grand Total</Text><Text style={s.grandValue}>Rs.{grandTotal.toLocaleString()}</Text></View>
+          </View>
+        </View>
+
+        {/* Billing Info */}
+        <View style={s.section}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <Ionicons name="information-circle-outline" size={18} color={T.textMuted} />
+            <Text style={s.billingLabel}>BILLING INFORMATION</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.billingKey}>GSTIN</Text>
+              <Text style={s.billingVal}>{ORDER.gstin}</Text>
             </View>
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-gray-400">Delivery Fee</Text>
-              <Text className="text-white">₹{order.deliveryFee}</Text>
-            </View>
-            <View className="flex-row justify-between mb-3">
-              <Text className="text-gray-400">Tax (GST)</Text>
-              <Text className="text-white">₹{order.tax}</Text>
-            </View>
-            <View className="flex-row justify-between pt-3 border-t border-gray-700">
-              <Text className="text-white font-semibold text-lg">Total Paid</Text>
-              <Text className="text-orange-500 font-bold text-xl">
-                ₹{order.total.toLocaleString()}
-              </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.billingKey}>Payment Mode</Text>
+              <Text style={s.billingVal}>{ORDER.paymentMode}</Text>
             </View>
           </View>
         </View>
       </ScrollView>
 
       {/* Bottom Actions */}
-      {order.status === 'delivered' && (
-        <View className="px-4 py-4 border-t border-gray-800">
-          <TouchableOpacity className="bg-orange-500 py-4 rounded-xl flex-row items-center justify-center">
-            <Ionicons name="refresh" size={20} color="white" />
-            <Text className="text-white font-semibold ml-2">Reorder</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={s.bottomBar}>
+        <TouchableOpacity style={s.downloadBtn}>
+          <Ionicons name="download-outline" size={18} color={T.white} />
+          <Text style={s.downloadText}>Download Invoice</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.supportBtn}>
+          <Ionicons name="headset-outline" size={22} color={T.navy} />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
+
+const s = {
+  header: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: T.surface, borderBottomWidth: 1, borderBottomColor: T.border },
+  headerBtn: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center' as const, alignItems: 'center' as const },
+  headerTitle: { fontSize: 18, fontWeight: '700' as const, color: T.text },
+  statusBanner: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14, paddingHorizontal: 16, paddingVertical: 16 },
+  statusIcon: { width: 52, height: 52, borderRadius: 14, backgroundColor: T.navy, justifyContent: 'center' as const, alignItems: 'center' as const },
+  statusTitle: { fontSize: 18, fontWeight: '700' as const, color: T.text },
+  statusSub: { fontSize: 13, color: T.textMuted, marginTop: 2 },
+  divider: { height: 1, backgroundColor: T.border, marginHorizontal: 16 },
+  section: { paddingHorizontal: 16, paddingVertical: 16 },
+  sectionLabel: { fontSize: 12, fontWeight: '700' as const, color: T.text, letterSpacing: 1, textTransform: 'uppercase' as const },
+  addressName: { fontSize: 15, fontWeight: '600' as const, color: T.text },
+  addressLine: { fontSize: 13, color: T.textSecondary, lineHeight: 20 },
+  itemRow: { flexDirection: 'row' as const, gap: 14, paddingVertical: 12 },
+  itemThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: T.bg, borderWidth: 1, borderColor: T.border, justifyContent: 'center' as const, alignItems: 'center' as const, overflow: 'hidden' as const },
+  itemName: { fontSize: 15, fontWeight: '700' as const, color: T.text },
+  itemSpec: { fontSize: 13, color: T.textMuted, marginTop: 2 },
+  itemPriceRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 6 },
+  itemCalc: { fontSize: 13, color: T.textMuted },
+  itemTotal: { fontSize: 15, fontWeight: '700' as const, color: T.text },
+  summaryCard: { backgroundColor: '#F0F1F5', borderRadius: 14, padding: 16 },
+  summaryTitle: { fontSize: 12, fontWeight: '700' as const, letterSpacing: 1, textTransform: 'uppercase' as const, color: T.text, marginBottom: 14 },
+  summaryRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginBottom: 10 },
+  summaryLabel: { fontSize: 14, color: T.textSecondary },
+  summaryValue: { fontSize: 14, fontWeight: '600' as const, color: T.text },
+  grandLabel: { fontSize: 17, fontWeight: '800' as const, color: T.text },
+  grandValue: { fontSize: 17, fontWeight: '800' as const, color: T.text },
+  billingLabel: { fontSize: 11, fontWeight: '600' as const, color: T.textMuted, letterSpacing: 0.5, textTransform: 'uppercase' as const },
+  billingKey: { fontSize: 10, fontWeight: '700' as const, color: T.textMuted, textTransform: 'uppercase' as const, marginBottom: 4 },
+  billingVal: { fontSize: 14, color: T.textSecondary },
+  bottomBar: { flexDirection: 'row' as const, padding: 16, gap: 12, backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.border },
+  downloadBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.navy, borderRadius: 14, paddingVertical: 16, gap: 8, shadowColor: T.navy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
+  downloadText: { fontSize: 15, fontWeight: '700' as const, color: T.white },
+  supportBtn: { width: 56, height: 56, borderRadius: 14, borderWidth: 2, borderColor: T.border, justifyContent: 'center' as const, alignItems: 'center' as const },
+};
