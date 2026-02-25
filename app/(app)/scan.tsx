@@ -4,6 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import QRScanner from '../../src/components/QRScanner';
+import { LightTheme } from '../../src/theme/designSystem';
+
+const T = LightTheme;
 
 interface ScannedData {
   raw: string;
@@ -238,23 +241,25 @@ export default function ScanScreen() {
 
   // Result view
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.safeArea}>
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 border-b border-gray-800">
-        <TouchableOpacity onPress={handleClose} className="mr-4">
-          <Ionicons name="close" size={24} color="white" />
+      <View style={s.header}>
+        <TouchableOpacity onPress={handleClose} style={s.closeButton}>
+          <Ionicons name="close" size={24} color={T.text} />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-semibold flex-1">Scan Result</Text>
+        <Text style={s.headerTitle}>Scan Result</Text>
       </View>
 
-      <ScrollView className="flex-1 px-4 py-6">
+      <ScrollView style={s.scrollView}>
         {scannedData && (
           <>
             {/* Type Badge */}
-            <View className="items-center mb-6">
+            <View style={s.badgeContainer}>
               <View
-                className="w-20 h-20 rounded-full items-center justify-center mb-4"
-                style={{ backgroundColor: `${getTypeColor(scannedData.parsed.type)}20` }}
+                style={[
+                  s.badgeCircle,
+                  { backgroundColor: `${getTypeColor(scannedData.parsed.type)}26` },
+                ]}
               >
                 <Ionicons
                   name={getTypeIcon(scannedData.parsed.type) as any}
@@ -262,31 +267,31 @@ export default function ScanScreen() {
                   color={getTypeColor(scannedData.parsed.type)}
                 />
               </View>
-              <Text className="text-white text-xl font-bold">
+              <Text style={s.typeLabel}>
                 {getTypeLabel(scannedData.parsed.type)}
               </Text>
-              <Text className="text-gray-400 text-sm mt-1">
+              <Text style={s.successText}>
                 Successfully scanned
               </Text>
             </View>
 
             {/* Data Card */}
-            <View className="bg-gray-800 rounded-xl p-4 mb-4">
-              <Text className="text-gray-400 text-sm mb-2">Scanned Data</Text>
+            <View style={s.dataCard}>
+              <Text style={s.cardLabel}>Scanned Data</Text>
 
               {scannedData.parsed.type === 'order' && (
                 <View>
-                  <Text className="text-white text-lg font-semibold">
+                  <Text style={s.primaryText}>
                     Order: {scannedData.parsed.data.orderId}
                   </Text>
                   {scannedData.parsed.data.customer && (
-                    <Text className="text-gray-400 mt-1">
+                    <Text style={s.secondaryText}>
                       Customer: {scannedData.parsed.data.customer}
                     </Text>
                   )}
                   {scannedData.parsed.data.total && (
-                    <Text className="text-green-500 font-bold mt-1">
-                      Total: ₹{scannedData.parsed.data.total}
+                    <Text style={s.greenAmount}>
+                      Total: {scannedData.parsed.data.total}
                     </Text>
                   )}
                 </View>
@@ -294,11 +299,11 @@ export default function ScanScreen() {
 
               {scannedData.parsed.type === 'delivery' && (
                 <View>
-                  <Text className="text-white text-lg font-semibold">
+                  <Text style={s.primaryText}>
                     Delivery: {scannedData.parsed.data.deliveryId}
                   </Text>
                   {scannedData.parsed.data.status && (
-                    <Text className="text-gray-400 mt-1">
+                    <Text style={s.secondaryText}>
                       Status: {scannedData.parsed.data.status}
                     </Text>
                   )}
@@ -307,11 +312,11 @@ export default function ScanScreen() {
 
               {scannedData.parsed.type === 'worker' && (
                 <View>
-                  <Text className="text-white text-lg font-semibold">
+                  <Text style={s.primaryText}>
                     Worker: {scannedData.parsed.data.workerId}
                   </Text>
                   {scannedData.parsed.data.name && (
-                    <Text className="text-gray-400 mt-1">
+                    <Text style={s.secondaryText}>
                       Name: {scannedData.parsed.data.name}
                     </Text>
                   )}
@@ -320,12 +325,12 @@ export default function ScanScreen() {
 
               {scannedData.parsed.type === 'payment' && (
                 <View>
-                  <Text className="text-white text-lg font-semibold">
+                  <Text style={s.primaryText}>
                     Payment: {scannedData.parsed.data.paymentId || 'Pending'}
                   </Text>
                   {scannedData.parsed.data.amount && (
-                    <Text className="text-green-500 font-bold text-xl mt-1">
-                      ₹{scannedData.parsed.data.amount}
+                    <Text style={s.greenAmountLarge}>
+                      {scannedData.parsed.data.amount}
                     </Text>
                   )}
                 </View>
@@ -333,11 +338,11 @@ export default function ScanScreen() {
 
               {scannedData.parsed.type === 'product' && (
                 <View>
-                  <Text className="text-white text-lg font-semibold">
+                  <Text style={s.primaryText}>
                     Product: {scannedData.parsed.data.productId || scannedData.parsed.data.sku}
                   </Text>
                   {scannedData.parsed.data.name && (
-                    <Text className="text-gray-400 mt-1">
+                    <Text style={s.secondaryText}>
                       {scannedData.parsed.data.name}
                     </Text>
                   )}
@@ -345,42 +350,44 @@ export default function ScanScreen() {
               )}
 
               {scannedData.parsed.type === 'url' && (
-                <Text className="text-blue-400 text-base" numberOfLines={3}>
+                <Text style={s.urlText} numberOfLines={3}>
                   {scannedData.parsed.data.url}
                 </Text>
               )}
 
               {(scannedData.parsed.type === 'text' || scannedData.parsed.type === 'unknown') && (
-                <Text className="text-white text-base">
+                <Text style={s.plainText}>
                   {scannedData.raw}
                 </Text>
               )}
             </View>
 
             {/* Raw Data */}
-            <View className="bg-gray-800 rounded-xl p-4 mb-6">
-              <Text className="text-gray-400 text-sm mb-2">Raw Content</Text>
-              <Text className="text-gray-300 text-sm font-mono" numberOfLines={5}>
+            <View style={s.rawCard}>
+              <Text style={s.cardLabel}>Raw Content</Text>
+              <Text style={s.rawText} numberOfLines={5}>
                 {scannedData.raw}
               </Text>
             </View>
 
             {/* Action Buttons */}
-            <View className="space-y-3">
+            <View style={s.actionsContainer}>
               {(scannedData.parsed.type === 'order' ||
                 scannedData.parsed.type === 'worker' ||
                 scannedData.parsed.type === 'url') && (
                 <TouchableOpacity
-                  className="py-4 rounded-xl flex-row items-center justify-center"
-                  style={{ backgroundColor: getTypeColor(scannedData.parsed.type) }}
+                  style={[
+                    s.actionButton,
+                    { backgroundColor: getTypeColor(scannedData.parsed.type) },
+                  ]}
                   onPress={handleAction}
                 >
                   <Ionicons
                     name={scannedData.parsed.type === 'url' ? 'open-outline' : 'arrow-forward'}
                     size={20}
-                    color="white"
+                    color="#FFFFFF"
                   />
-                  <Text className="text-white font-semibold text-lg ml-2">
+                  <Text style={s.actionButtonText}>
                     {scannedData.parsed.type === 'order' ? 'View Order' :
                      scannedData.parsed.type === 'worker' ? 'View Worker' :
                      scannedData.parsed.type === 'url' ? 'Open Link' :
@@ -390,11 +397,11 @@ export default function ScanScreen() {
               )}
 
               <TouchableOpacity
-                className="bg-gray-700 py-4 rounded-xl flex-row items-center justify-center"
+                style={s.scanAgainButton}
                 onPress={handleScanAgain}
               >
-                <Ionicons name="scan" size={20} color="white" />
-                <Text className="text-white font-semibold text-lg ml-2">
+                <Ionicons name="scan" size={20} color={T.text} />
+                <Text style={s.scanAgainText}>
                   Scan Another
                 </Text>
               </TouchableOpacity>
@@ -405,3 +412,139 @@ export default function ScanScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  safeArea: {
+    flex: 1 as const,
+    backgroundColor: T.bg,
+  },
+  header: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+  closeButton: {
+    marginRight: 16,
+  },
+  headerTitle: {
+    color: T.text,
+    fontSize: 18,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1 as const,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+  badgeContainer: {
+    alignItems: 'center' as const,
+    marginBottom: 24,
+  },
+  badgeCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginBottom: 16,
+  },
+  typeLabel: {
+    color: T.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  successText: {
+    color: T.textSecondary,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  dataCard: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 16,
+    marginBottom: 16,
+  },
+  cardLabel: {
+    color: T.textMuted,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  primaryText: {
+    color: T.text,
+    fontSize: 18,
+    fontWeight: '600' as const,
+  },
+  secondaryText: {
+    color: T.textSecondary,
+    marginTop: 4,
+  },
+  greenAmount: {
+    color: T.success,
+    fontWeight: '700' as const,
+    marginTop: 4,
+  },
+  greenAmountLarge: {
+    color: T.success,
+    fontWeight: '700' as const,
+    fontSize: 20,
+    marginTop: 4,
+  },
+  urlText: {
+    color: '#3B82F6',
+    fontSize: 16,
+  },
+  plainText: {
+    color: T.text,
+    fontSize: 16,
+  },
+  rawCard: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 16,
+    marginBottom: 24,
+  },
+  rawText: {
+    color: T.textSecondary,
+    fontSize: 14,
+    fontFamily: 'monospace' as const,
+  },
+  actionsContainer: {
+    gap: 12,
+  },
+  actionButton: {
+    paddingVertical: 16,
+    borderRadius: 14,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600' as const,
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  scanAgainButton: {
+    backgroundColor: T.bg,
+    paddingVertical: 16,
+    borderRadius: 14,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  scanAgainText: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 18,
+    marginLeft: 8,
+  },
+};

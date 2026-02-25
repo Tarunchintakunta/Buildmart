@@ -38,6 +38,7 @@ coverage/
 .idea/
 .vscode/
 .cursor/
+.mcp/
 *.swp
 *.swo
 *~

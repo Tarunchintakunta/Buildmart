@@ -3,6 +3,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/context/AuthContext';
+import { LightTheme } from '../../../src/theme/designSystem';
+
+const T = LightTheme;
 
 // Mock worker data
 const MOCK_WORKER = {
@@ -41,118 +44,132 @@ export default function WorkerDetailScreen() {
   const canHire = (isContractor || isCustomer) && worker.status === 'waiting' && worker.isVerified;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.safeArea}>
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 border-b border-gray-800">
+      <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Ionicons name="arrow-back" size={24} color={T.text} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-bold ml-4">Worker Profile</Text>
+        <Text style={s.headerTitle}>Worker Profile</Text>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
-        <View className="px-4 py-6 items-center">
-          <View className="w-24 h-24 bg-gray-700 rounded-full items-center justify-center">
-            <Ionicons name="person" size={48} color="#6B7280" />
+        <View style={s.profileSection}>
+          <View style={s.avatarWrapper}>
+            <Ionicons name="person" size={48} color={T.textMuted} />
             {worker.isVerified && (
-              <View className="absolute bottom-0 right-0 bg-green-500 rounded-full p-2">
+              <View style={s.verifiedBadge}>
                 <Ionicons name="checkmark" size={16} color="white" />
               </View>
             )}
           </View>
-          <Text className="text-white text-2xl font-bold mt-4">{worker.name}</Text>
-          <View className={`mt-2 px-4 py-1 rounded-full ${
-            worker.status === 'waiting' ? 'bg-green-500/20' : 'bg-orange-500/20'
-          }`}>
-            <Text className={worker.status === 'waiting' ? 'text-green-500' : 'text-orange-500'}>
+          <Text style={s.workerName}>{worker.name}</Text>
+          <View
+            style={[
+              s.statusBadge,
+              {
+                backgroundColor:
+                  worker.status === 'waiting'
+                    ? 'rgba(16,185,129,0.15)'
+                    : 'rgba(242,150,13,0.15)',
+              },
+            ]}
+          >
+            <Text
+              style={{
+                color: worker.status === 'waiting' ? '#10B981' : T.amber,
+                fontSize: 14,
+                fontWeight: '500',
+              }}
+            >
               {worker.status === 'waiting' ? 'Available for Work' : 'Currently Working'}
             </Text>
           </View>
         </View>
 
         {/* Skills */}
-        <View className="px-4 pb-4">
-          <View className="flex-row flex-wrap justify-center">
+        <View style={s.skillsSection}>
+          <View style={s.skillsRow}>
             {worker.skills.map((skill, index) => (
-              <View key={index} className="bg-orange-500/20 px-4 py-2 rounded-full m-1">
-                <Text className="text-orange-500 font-medium">{skill}</Text>
+              <View key={index} style={s.skillBadge}>
+                <Text style={s.skillText}>{skill}</Text>
               </View>
             ))}
           </View>
         </View>
 
         {/* Stats */}
-        <View className="flex-row px-4 pb-4">
-          <View className="flex-1 bg-gray-800 rounded-xl p-4 mr-2 items-center">
-            <View className="flex-row items-center">
+        <View style={s.statsRow}>
+          <View style={[s.statCard, { marginRight: 8 }]}>
+            <View style={s.ratingRow}>
               <Ionicons name="star" size={20} color="#F59E0B" />
-              <Text className="text-white text-2xl font-bold ml-1">{worker.rating}</Text>
+              <Text style={[s.statValue, { marginLeft: 4 }]}>{worker.rating}</Text>
             </View>
-            <Text className="text-gray-400 text-sm mt-1">Rating</Text>
+            <Text style={s.statLabel}>Rating</Text>
           </View>
-          <View className="flex-1 bg-gray-800 rounded-xl p-4 mx-1 items-center">
-            <Text className="text-white text-2xl font-bold">{worker.totalJobs}</Text>
-            <Text className="text-gray-400 text-sm mt-1">Jobs Done</Text>
+          <View style={[s.statCard, { marginHorizontal: 4 }]}>
+            <Text style={s.statValue}>{worker.totalJobs}</Text>
+            <Text style={s.statLabel}>Jobs Done</Text>
           </View>
-          <View className="flex-1 bg-gray-800 rounded-xl p-4 ml-2 items-center">
-            <Text className="text-white text-2xl font-bold">{worker.experience}y</Text>
-            <Text className="text-gray-400 text-sm mt-1">Experience</Text>
+          <View style={[s.statCard, { marginLeft: 8 }]}>
+            <Text style={s.statValue}>{worker.experience}y</Text>
+            <Text style={s.statLabel}>Experience</Text>
           </View>
         </View>
 
         {/* Rates */}
-        <View className="px-4 pb-4">
-          <View className="bg-orange-500 rounded-xl p-4">
-            <View className="flex-row justify-around">
-              <View className="items-center">
-                <Text className="text-orange-100 text-sm">Hourly Rate</Text>
-                <Text className="text-white text-2xl font-bold">₹{worker.hourlyRate}</Text>
+        <View style={s.sectionPadding}>
+          <View style={s.ratesCard}>
+            <View style={s.ratesRow}>
+              <View style={s.rateItem}>
+                <Text style={s.rateLabel}>Hourly Rate</Text>
+                <Text style={s.rateValue}>₹{worker.hourlyRate}</Text>
               </View>
-              <View className="w-px bg-white/30" />
-              <View className="items-center">
-                <Text className="text-orange-100 text-sm">Daily Rate</Text>
-                <Text className="text-white text-2xl font-bold">₹{worker.dailyRate}</Text>
+              <View style={s.rateDivider} />
+              <View style={s.rateItem}>
+                <Text style={s.rateLabel}>Daily Rate</Text>
+                <Text style={s.rateValue}>₹{worker.dailyRate}</Text>
               </View>
             </View>
           </View>
         </View>
 
         {/* Bio */}
-        <View className="px-4 pb-4">
-          <Text className="text-white text-lg font-semibold mb-2">About</Text>
-          <View className="bg-gray-800 rounded-xl p-4">
-            <Text className="text-gray-300 leading-6">{worker.bio}</Text>
+        <View style={s.sectionPadding}>
+          <Text style={s.sectionTitle}>About</Text>
+          <View style={s.infoCard}>
+            <Text style={s.bioText}>{worker.bio}</Text>
           </View>
         </View>
 
         {/* Contact Info */}
-        <View className="px-4 pb-4">
-          <Text className="text-white text-lg font-semibold mb-2">Contact</Text>
-          <View className="bg-gray-800 rounded-xl p-4">
-            <View className="flex-row items-center mb-3">
-              <Ionicons name="call" size={18} color="#9CA3AF" />
-              <Text className="text-gray-300 ml-3">{worker.phone}</Text>
+        <View style={s.sectionPadding}>
+          <Text style={s.sectionTitle}>Contact</Text>
+          <View style={s.infoCard}>
+            <View style={[s.contactRow, { marginBottom: 12 }]}>
+              <Ionicons name="call" size={18} color={T.textMuted} />
+              <Text style={s.contactText}>{worker.phone}</Text>
             </View>
-            <View className="flex-row items-center mb-3">
-              <Ionicons name="mail" size={18} color="#9CA3AF" />
-              <Text className="text-gray-300 ml-3">{worker.email}</Text>
+            <View style={[s.contactRow, { marginBottom: 12 }]}>
+              <Ionicons name="mail" size={18} color={T.textMuted} />
+              <Text style={s.contactText}>{worker.email}</Text>
             </View>
-            <View className="flex-row items-center">
-              <Ionicons name="location" size={18} color="#9CA3AF" />
-              <Text className="text-gray-300 ml-3">{worker.address}</Text>
+            <View style={s.contactRow}>
+              <Ionicons name="location" size={18} color={T.textMuted} />
+              <Text style={s.contactText}>{worker.address}</Text>
             </View>
           </View>
         </View>
 
         {/* Reviews */}
-        <View className="px-4 pb-8">
-          <Text className="text-white text-lg font-semibold mb-2">Reviews</Text>
+        <View style={s.reviewsSection}>
+          <Text style={s.sectionTitle}>Reviews</Text>
           {worker.reviews.map((review, index) => (
-            <View key={index} className="bg-gray-800 rounded-xl p-4 mb-3">
-              <View className="flex-row justify-between items-start mb-2">
-                <Text className="text-white font-medium">{review.customer}</Text>
-                <View className="flex-row items-center">
+            <View key={index} style={s.reviewCard}>
+              <View style={s.reviewHeader}>
+                <Text style={s.reviewCustomer}>{review.customer}</Text>
+                <View style={s.starsRow}>
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Ionicons
                       key={star}
@@ -163,8 +180,8 @@ export default function WorkerDetailScreen() {
                   ))}
                 </View>
               </View>
-              <Text className="text-gray-400">{review.comment}</Text>
-              <Text className="text-gray-500 text-sm mt-2">{review.date}</Text>
+              <Text style={s.reviewComment}>{review.comment}</Text>
+              <Text style={s.reviewDate}>{review.date}</Text>
             </View>
           ))}
         </View>
@@ -172,21 +189,22 @@ export default function WorkerDetailScreen() {
 
       {/* Bottom Actions */}
       {canHire && (
-        <View className="px-4 py-4 border-t border-gray-800">
-          <View className="flex-row space-x-3">
+        <View style={s.bottomBar}>
+          <View style={s.bottomRow}>
             <TouchableOpacity
-              className="flex-1 bg-gray-700 py-4 rounded-xl flex-row items-center justify-center"
+              style={s.callBtn}
               onPress={() => {/* Call worker */}}
             >
               <Ionicons name="call" size={20} color="white" />
-              <Text className="text-white font-semibold ml-2">Call</Text>
+              <Text style={s.btnText}>Call</Text>
             </TouchableOpacity>
+            <View style={{ width: 12 }} />
             <TouchableOpacity
-              className="flex-1 bg-orange-500 py-4 rounded-xl flex-row items-center justify-center"
+              style={s.bookBtn}
               onPress={() => router.push(`/(app)/hire?workerId=${worker.id}`)}
             >
               <Ionicons name="calendar" size={20} color="white" />
-              <Text className="text-white font-semibold ml-2">
+              <Text style={s.btnText}>
                 {isContractor ? 'Create Agreement' : 'Book Now'}
               </Text>
             </TouchableOpacity>
@@ -196,3 +214,276 @@ export default function WorkerDetailScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  safeArea: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  header: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+
+  headerTitle: {
+    color: T.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginLeft: 16,
+  },
+
+  scrollView: {
+    flex: 1,
+  } as const,
+
+  profileSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    alignItems: 'center' as const,
+  },
+
+  avatarWrapper: {
+    width: 96,
+    height: 96,
+    backgroundColor: T.bg,
+    borderRadius: 48,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  verifiedBadge: {
+    position: 'absolute' as const,
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#10B981',
+    borderRadius: 999,
+    padding: 8,
+  },
+
+  workerName: {
+    color: T.text,
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginTop: 16,
+  },
+
+  statusBadge: {
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+
+  skillsSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+
+  skillsRow: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    justifyContent: 'center' as const,
+  },
+
+  skillBadge: {
+    backgroundColor: T.amberBg,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    margin: 4,
+  },
+
+  skillText: {
+    color: T.amber,
+    fontWeight: '500' as const,
+    fontSize: 14,
+  },
+
+  statsRow: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+
+  statCard: {
+    flex: 1,
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+
+  ratingRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  statValue: {
+    color: T.text,
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+
+  statLabel: {
+    color: T.textMuted,
+    fontSize: 13,
+    marginTop: 4,
+  },
+
+  sectionPadding: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+
+  ratesCard: {
+    backgroundColor: T.navy,
+    borderRadius: 16,
+    padding: 16,
+  },
+
+  ratesRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
+  },
+
+  rateItem: {
+    alignItems: 'center' as const,
+  },
+
+  rateLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+  },
+
+  rateValue: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+
+  rateDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+
+  sectionTitle: {
+    color: T.text,
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+
+  infoCard: {
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+
+  bioText: {
+    color: T.textSecondary,
+    lineHeight: 24,
+    fontSize: 15,
+  },
+
+  contactRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  contactText: {
+    color: T.textSecondary,
+    marginLeft: 12,
+    fontSize: 15,
+  },
+
+  reviewsSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
+
+  reviewCard: {
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+
+  reviewHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'flex-start' as const,
+    marginBottom: 8,
+  },
+
+  reviewCustomer: {
+    color: T.text,
+    fontWeight: '500' as const,
+    fontSize: 15,
+  },
+
+  starsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  reviewComment: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  reviewDate: {
+    color: T.textMuted,
+    fontSize: 13,
+    marginTop: 8,
+  },
+
+  bottomBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  bottomRow: {
+    flexDirection: 'row' as const,
+  },
+
+  callBtn: {
+    flex: 1,
+    backgroundColor: T.bg,
+    paddingVertical: 16,
+    borderRadius: 16,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  bookBtn: {
+    flex: 1,
+    backgroundColor: T.amber,
+    paddingVertical: 16,
+    borderRadius: 16,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  btnText: {
+    color: '#FFFFFF',
+    fontWeight: '600' as const,
+    fontSize: 15,
+    marginLeft: 8,
+  },
+};

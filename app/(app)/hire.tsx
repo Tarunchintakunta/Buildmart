@@ -12,6 +12,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { useWalletStore } from '../../src/store/useStore';
+import { LightTheme } from '../../src/theme/designSystem';
+
+const T = LightTheme;
 
 const DURATION_OPTIONS = [
   { id: 1, label: '1 Hour' },
@@ -104,68 +107,68 @@ export default function HireScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={s.safeArea}>
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 border-b border-gray-800">
+      <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color="white" />
+          <Ionicons name="close" size={24} color={T.text} />
         </TouchableOpacity>
-        <Text className="text-white text-xl font-bold ml-4">Hire Worker</Text>
+        <Text style={s.headerTitle}>Hire Worker</Text>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false}>
         {/* Worker Info */}
-        <View className="px-4 py-4">
-          <View className="bg-gray-800 rounded-xl p-4">
-            <View className="flex-row items-center">
-              <View className="w-16 h-16 bg-gray-700 rounded-full items-center justify-center">
-                <Ionicons name="person" size={32} color="#6B7280" />
+        <View style={s.sectionWrap}>
+          <View style={s.workerCard}>
+            <View style={s.workerRow}>
+              <View style={s.avatar}>
+                <Ionicons name="person" size={32} color={T.textMuted} />
                 {worker.isVerified && (
-                  <View className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
-                    <Ionicons name="checkmark" size={10} color="white" />
+                  <View style={s.verifiedBadge}>
+                    <Ionicons name="checkmark" size={10} color="#FFFFFF" />
                   </View>
                 )}
               </View>
-              <View className="flex-1 ml-4">
-                <Text className="text-white font-semibold text-lg">{worker.name}</Text>
-                <View className="flex-row flex-wrap mt-1">
+              <View style={s.workerInfo}>
+                <Text style={s.workerName}>{worker.name}</Text>
+                <View style={s.skillsRow}>
                   {worker.skills.map((skill, index) => (
-                    <View key={index} className="bg-gray-700 px-2 py-0.5 rounded mr-2">
-                      <Text className="text-gray-300 text-xs">{skill}</Text>
+                    <View key={index} style={s.skillPill}>
+                      <Text style={s.skillText}>{skill}</Text>
                     </View>
                   ))}
                 </View>
-                <View className="flex-row items-center mt-2">
-                  <Ionicons name="star" size={14} color="#F59E0B" />
-                  <Text className="text-white ml-1">{worker.rating}</Text>
-                  <Text className="text-gray-500 mx-2">•</Text>
-                  <Text className="text-gray-400">{worker.totalJobs} jobs</Text>
-                  <Text className="text-gray-500 mx-2">•</Text>
-                  <Text className="text-gray-400">{worker.distance}</Text>
+                <View style={s.statsRow}>
+                  <Ionicons name="star" size={14} color={T.amber} />
+                  <Text style={s.ratingText}>{worker.rating}</Text>
+                  <Text style={s.dot}>•</Text>
+                  <Text style={s.statText}>{worker.totalJobs} jobs</Text>
+                  <Text style={s.dot}>•</Text>
+                  <Text style={s.statText}>{worker.distance}</Text>
                 </View>
               </View>
             </View>
 
-            <View className="flex-row justify-around mt-4 pt-4 border-t border-gray-700">
-              <View className="items-center">
-                <Text className="text-gray-400 text-sm">Hourly Rate</Text>
-                <Text className="text-orange-500 font-bold text-lg">₹{worker.hourlyRate}</Text>
+            <View style={s.rateDivider}>
+              <View style={s.rateItem}>
+                <Text style={s.rateLabel}>Hourly Rate</Text>
+                <Text style={s.rateValue}>{'\u20B9'}{worker.hourlyRate}</Text>
               </View>
-              <View className="items-center">
-                <Text className="text-gray-400 text-sm">Daily Rate</Text>
-                <Text className="text-orange-500 font-bold text-lg">₹{worker.dailyRate}</Text>
+              <View style={s.rateItem}>
+                <Text style={s.rateLabel}>Daily Rate</Text>
+                <Text style={s.rateValue}>{'\u20B9'}{worker.dailyRate}</Text>
               </View>
             </View>
           </View>
         </View>
 
         {/* Work Description */}
-        <View className="px-4 pb-4">
-          <Text className="text-white font-semibold mb-2">Work Description *</Text>
+        <View style={s.fieldWrap}>
+          <Text style={s.label}>Work Description *</Text>
           <TextInput
-            className="bg-gray-800 text-white rounded-xl px-4 py-3"
+            style={[s.textInput, { minHeight: 100 }]}
             placeholder="Describe what you need help with..."
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={T.textMuted}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -175,12 +178,12 @@ export default function HireScreen() {
         </View>
 
         {/* Work Address */}
-        <View className="px-4 pb-4">
-          <Text className="text-white font-semibold mb-2">Work Address *</Text>
+        <View style={s.fieldWrap}>
+          <Text style={s.label}>Work Address *</Text>
           <TextInput
-            className="bg-gray-800 text-white rounded-xl px-4 py-3"
+            style={[s.textInput, { minHeight: 60 }]}
             placeholder="Enter the address where work will be done"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={T.textMuted}
             value={address}
             onChangeText={setAddress}
             multiline
@@ -190,24 +193,25 @@ export default function HireScreen() {
         </View>
 
         {/* Date & Time */}
-        <View className="px-4 pb-4">
-          <View className="flex-row space-x-3">
-            <View className="flex-1">
-              <Text className="text-white font-semibold mb-2">Date *</Text>
+        <View style={s.fieldWrap}>
+          <View style={s.dateTimeRow}>
+            <View style={s.dateTimeCol}>
+              <Text style={s.label}>Date *</Text>
               <TextInput
-                className="bg-gray-800 text-white rounded-xl px-4 py-3"
+                style={s.textInput}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={T.textMuted}
                 value={selectedDate}
                 onChangeText={setSelectedDate}
               />
             </View>
-            <View className="flex-1">
-              <Text className="text-white font-semibold mb-2">Time *</Text>
+            <View style={{ width: 12 }} />
+            <View style={s.dateTimeCol}>
+              <Text style={s.label}>Time *</Text>
               <TextInput
-                className="bg-gray-800 text-white rounded-xl px-4 py-3"
+                style={s.textInput}
                 placeholder="HH:MM"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={T.textMuted}
                 value={selectedTime}
                 onChangeText={setSelectedTime}
               />
@@ -216,21 +220,25 @@ export default function HireScreen() {
         </View>
 
         {/* Duration */}
-        <View className="px-4 pb-4">
-          <Text className="text-white font-semibold mb-2">Duration</Text>
-          <View className="flex-row flex-wrap">
+        <View style={s.fieldWrap}>
+          <Text style={s.label}>Duration</Text>
+          <View style={s.durationRow}>
             {DURATION_OPTIONS.map((option) => (
               <TouchableOpacity
                 key={option.id}
-                className={`px-4 py-2 rounded-full mr-2 mb-2 ${
-                  selectedDuration === option.id ? 'bg-orange-500' : 'bg-gray-800'
-                }`}
+                style={[
+                  s.durationPill,
+                  selectedDuration === option.id ? s.durationActive : s.durationInactive,
+                ]}
                 onPress={() => setSelectedDuration(option.id)}
               >
                 <Text
-                  className={`font-medium ${
-                    selectedDuration === option.id ? 'text-white' : 'text-gray-400'
-                  }`}
+                  style={[
+                    s.durationText,
+                    selectedDuration === option.id
+                      ? s.durationTextActive
+                      : s.durationTextInactive,
+                  ]}
                 >
                   {option.label}
                 </Text>
@@ -240,68 +248,72 @@ export default function HireScreen() {
         </View>
 
         {/* Cost Summary */}
-        <View className="px-4 pb-4">
-          <View className="bg-gray-800 rounded-xl p-4">
-            <Text className="text-white font-semibold text-lg mb-3">Cost Summary</Text>
+        <View style={s.fieldWrap}>
+          <View style={s.costCard}>
+            <Text style={s.costTitle}>Cost Summary</Text>
 
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-gray-400">
+            <View style={s.costRow}>
+              <Text style={s.costLabel}>
                 {selectedDuration >= 8 ? 'Daily Rate' : `Hourly Rate x ${selectedDuration}`}
               </Text>
-              <Text className="text-white">
+              <Text style={s.costValue}>
                 {selectedDuration >= 8
-                  ? `₹${worker.dailyRate}`
-                  : `₹${worker.hourlyRate} x ${selectedDuration}`}
+                  ? `\u20B9${worker.dailyRate}`
+                  : `\u20B9${worker.hourlyRate} x ${selectedDuration}`}
               </Text>
             </View>
 
-            <View className="flex-row justify-between pt-3 border-t border-gray-700">
-              <Text className="text-white font-semibold">Total</Text>
-              <Text className="text-orange-500 font-bold text-xl">
-                ₹{totalCost.toLocaleString()}
+            <View style={s.costTotalRow}>
+              <Text style={s.costTotalLabel}>Total</Text>
+              <Text style={s.costTotalValue}>
+                {'\u20B9'}{totalCost.toLocaleString()}
               </Text>
             </View>
           </View>
         </View>
 
         {/* Wallet Balance */}
-        <View className="px-4 pb-6">
+        <View style={s.walletWrap}>
           <View
-            className={`rounded-xl p-4 flex-row items-center justify-between ${
-              hasEnoughBalance
-                ? 'bg-green-500/10 border border-green-500/30'
-                : 'bg-red-500/10 border border-red-500/30'
-            }`}
+            style={[
+              s.walletCard,
+              hasEnoughBalance ? s.walletSufficient : s.walletInsufficient,
+            ]}
           >
-            <View className="flex-row items-center">
+            <View style={s.walletLeft}>
               <Ionicons
                 name="wallet"
                 size={24}
                 color={hasEnoughBalance ? '#22C55E' : '#EF4444'}
               />
-              <View className="ml-3">
-                <Text className={hasEnoughBalance ? 'text-green-500' : 'text-red-500'}>
+              <View style={{ marginLeft: 12 }}>
+                <Text
+                  style={{
+                    color: hasEnoughBalance ? '#22C55E' : '#EF4444',
+                    fontSize: 14,
+                  }}
+                >
                   Wallet Balance
                 </Text>
-                <Text className="text-white font-bold text-lg">
-                  ₹{walletBalance.toLocaleString()}
+                <Text style={s.walletAmount}>
+                  {'\u20B9'}{walletBalance.toLocaleString()}
                 </Text>
               </View>
             </View>
             {!hasEnoughBalance && (
-              <TouchableOpacity className="bg-orange-500 px-4 py-2 rounded-full">
-                <Text className="text-white font-medium">Add Funds</Text>
+              <TouchableOpacity style={s.addFundsBtn}>
+                <Text style={s.addFundsText}>Add Funds</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
         {/* Info Note */}
-        <View className="px-4 pb-8">
-          <View className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/30">
-            <View className="flex-row items-start">
-              <Ionicons name="information-circle" size={20} color="#3B82F6" />
-              <Text className="text-gray-400 text-sm ml-3 flex-1">
+        <View style={s.infoWrap}>
+          <View style={s.infoCard}>
+            <View style={s.infoRow}>
+              <Ionicons name="information-circle" size={20} color={T.info} />
+              <Text style={s.infoText}>
                 Payment will be held in escrow until the work is completed to your
                 satisfaction. You can cancel up to 30 minutes before the scheduled time.
               </Text>
@@ -311,21 +323,22 @@ export default function HireScreen() {
       </ScrollView>
 
       {/* Submit Button */}
-      <View className="px-4 py-4 border-t border-gray-800">
+      <View style={s.submitWrap}>
         <TouchableOpacity
-          className={`py-4 rounded-xl flex-row items-center justify-center ${
-            hasEnoughBalance && !isSubmitting ? 'bg-orange-500' : 'bg-gray-600'
-          }`}
+          style={[
+            s.submitBtn,
+            hasEnoughBalance && !isSubmitting ? s.submitActive : s.submitDisabled,
+          ]}
           onPress={handleHire}
           disabled={!hasEnoughBalance || isSubmitting}
         >
           {isSubmitting ? (
-            <Text className="text-white font-semibold text-lg">Sending Request...</Text>
+            <Text style={s.submitText}>Sending Request...</Text>
           ) : (
             <>
-              <Ionicons name="paper-plane" size={20} color="white" />
-              <Text className="text-white font-semibold text-lg ml-2">
-                Send Hiring Request • ₹{totalCost.toLocaleString()}
+              <Ionicons name="paper-plane" size={20} color="#FFFFFF" />
+              <Text style={[s.submitText, { marginLeft: 8 }]}>
+                Send Hiring Request {'\u2022'} {'\u20B9'}{totalCost.toLocaleString()}
               </Text>
             </>
           )}
@@ -334,3 +347,363 @@ export default function HireScreen() {
     </SafeAreaView>
   );
 }
+
+const s = {
+  safeArea: {
+    flex: 1,
+    backgroundColor: T.bg,
+  } as const,
+
+  header: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+
+  headerTitle: {
+    color: T.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginLeft: 16,
+  },
+
+  scrollView: {
+    flex: 1,
+  } as const,
+
+  sectionWrap: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+
+  workerCard: {
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+
+  workerRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: T.bg,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  verifiedBadge: {
+    position: 'absolute' as const,
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#22C55E',
+    borderRadius: 10,
+    padding: 2,
+  },
+
+  workerInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+
+  workerName: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 18,
+  },
+
+  skillsRow: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    marginTop: 4,
+  },
+
+  skillPill: {
+    backgroundColor: T.bg,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+
+  skillText: {
+    color: T.textSecondary,
+    fontSize: 12,
+  },
+
+  statsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 8,
+  },
+
+  ratingText: {
+    color: T.text,
+    marginLeft: 4,
+    fontSize: 14,
+  },
+
+  dot: {
+    color: T.textMuted,
+    marginHorizontal: 8,
+  },
+
+  statText: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  rateDivider: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  rateItem: {
+    alignItems: 'center' as const,
+  },
+
+  rateLabel: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  rateValue: {
+    color: T.amber,
+    fontWeight: '700' as const,
+    fontSize: 18,
+  },
+
+  fieldWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+
+  label: {
+    color: T.text,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    fontSize: 15,
+  },
+
+  textInput: {
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: T.text,
+    fontSize: 15,
+  },
+
+  dateTimeRow: {
+    flexDirection: 'row' as const,
+  },
+
+  dateTimeCol: {
+    flex: 1,
+  } as const,
+
+  durationRow: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+  },
+
+  durationPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+
+  durationActive: {
+    backgroundColor: T.navy,
+  },
+
+  durationInactive: {
+    backgroundColor: T.bg,
+  },
+
+  durationText: {
+    fontWeight: '500' as const,
+    fontSize: 14,
+  },
+
+  durationTextActive: {
+    color: '#FFFFFF',
+  },
+
+  durationTextInactive: {
+    color: T.textSecondary,
+  },
+
+  costCard: {
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+
+  costTitle: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 18,
+    marginBottom: 12,
+  },
+
+  costRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: 8,
+  },
+
+  costLabel: {
+    color: T.textSecondary,
+    fontSize: 14,
+  },
+
+  costValue: {
+    color: T.text,
+    fontSize: 14,
+  },
+
+  costTotalRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  costTotalLabel: {
+    color: T.text,
+    fontWeight: '600' as const,
+    fontSize: 16,
+  },
+
+  costTotalValue: {
+    color: T.amber,
+    fontWeight: '700' as const,
+    fontSize: 20,
+  },
+
+  walletWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+
+  walletCard: {
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+
+  walletSufficient: {
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+  },
+
+  walletInsufficient: {
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+  },
+
+  walletLeft: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  walletAmount: {
+    color: T.text,
+    fontWeight: '700' as const,
+    fontSize: 18,
+  },
+
+  addFundsBtn: {
+    backgroundColor: T.amber,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+
+  addFundsText: {
+    color: '#FFFFFF',
+    fontWeight: '500' as const,
+    fontSize: 14,
+  },
+
+  infoWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
+
+  infoCard: {
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.25)',
+  },
+
+  infoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+  },
+
+  infoText: {
+    color: T.textSecondary,
+    fontSize: 14,
+    marginLeft: 12,
+    flex: 1,
+    lineHeight: 20,
+  },
+
+  submitWrap: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+
+  submitBtn: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  submitActive: {
+    backgroundColor: T.amber,
+  },
+
+  submitDisabled: {
+    backgroundColor: T.border,
+  },
+
+  submitText: {
+    color: '#FFFFFF',
+    fontWeight: '600' as const,
+    fontSize: 18,
+  },
+};
