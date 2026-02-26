@@ -19,13 +19,76 @@ type MenuItem = {
 const CUSTOMER_MENU: MenuItem[] = [
   { icon: 'receipt-outline', label: 'My Orders', subtitle: 'Track and manage orders', route: '/(app)/(tabs)/orders' },
   { icon: 'heart-outline', label: 'Wishlist', subtitle: 'Saved items', badge: '8', route: '/(app)/wishlist' },
-  { icon: 'location-outline', label: 'Saved Addresses', subtitle: 'Manage delivery locations' },
+  { icon: 'location-outline', label: 'Saved Addresses', subtitle: 'Manage delivery locations', route: '/(app)/addresses' },
   { icon: 'wallet-outline', label: 'Wallet', subtitle: 'Balance & transactions', route: '/(app)/(tabs)/wallet' },
-  { icon: 'card-outline', label: 'Payment Methods', subtitle: 'Cards & UPI' },
-  { icon: 'notifications-outline', label: 'Notifications', subtitle: 'Preferences & alerts' },
-  { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQs and contact us' },
+  { icon: 'card-outline', label: 'Payment Methods', subtitle: 'Cards & UPI', route: '/(app)/payment-methods' },
+  { icon: 'notifications-outline', label: 'Notifications', subtitle: 'Preferences & alerts', route: '/(app)/notifications' },
+  { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQs and contact us', route: '/(app)/help-support' },
   { icon: 'document-text-outline', label: 'Terms & Privacy', subtitle: 'Legal documents' },
 ];
+
+const CONTRACTOR_MENU: MenuItem[] = [
+  { icon: 'document-text-outline', label: 'Agreements', subtitle: 'Manage contracts', route: '/(app)/(tabs)/agreements' },
+  { icon: 'people-outline', label: 'Workers', subtitle: 'Hire and manage', route: '/(app)/(tabs)/workers' },
+  { icon: 'business-outline', label: 'Site Management', subtitle: 'Track projects', route: '/(app)/site-management' },
+  { icon: 'bar-chart-outline', label: 'Analytics', subtitle: 'Spending & reports', route: '/(app)/contractor-analytics' },
+  { icon: 'megaphone-outline', label: 'Tenders', subtitle: 'Bids & proposals', route: '/(app)/tenders' },
+  { icon: 'wallet-outline', label: 'Wallet', subtitle: 'Balance & transactions', route: '/(app)/(tabs)/wallet' },
+  { icon: 'notifications-outline', label: 'Notifications', subtitle: 'Preferences & alerts', route: '/(app)/notifications' },
+  { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQs and contact us', route: '/(app)/help-support' },
+];
+
+const WORKER_MENU: MenuItem[] = [
+  { icon: 'briefcase-outline', label: 'Jobs', subtitle: 'Requests & active work', route: '/(app)/(tabs)/jobs' },
+  { icon: 'construct-outline', label: 'Skills', subtitle: 'Manage your skills', route: '/(app)/skill-management' },
+  { icon: 'calendar-outline', label: 'Availability', subtitle: 'Set your schedule', route: '/(app)/availability' },
+  { icon: 'time-outline', label: 'Job History', subtitle: 'Past work & ratings', route: '/(app)/job-history' },
+  { icon: 'ribbon-outline', label: 'Certifications', subtitle: 'Badges & certificates', route: '/(app)/certifications' },
+  { icon: 'wallet-outline', label: 'Wallet', subtitle: 'Earnings & withdrawals', route: '/(app)/(tabs)/wallet' },
+  { icon: 'notifications-outline', label: 'Notifications', subtitle: 'Preferences & alerts', route: '/(app)/notifications' },
+  { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQs and contact us', route: '/(app)/help-support' },
+];
+
+const SHOPKEEPER_MENU: MenuItem[] = [
+  { icon: 'cube-outline', label: 'Inventory', subtitle: 'Manage stock', route: '/(app)/(tabs)/inventory' },
+  { icon: 'receipt-outline', label: 'Orders', subtitle: 'Track orders', route: '/(app)/(tabs)/orders' },
+  { icon: 'settings-outline', label: 'Shop Settings', subtitle: 'Profile & hours', route: '/(app)/shop-settings' },
+  { icon: 'add-circle-outline', label: 'Add Product', subtitle: 'List new items', route: '/(app)/add-product' },
+  { icon: 'pricetags-outline', label: 'Pricing & Offers', subtitle: 'Discounts & deals', route: '/(app)/pricing-offers' },
+  { icon: 'bar-chart-outline', label: 'Analytics', subtitle: 'Sales & insights', route: '/(app)/shop-analytics' },
+  { icon: 'wallet-outline', label: 'Wallet', subtitle: 'Balance & payouts', route: '/(app)/(tabs)/wallet' },
+  { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQs and contact us', route: '/(app)/help-support' },
+];
+
+const DRIVER_MENU: MenuItem[] = [
+  { icon: 'bicycle-outline', label: 'Deliveries', subtitle: 'Active & completed', route: '/(app)/(tabs)/deliveries' },
+  { icon: 'map-outline', label: 'Route Planner', subtitle: 'Optimize routes', route: '/(app)/route-optimization' },
+  { icon: 'camera-outline', label: 'Delivery Proof', subtitle: 'Photos & signatures', route: '/(app)/delivery-proof' },
+  { icon: 'cash-outline', label: 'Earnings', subtitle: 'History & payouts', route: '/(app)/earnings-history' },
+  { icon: 'car-outline', label: 'Vehicle', subtitle: 'Manage vehicle info', route: '/(app)/vehicle-management' },
+  { icon: 'wallet-outline', label: 'Wallet', subtitle: 'Balance & withdrawals', route: '/(app)/(tabs)/wallet' },
+  { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQs and contact us', route: '/(app)/help-support' },
+];
+
+const ADMIN_MENU: MenuItem[] = [
+  { icon: 'shield-checkmark-outline', label: 'Verifications', subtitle: 'Review requests', route: '/(app)/(tabs)/verifications' },
+  { icon: 'people-outline', label: 'Users', subtitle: 'Manage all users', route: '/(app)/(tabs)/users' },
+  { icon: 'analytics-outline', label: 'Analytics', subtitle: 'Platform insights', route: '/(app)/admin-analytics' },
+  { icon: 'receipt-outline', label: 'Orders', subtitle: 'Order management', route: '/(app)/order-management' },
+  { icon: 'storefront-outline', label: 'Shops', subtitle: 'Shop management', route: '/(app)/shop-management' },
+  { icon: 'warning-outline', label: 'Disputes', subtitle: 'Resolve issues', route: '/(app)/disputes' },
+  { icon: 'notifications-outline', label: 'Notifications', subtitle: 'System alerts', route: '/(app)/notifications' },
+  { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQs and contact us', route: '/(app)/help-support' },
+];
+
+const ROLE_MENUS: Record<string, MenuItem[]> = {
+  customer: CUSTOMER_MENU,
+  contractor: CONTRACTOR_MENU,
+  worker: WORKER_MENU,
+  shopkeeper: SHOPKEEPER_MENU,
+  driver: DRIVER_MENU,
+  admin: ADMIN_MENU,
+};
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -53,7 +116,7 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={s.header}>
           <Text style={s.headerTitle}>Profile</Text>
-          <TouchableOpacity style={s.settingsBtn}>
+          <TouchableOpacity style={s.settingsBtn} onPress={() => router.push('/(app)/settings')}>
             <Ionicons name="settings-outline" size={22} color={T.text} />
           </TouchableOpacity>
         </View>
@@ -73,7 +136,7 @@ export default function ProfileScreen() {
               <Text style={s.roleText}>{roleLabel}</Text>
             </View>
           </View>
-          <TouchableOpacity style={s.editBtn}>
+          <TouchableOpacity style={s.editBtn} onPress={() => router.push('/(app)/edit-profile')}>
             <Ionicons name="create-outline" size={18} color={T.navy} />
           </TouchableOpacity>
         </View>
@@ -92,7 +155,7 @@ export default function ProfileScreen() {
 
         {/* Menu Items */}
         <View style={s.menuSection}>
-          {CUSTOMER_MENU.map((item, i) => (
+          {(ROLE_MENUS[user?.role || 'customer'] || CUSTOMER_MENU).map((item, i) => (
             <TouchableOpacity
               key={i}
               style={s.menuItem}
