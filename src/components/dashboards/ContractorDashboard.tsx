@@ -81,6 +81,26 @@ export default function ContractorDashboard() {
           </View>
         </View>
 
+        {/* Tools & Features */}
+        <View>
+          <Text style={s.sectionTitle}>Tools & Features</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {[
+              { icon: 'business' as const, label: 'Sites', color: '#3B82F6', route: '/(app)/site-management' },
+              { icon: 'bar-chart' as const, label: 'Analytics', color: '#10B981', route: '/(app)/contractor-analytics' },
+              { icon: 'megaphone' as const, label: 'Tenders', color: '#8B5CF6', route: '/(app)/tenders' },
+              { icon: 'chatbubbles' as const, label: 'Messages', color: '#F59E0B', route: '/(app)/chat/index' },
+            ].map((tool, i) => (
+              <TouchableOpacity key={i} style={s.toolCard} onPress={() => router.push(tool.route as any)}>
+                <View style={[s.toolIcon, { backgroundColor: `${tool.color}15` }]}>
+                  <Ionicons name={tool.icon} size={22} color={tool.color} />
+                </View>
+                <Text style={s.toolLabel}>{tool.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Active Agreements */}
         <View>
           <View style={s.sectionHeader}>
@@ -175,4 +195,7 @@ const s = {
   workerSkill: { fontSize: 12, color: T.textSecondary, marginTop: 2 },
   workerRate: { fontSize: 13, fontWeight: '700' as const, color: T.amber },
   workerRating: { fontSize: 12, fontWeight: '600' as const, color: T.textSecondary },
+  toolCard: { width: '47%' as any, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, alignItems: 'center' as const, gap: 10 },
+  toolIcon: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center' as const, alignItems: 'center' as const },
+  toolLabel: { fontSize: 13, fontWeight: '700' as const, color: T.text },
 };

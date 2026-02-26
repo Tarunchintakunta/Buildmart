@@ -105,10 +105,30 @@ export default function WorkerDashboard() {
                 <Text style={s.skillText}>{skill}</Text>
               </View>
             ))}
-            <TouchableOpacity style={s.addSkillBtn}>
+            <TouchableOpacity style={s.addSkillBtn} onPress={() => router.push('/(app)/skill-management')}>
               <Ionicons name="add" size={16} color={T.textMuted} />
               <Text style={s.addSkillText}>Add Skill</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Tools & Features */}
+        <View>
+          <Text style={s.sectionTitle}>Tools & Features</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {[
+              { icon: 'construct' as const, label: 'Skills', color: '#3B82F6', route: '/(app)/skill-management' },
+              { icon: 'calendar' as const, label: 'Availability', color: '#10B981', route: '/(app)/availability' },
+              { icon: 'time' as const, label: 'Job History', color: '#8B5CF6', route: '/(app)/job-history' },
+              { icon: 'ribbon' as const, label: 'Certifications', color: '#F59E0B', route: '/(app)/certifications' },
+            ].map((tool, i) => (
+              <TouchableOpacity key={i} style={s.toolCard} onPress={() => router.push(tool.route as any)}>
+                <View style={[s.toolIcon, { backgroundColor: `${tool.color}15` }]}>
+                  <Ionicons name={tool.icon} size={22} color={tool.color} />
+                </View>
+                <Text style={s.toolLabel}>{tool.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -213,4 +233,7 @@ const s = {
   contractEnd: { fontSize: 12, color: T.textMuted },
   activeBadge: { backgroundColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   activeBadgeText: { fontSize: 11, fontWeight: '700' as const, color: '#10B981' },
+  toolCard: { width: '47%' as any, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, alignItems: 'center' as const, gap: 10 },
+  toolIcon: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center' as const, alignItems: 'center' as const },
+  toolLabel: { fontSize: 13, fontWeight: '700' as const, color: T.text },
 };

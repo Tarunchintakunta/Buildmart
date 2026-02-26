@@ -1,5 +1,8 @@
 import { View, ViewStyle } from 'react-native';
 import { ReactNode } from 'react';
+import { LightTheme } from '../../theme/designSystem';
+
+const T = LightTheme;
 
 interface CardProps {
   children: ReactNode;
@@ -18,8 +21,8 @@ export default function Card({
 }: CardProps) {
   const getVariantStyles = (): ViewStyle => {
     const baseStyle: ViewStyle = {
-      backgroundColor: '#1F2937',
-      borderRadius: 20,
+      backgroundColor: T.surface,
+      borderRadius: 14,
       padding,
     };
 
@@ -29,7 +32,7 @@ export default function Card({
           ...baseStyle,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
+          shadowOpacity: 0.08,
           shadowRadius: 12,
           elevation: 8,
         };
@@ -37,14 +40,16 @@ export default function Card({
         return {
           ...baseStyle,
           borderWidth: 1,
-          borderColor: '#374151',
+          borderColor: T.border,
         };
       default:
         return {
           ...baseStyle,
+          borderWidth: 1,
+          borderColor: T.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
+          shadowOpacity: 0.05,
           shadowRadius: 8,
           elevation: 4,
         };

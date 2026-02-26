@@ -79,7 +79,7 @@ export default function ShopkeeperDashboard() {
 
         {/* Quick Actions */}
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          <TouchableOpacity style={s.primaryAction} onPress={() => router.push('/(app)/(tabs)/inventory')}>
+          <TouchableOpacity style={s.primaryAction} onPress={() => router.push('/(app)/add-product')}>
             <Ionicons name="add-circle" size={20} color={T.white} />
             <Text style={s.primaryActionText}>Add Product</Text>
           </TouchableOpacity>
@@ -87,6 +87,26 @@ export default function ShopkeeperDashboard() {
             <Ionicons name="receipt" size={20} color={T.navy} />
             <Text style={s.secondaryActionText}>View Orders</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Tools & Features */}
+        <View>
+          <Text style={s.sectionTitle}>Manage Shop</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {[
+              { icon: 'settings' as const, label: 'Shop Settings', color: '#3B82F6', route: '/(app)/shop-settings' },
+              { icon: 'pricetags' as const, label: 'Pricing & Offers', color: '#10B981', route: '/(app)/pricing-offers' },
+              { icon: 'bar-chart' as const, label: 'Analytics', color: '#8B5CF6', route: '/(app)/shop-analytics' },
+              { icon: 'chatbubbles' as const, label: 'Messages', color: '#F59E0B', route: '/(app)/chat/index' },
+            ].map((tool, i) => (
+              <TouchableOpacity key={i} style={s.toolCard} onPress={() => router.push(tool.route as any)}>
+                <View style={[s.toolIcon, { backgroundColor: `${tool.color}15` }]}>
+                  <Ionicons name={tool.icon} size={22} color={tool.color} />
+                </View>
+                <Text style={s.toolLabel}>{tool.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Pending Orders */}
@@ -224,4 +244,7 @@ const s = {
   driverAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: T.bg, justifyContent: 'center' as const, alignItems: 'center' as const },
   driverName: { fontSize: 14, fontWeight: '700' as const, color: T.text },
   driverStatus: { fontSize: 12, fontWeight: '600' as const, marginTop: 2 },
+  toolCard: { width: '47%' as any, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, alignItems: 'center' as const, gap: 10 },
+  toolIcon: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center' as const, alignItems: 'center' as const },
+  toolLabel: { fontSize: 13, fontWeight: '700' as const, color: T.text },
 };

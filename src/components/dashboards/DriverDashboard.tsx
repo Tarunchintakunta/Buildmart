@@ -142,6 +142,26 @@ export default function DriverDashboard() {
           ))}
         </View>
 
+        {/* Tools & Features */}
+        <View>
+          <Text style={s.sectionTitle}>Tools & Features</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {[
+              { icon: 'map' as const, label: 'Route Planner', color: '#3B82F6', route: '/(app)/route-optimization' },
+              { icon: 'camera' as const, label: 'Delivery Proof', color: '#10B981', route: '/(app)/delivery-proof' },
+              { icon: 'cash' as const, label: 'Earnings', color: '#8B5CF6', route: '/(app)/earnings-history' },
+              { icon: 'car' as const, label: 'Vehicle', color: '#F59E0B', route: '/(app)/vehicle-management' },
+            ].map((tool, i) => (
+              <TouchableOpacity key={i} style={s.toolCard} onPress={() => router.push(tool.route as any)}>
+                <View style={[s.toolIcon, { backgroundColor: `${tool.color}15` }]}>
+                  <Ionicons name={tool.icon} size={22} color={tool.color} />
+                </View>
+                <Text style={s.toolLabel}>{tool.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Scan QR */}
         <TouchableOpacity style={s.scanBtn} onPress={() => router.push('/(app)/scan?mode=delivery')}>
           <Ionicons name="scan" size={24} color={T.white} />
@@ -221,4 +241,7 @@ const s = {
   perfValue: { fontSize: 24, fontWeight: '800' as const, color: T.text, marginBottom: 4 },
   perfLabel: { fontSize: 12, fontWeight: '600' as const, color: T.textSecondary },
   perfDivider: { width: 1, backgroundColor: T.border },
+  toolCard: { width: '47%' as any, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, alignItems: 'center' as const, gap: 10 },
+  toolIcon: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center' as const, alignItems: 'center' as const },
+  toolLabel: { fontSize: 13, fontWeight: '700' as const, color: T.text },
 };

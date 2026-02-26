@@ -75,6 +75,26 @@ export default function AdminDashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Admin Tools */}
+        <View>
+          <Text style={s.sectionTitle}>Admin Tools</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {[
+              { icon: 'analytics' as const, label: 'Analytics', color: '#3B82F6', route: '/(app)/admin-analytics' },
+              { icon: 'receipt' as const, label: 'Orders', color: '#10B981', route: '/(app)/order-management' },
+              { icon: 'storefront' as const, label: 'Shops', color: '#8B5CF6', route: '/(app)/shop-management' },
+              { icon: 'warning' as const, label: 'Disputes', color: '#EF4444', route: '/(app)/disputes' },
+            ].map((tool, i) => (
+              <TouchableOpacity key={i} style={s.toolCard} onPress={() => router.push(tool.route as any)}>
+                <View style={[s.toolIcon, { backgroundColor: `${tool.color}15` }]}>
+                  <Ionicons name={tool.icon} size={22} color={tool.color} />
+                </View>
+                <Text style={s.toolLabel}>{tool.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Pending Verifications */}
         <View>
           <View style={s.sectionHeader}>
@@ -223,4 +243,7 @@ const s = {
   sysValue: { fontSize: 26, fontWeight: '800' as const, color: T.text, marginBottom: 10 },
   progressTrack: { height: 6, borderRadius: 3, backgroundColor: T.bg },
   progressFill: { height: 6, borderRadius: 3 },
+  toolCard: { width: '47%' as any, backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border, alignItems: 'center' as const, gap: 10 },
+  toolIcon: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center' as const, alignItems: 'center' as const },
+  toolLabel: { fontSize: 13, fontWeight: '700' as const, color: T.text },
 };

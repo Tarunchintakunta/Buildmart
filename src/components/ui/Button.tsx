@@ -1,5 +1,8 @@
 import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LightTheme } from '../../theme/designSystem';
+
+const T = LightTheme;
 
 interface ButtonProps {
   title: string;
@@ -32,8 +35,8 @@ export default function Button({
     switch (variant) {
       case 'primary':
         return {
-          backgroundColor: '#F97316',
-          shadowColor: '#F97316',
+          backgroundColor: T.amber,
+          shadowColor: T.amber,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,
@@ -41,13 +44,13 @@ export default function Button({
         };
       case 'secondary':
         return {
-          backgroundColor: '#374151',
+          backgroundColor: T.bg,
         };
       case 'outline':
         return {
           backgroundColor: 'transparent',
           borderWidth: 1,
-          borderColor: '#374151',
+          borderColor: T.border,
         };
       default:
         return {};
@@ -71,8 +74,11 @@ export default function Button({
 
   return (
     <TouchableOpacity
-      className="rounded-2xl flex-row items-center justify-center"
       style={{
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
         ...getVariantStyles(),
         opacity: disabled || loading ? 0.6 : 1,
         width: fullWidth ? '100%' : 'auto',
@@ -89,8 +95,9 @@ export default function Button({
             <Ionicons name={icon} size={sizeStyles.fontSize} color="white" style={{ marginRight: 8 }} />
           )}
           <Text
-            className="font-bold text-white"
             style={{
+              fontWeight: '700' as const,
+              color: variant === 'secondary' ? T.navy : variant === 'outline' ? T.text : T.white,
               fontSize: sizeStyles.fontSize,
               ...textStyle,
             }}
