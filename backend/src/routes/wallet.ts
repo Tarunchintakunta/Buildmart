@@ -81,6 +81,36 @@ export async function walletRoutes(fastify: FastifyInstance): Promise<void> {
     }
   });
 
+  // POST /api/wallet/withdraw — mock withdrawal (records transaction, actual payout after funding)
+  fastify.post('/withdraw', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const requester = request.user as unknown as JWTPayload;
+    const result = depositSchema.safeParse(request.body);
+    if (!result.success) {
+      return reply.status(400).send({ error: 'Validation failed', code: 'VALIDATION_ERROR', details: result.error.errors });
+    }
+
+    try {
+      const wallet = await getOrCreateWallet(requester.userId);
+      if (parseFloat(wallet.balance) < result.data.amount) {
+        return reply.status(400).send({ error: 'Insufficient balance', code: 'INSUFFICIENT_BALANCE' });
+      }
+      const { generateTransactionNumber } = await import('../services/auth.service.js');
+      const newBalance = parseFloat(wallet.balance) - result.data.amount;
+      const newSpent = parseFloat(wallet.total_spent) + result.data.amount;
+      await supabaseAdmin.from('wallets').update({ balance: newBalance, total_spent: newSpent, updated_at: new Date().toISOString() }).eq('id', wallet.id);
+      const txnNumber = generateTransactionNumber();
+      const { data: txn } = await supabaseAdmin.from('transactions').insert({
+        transaction_number: txnNumber, wallet_id: wallet.id, type: 'withdrawal',
+        amount: result.data.amount, status: 'completed', from_user_id: requester.userId,
+        description: result.data.description || 'Withdrawal request',
+        completed_at: new Date().toISOString(),
+      }).select().single();
+      return reply.send({ message: 'Withdrawal recorded. Actual payout will be processed after funding.', transaction: txn });
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message, code: 'WALLET_ERROR' });
+    }
+  });
+
   // POST /api/wallet/hold — internal: hold funds
   fastify.post('/hold', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
     const requester = request.user as unknown as JWTPayload;
