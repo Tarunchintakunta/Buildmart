@@ -1,21 +1,33 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  FadeInLeft,
+} from 'react-native-reanimated';
 import Colors from '../../theme/colors';
 import type { Order, OrderWithDetails } from '../../types';
 import StatusBadge from './StatusBadge';
+import { SPRING_SNAPPY, SPRING_BOUNCY } from '../../utils/animations';
 
 export interface OrderCardProps {
   order: Order | OrderWithDetails;
   onPress?: () => void;
   onTrack?: () => void;
   style?: ViewStyle;
+  index?: number;
 }
 
 function formatDate(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   } catch {
     return iso;
   }
@@ -31,81 +43,103 @@ function formatIndian(num: number): string {
   return '₹' + groups.reverse().join('');
 }
 
-const TRACKABLE_STATUSES = ['accepted', 'processing', 'out_for_delivery'];
+const TRACKABLE = ['accepted', 'processing', 'out_for_delivery'];
 
-export default function OrderCard({ order, onPress, onTrack, style }: OrderCardProps) {
+export default function OrderCard({ order, onPress, onTrack, style, index = 0 }: OrderCardProps) {
   const withDetails = order as OrderWithDetails;
   const shopName = withDetails.shop?.name ?? 'Shop';
   const itemCount = withDetails.items?.length ?? 0;
-
   const itemSummary = withDetails.items
     ? withDetails.items
         .slice(0, 2)
         .map((i) => i.product?.name ?? 'Item')
         .join(', ')
     : '';
+  const canTrack = TRACKABLE.includes(order.status);
 
-  const canTrack = TRACKABLE_STATUSES.includes(order.status);
+  // Press animation
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  const handlePressIn = useCallback(() => {
+    scale.value = withSpring(0.97, SPRING_SNAPPY);
+  }, [scale]);
+  const handlePressOut = useCallback(() => {
+    scale.value = withSpring(1, SPRING_BOUNCY);
+  }, [scale]);
 
   return (
-    <TouchableOpacity
-      style={[styles.card, style]}
-      onPress={onPress}
-      activeOpacity={0.95}
-      accessibilityRole="button"
-      accessibilityLabel={`Order ${order.order_number}`}
+    <Animated.View
+      style={[styles.card, style, animStyle]}
+      entering={FadeInLeft.delay(index * 80)
+        .springify()
+        .damping(18)
+        .stiffness(180)}
     >
-      {/* Header row */}
-      <View style={styles.headerRow}>
-        <View style={styles.orderInfo}>
-          <Text style={styles.orderNumber} numberOfLines={1}>
-            #{order.order_number}
-          </Text>
-          <Text style={styles.date}>{formatDate(order.created_at)}</Text>
-        </View>
-        <StatusBadge status={order.status} type="order" size="sm" />
-      </View>
-
-      <View style={styles.divider} />
-
-      {/* Shop + items */}
-      <View style={styles.bodyRow}>
-        <View style={styles.shopIcon}>
-          <Ionicons name="storefront-outline" size={20} color={Colors.textSecondary} />
-        </View>
-        <View style={styles.bodyContent}>
-          <Text style={styles.shopName} numberOfLines={1}>
-            {shopName}
-          </Text>
-          {itemCount > 0 ? (
-            <Text style={styles.items} numberOfLines={1}>
-              {itemCount} item{itemCount !== 1 ? 's' : ''}
-              {itemSummary ? ` · ${itemSummary}` : ''}
-              {itemCount > 2 ? '...' : ''}
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.pressable}
+        accessibilityRole="button"
+        accessibilityLabel={`Order ${order.order_number}`}
+      >
+        {/* Header row */}
+        <View style={styles.headerRow}>
+          <View style={styles.orderInfo}>
+            <Text style={styles.orderNumber} numberOfLines={1}>
+              #{order.order_number}
             </Text>
-          ) : null}
+            <Text style={styles.date}>{formatDate(order.created_at)}</Text>
+          </View>
+          <StatusBadge status={order.status} type="order" size="sm" />
         </View>
-      </View>
 
-      {/* Footer */}
-      <View style={styles.footerRow}>
-        <View>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalAmount}>{formatIndian(order.total_amount)}</Text>
+        <View style={styles.divider} />
+
+        {/* Shop + items */}
+        <View style={styles.bodyRow}>
+          <View style={styles.shopIcon}>
+            <Ionicons name="storefront-outline" size={20} color={Colors.textSecondary} />
+          </View>
+          <View style={styles.bodyContent}>
+            <Text style={styles.shopName} numberOfLines={1}>
+              {shopName}
+            </Text>
+            {itemCount > 0 && (
+              <Text style={styles.items} numberOfLines={1}>
+                {itemCount} item{itemCount !== 1 ? 's' : ''}
+                {itemSummary ? ` · ${itemSummary}` : ''}
+                {itemCount > 2 ? '...' : ''}
+              </Text>
+            )}
+          </View>
         </View>
-        {canTrack && onTrack ? (
-          <TouchableOpacity
-            style={styles.trackBtn}
-            onPress={onTrack}
-            accessibilityRole="button"
-            accessibilityLabel="Track order"
-          >
-            <Ionicons name="location-outline" size={14} color={Colors.primary} />
-            <Text style={styles.trackText}>Track</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    </TouchableOpacity>
+
+        {/* Footer */}
+        <View style={styles.footerRow}>
+          <View>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalAmount}>{formatIndian(order.total_amount)}</Text>
+          </View>
+          {canTrack && onTrack && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.trackBtn,
+                pressed && styles.trackBtnPressed,
+              ]}
+              onPress={onTrack}
+              accessibilityRole="button"
+              accessibilityLabel="Track order"
+            >
+              <Ionicons name="location-outline" size={14} color={Colors.primary} />
+              <Text style={styles.trackText}>Track</Text>
+            </Pressable>
+          )}
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -113,7 +147,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
     borderRadius: 14,
-    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -122,6 +155,10 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  pressable: {
+    padding: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -163,6 +200,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  trackBtnPressed: {
+    backgroundColor: Colors.border,
   },
   trackText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
 });

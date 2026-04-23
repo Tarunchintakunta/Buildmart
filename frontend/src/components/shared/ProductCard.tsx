@@ -1,19 +1,28 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  ViewStyle,
+  type ViewStyle,
   Image,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  FadeInDown,
+  ZoomIn,
+} from 'react-native-reanimated';
 import Colors from '../../theme/colors';
+import { SPRING_SNAPPY, SPRING_BOUNCY } from '../../utils/animations';
 import type { Product, Inventory } from '../../types';
 
 export interface ProductCardProps {
   product: Product;
   inventoryItem: Inventory;
+  onPress?: () => void;
   onAddToCart?: () => void;
   onWishlist?: () => void;
   onIncrement?: () => void;
@@ -24,6 +33,7 @@ export interface ProductCardProps {
   isBestSeller?: boolean;
   isNew?: boolean;
   style?: ViewStyle;
+  index?: number;
 }
 
 function formatIndian(num: number): string {
@@ -39,6 +49,7 @@ function formatIndian(num: number): string {
 export default function ProductCard({
   product,
   inventoryItem,
+  onPress,
   onAddToCart,
   onWishlist,
   onIncrement,
@@ -49,120 +60,185 @@ export default function ProductCard({
   isBestSeller = false,
   isNew = false,
   style,
+  index = 0,
 }: ProductCardProps) {
   const isOutOfStock = !inventoryItem.is_available || inventoryItem.stock_quantity === 0;
 
+  // Card press animation
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = useCallback(() => {
+    scale.value = withSpring(0.96, SPRING_SNAPPY);
+  }, [scale]);
+
+  const handlePressOut = useCallback(() => {
+    scale.value = withSpring(1, SPRING_BOUNCY);
+  }, [scale]);
+
+  // Wishlist heart pop
+  const heartScale = useSharedValue(1);
+  const heartAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
+
+  const handleWishlist = useCallback(() => {
+    heartScale.value = withSpring(1.4, SPRING_SNAPPY, () => {
+      heartScale.value = withSpring(1, SPRING_BOUNCY);
+    });
+    onWishlist?.();
+  }, [heartScale, onWishlist]);
+
+  // Add to cart bounce
+  const addScale = useSharedValue(1);
+  const addAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: addScale.value }],
+  }));
+
+  const handleAddToCart = useCallback(() => {
+    addScale.value = withSpring(0.88, SPRING_SNAPPY, () => {
+      addScale.value = withSpring(1.08, SPRING_BOUNCY, () => {
+        addScale.value = withSpring(1, SPRING_GENTLE);
+      });
+    });
+    onAddToCart?.();
+  }, [addScale, onAddToCart]);
+
   return (
-    <View style={[styles.card, style]}>
-      {/* Image area */}
-      <View style={styles.imageWrap}>
-        {product.image_url ? (
-          <Image
-            source={{ uri: product.image_url }}
-            style={styles.image}
-            resizeMode="cover"
-            accessibilityLabel={product.name}
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Ionicons name="cube-outline" size={36} color={Colors.textMuted} />
-          </View>
-        )}
-
-        {/* Badges */}
-        {isBestSeller ? (
-          <View style={styles.badgePill}>
-            <Text style={styles.badgePillText}>Best Seller</Text>
-          </View>
-        ) : isNew ? (
-          <View style={[styles.badgePill, styles.newBadge]}>
-            <Text style={styles.badgePillText}>New</Text>
-          </View>
-        ) : null}
-
-        {/* Wishlist */}
-        {onWishlist ? (
-          <TouchableOpacity
-            style={styles.wishlistBtn}
-            onPress={onWishlist}
-            accessibilityRole="button"
-            accessibilityLabel={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-          >
-            <Ionicons
-              name={isWishlisted ? 'heart' : 'heart-outline'}
-              size={18}
-              color={isWishlisted ? Colors.error : Colors.textSecondary}
+    <Animated.View
+      style={[styles.card, style, animStyle]}
+      entering={FadeInDown.delay(index * 70)
+        .springify()
+        .damping(18)
+        .stiffness(180)}
+    >
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        style={styles.pressable}
+      >
+        {/* Image area */}
+        <View style={styles.imageWrap}>
+          {product.image_url ? (
+            <Image
+              source={{ uri: product.image_url }}
+              style={styles.image}
+              resizeMode="cover"
+              accessibilityLabel={product.name}
             />
-          </TouchableOpacity>
-        ) : null}
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="cube-outline" size={36} color={Colors.textMuted} />
+            </View>
+          )}
 
-        {/* Out of stock overlay */}
-        {isOutOfStock ? (
-          <View style={styles.oosBg}>
-            <TouchableOpacity
-              style={styles.notifyBtn}
-              onPress={onNotifyMe}
-              accessibilityRole="button"
-              accessibilityLabel="Notify me when in stock"
+          {/* Best Seller / New badge */}
+          {isBestSeller ? (
+            <Animated.View
+              style={styles.badgePill}
+              entering={ZoomIn.delay(index * 70 + 200).springify()}
             >
-              <Text style={styles.notifyText}>Notify Me</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-      </View>
-
-      {/* Details */}
-      <View style={styles.details}>
-        <Text style={styles.name} numberOfLines={2}>
-          {product.name}
-        </Text>
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>
-            {formatIndian(inventoryItem.price)}/{product.unit}
-          </Text>
-          {!isOutOfStock ? (
-            <Text style={styles.inStock}>In Stock</Text>
+              <Text style={styles.badgePillText}>Best Seller</Text>
+            </Animated.View>
+          ) : isNew ? (
+            <Animated.View
+              style={[styles.badgePill, styles.newBadge]}
+              entering={ZoomIn.delay(index * 70 + 200).springify()}
+            >
+              <Text style={styles.badgePillText}>New</Text>
+            </Animated.View>
           ) : null}
+
+          {/* Wishlist */}
+          {onWishlist ? (
+            <Animated.View style={[styles.wishlistBtn, heartAnimStyle]}>
+              <Pressable
+                onPress={handleWishlist}
+                accessibilityRole="button"
+                accessibilityLabel={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={isWishlisted ? 'heart' : 'heart-outline'}
+                  size={18}
+                  color={isWishlisted ? Colors.error : Colors.textSecondary}
+                />
+              </Pressable>
+            </Animated.View>
+          ) : null}
+
+          {/* Out of stock overlay */}
+          {isOutOfStock && (
+            <View style={styles.oosBg}>
+              <Pressable
+                style={styles.notifyBtn}
+                onPress={onNotifyMe}
+                accessibilityRole="button"
+                accessibilityLabel="Notify me when in stock"
+              >
+                <Text style={styles.notifyText}>Notify Me</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
-        {/* Cart controls */}
-        {!isOutOfStock ? (
-          cartQuantity === 0 ? (
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={onAddToCart}
-              accessibilityRole="button"
-              accessibilityLabel={`Add ${product.name} to cart`}
-            >
-              <Text style={styles.addBtnText}>Add</Text>
-              <Ionicons name="add" size={16} color={Colors.white} />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.qtyRow}>
-              <TouchableOpacity
-                style={styles.qtyBtn}
-                onPress={onDecrement}
-                accessibilityRole="button"
-                accessibilityLabel="Decrease quantity"
-              >
-                <Ionicons name="remove" size={16} color={Colors.primary} />
-              </TouchableOpacity>
-              <Text style={styles.qtyText}>{cartQuantity}</Text>
-              <TouchableOpacity
-                style={styles.qtyBtn}
-                onPress={onIncrement}
-                accessibilityRole="button"
-                accessibilityLabel="Increase quantity"
-              >
-                <Ionicons name="add" size={16} color={Colors.primary} />
-              </TouchableOpacity>
-            </View>
-          )
-        ) : null}
-      </View>
-    </View>
+        {/* Details */}
+        <View style={styles.details}>
+          <Text style={styles.name} numberOfLines={2}>
+            {product.name}
+          </Text>
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>
+              {formatIndian(inventoryItem.price)}/{product.unit}
+            </Text>
+            {!isOutOfStock && <Text style={styles.inStock}>In Stock</Text>}
+          </View>
+
+          {/* Cart controls */}
+          {!isOutOfStock &&
+            (cartQuantity === 0 ? (
+              <Animated.View style={addAnimStyle}>
+                <Pressable
+                  style={styles.addBtn}
+                  onPress={handleAddToCart}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Add ${product.name} to cart`}
+                >
+                  <Text style={styles.addBtnText}>Add</Text>
+                  <Ionicons name="add" size={16} color={Colors.white} />
+                </Pressable>
+              </Animated.View>
+            ) : (
+              <View style={styles.qtyRow}>
+                <Pressable
+                  style={styles.qtyBtn}
+                  onPress={onDecrement}
+                  accessibilityRole="button"
+                  accessibilityLabel="Decrease quantity"
+                >
+                  <Ionicons name="remove" size={16} color={Colors.primary} />
+                </Pressable>
+                <Text style={styles.qtyText}>{cartQuantity}</Text>
+                <Pressable
+                  style={styles.qtyBtn}
+                  onPress={onIncrement}
+                  accessibilityRole="button"
+                  accessibilityLabel="Increase quantity"
+                >
+                  <Ionicons name="add" size={16} color={Colors.primary} />
+                </Pressable>
+              </View>
+            ))}
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
+
+const SPRING_GENTLE = { damping: 26, stiffness: 160, mass: 1 };
 
 const styles = StyleSheet.create({
   card: {
@@ -177,6 +253,9 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  pressable: {
+    flex: 1,
   },
   imageWrap: {
     height: 140,
