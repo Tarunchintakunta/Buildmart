@@ -1,552 +1,894 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  Modal,
+  TextInput,
+  Dimensions,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../../src/hooks/useAuth';
-import { useWalletStore } from '../../../src/store/cart.store';
-import { LightTheme } from '../../../src/theme/colors';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  ZoomIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  Easing,
+  SlideInDown,
+} from 'react-native-reanimated';
 
-const T = LightTheme;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TRANSACTION_TABS = ['All', 'Credits', 'Debits', 'Held'];
+// Colors
+const C = {
+  navy: '#1A1D2E',
+  navyLight: '#252838',
+  amber: '#F2960D',
+  amberBg: '#FEF3C7',
+  bg: '#F5F6FA',
+  surface: '#FFFFFF',
+  success: '#10B981',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  border: '#E5E7EB',
+  text: '#1A1D2E',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  white: '#FFFFFF',
+};
 
-const MOCK_TRANSACTIONS = [
+const TRANSACTION_TABS = ['All', 'Credits', 'Debits', 'On Hold'] as const;
+type TransactionTab = typeof TRANSACTION_TABS[number];
+
+type TxType = 'deposit' | 'payment' | 'hold' | 'release' | 'withdrawal';
+
+interface Transaction {
+  id: string;
+  type: TxType;
+  amount: number;
+  description: string;
+  date: string;
+  status: string;
+  isCredit: boolean;
+  isHeld: boolean;
+}
+
+const MOCK_TRANSACTIONS: Transaction[] = [
   {
     id: 't1',
-    type: 'payment',
-    amount: 5460,
-    description: 'Payment for Order ORD-2024-0001',
-    referenceType: 'order',
+    type: 'deposit',
+    amount: 20000,
+    description: 'Wallet top-up via UPI',
+    date: 'Today, 10:30 AM',
     status: 'completed',
-    date: '2024-02-10',
-    isCredit: false,
+    isCredit: true,
+    isHeld: false,
   },
   {
     id: 't2',
     type: 'hold',
-    amount: 30000,
-    description: 'Payment held for Order ORD-2024-0002',
-    referenceType: 'order',
+    amount: 3000,
+    description: 'Escrow held for ORD-2024-0041',
+    date: 'Today, 09:15 AM',
     status: 'held',
-    date: '2024-02-15',
     isCredit: false,
+    isHeld: true,
   },
   {
     id: 't3',
-    type: 'hold',
-    amount: 50000,
-    description: 'Escrow for Agreement AGR-2024-001',
-    referenceType: 'agreement',
-    status: 'held',
-    date: '2024-01-15',
+    type: 'payment',
+    amount: 2450,
+    description: 'Payment to Sri Lakshmi Traders',
+    date: 'Yesterday, 3:45 PM',
+    status: 'completed',
     isCredit: false,
+    isHeld: false,
   },
   {
     id: 't4',
-    type: 'deposit',
-    amount: 100000,
-    description: 'Wallet top-up via UPI',
-    referenceType: 'wallet',
+    type: 'release',
+    amount: 5000,
+    description: 'Escrow released – ORD-2024-0039',
+    date: 'Yesterday, 11:00 AM',
     status: 'completed',
-    date: '2024-02-01',
     isCredit: true,
+    isHeld: false,
   },
   {
     id: 't5',
-    type: 'release',
-    amount: 36000,
-    description: 'Payment released for Agreement AGR-2024-002',
-    referenceType: 'agreement',
+    type: 'withdrawal',
+    amount: 10000,
+    description: 'Withdrawal to HDFC Bank ••4821',
+    date: '22 Apr, 6:00 PM',
     status: 'completed',
-    date: '2024-02-05',
-    isCredit: true,
+    isCredit: false,
+    isHeld: false,
   },
   {
     id: 't6',
-    type: 'payment',
+    type: 'deposit',
     amount: 15000,
-    description: 'Payment for Order ORD-2024-0006',
-    referenceType: 'order',
+    description: 'Wallet top-up via Net Banking',
+    date: '21 Apr, 2:30 PM',
     status: 'completed',
-    date: '2024-01-28',
+    isCredit: true,
+    isHeld: false,
+  },
+  {
+    id: 't7',
+    type: 'payment',
+    amount: 8760,
+    description: 'Rajesh Constructions – Cement order',
+    date: '20 Apr, 1:15 PM',
+    status: 'completed',
     isCredit: false,
+    isHeld: false,
+  },
+  {
+    id: 't8',
+    type: 'hold',
+    amount: 1200,
+    description: 'Escrow held for delivery DEL-0021',
+    date: '19 Apr, 9:00 AM',
+    status: 'held',
+    isCredit: false,
+    isHeld: true,
+  },
+  {
+    id: 't9',
+    type: 'release',
+    amount: 3500,
+    description: 'Agreement milestone released',
+    date: '18 Apr, 4:45 PM',
+    status: 'completed',
+    isCredit: true,
+    isHeld: false,
+  },
+  {
+    id: 't10',
+    type: 'deposit',
+    amount: 5000,
+    description: 'Referral bonus credited',
+    date: '17 Apr, 12:00 PM',
+    status: 'completed',
+    isCredit: true,
+    isHeld: false,
   },
 ];
 
-const getTransactionIcon = (type: string) => {
+const ADD_PRESETS = [500, 1000, 2000, 5000];
+
+const BALANCE = 12450;
+const HELD = 3000;
+
+function formatINR(amount: number): string {
+  return amount.toLocaleString('en-IN');
+}
+
+function getTxIcon(type: TxType): keyof typeof Ionicons.glyphMap {
   switch (type) {
-    case 'deposit':
-      return { icon: 'arrow-down-circle', color: '#22C55E' };
-    case 'withdrawal':
-      return { icon: 'arrow-up-circle', color: '#EF4444' };
-    case 'payment':
-      return { icon: 'cart', color: '#3B82F6' };
-    case 'hold':
-      return { icon: 'lock-closed', color: '#EAB308' };
-    case 'release':
-      return { icon: 'lock-open', color: '#22C55E' };
-    case 'refund':
-      return { icon: 'refresh', color: '#8B5CF6' };
-    default:
-      return { icon: 'help-circle', color: '#6B7280' };
+    case 'deposit': return 'arrow-down-circle';
+    case 'payment': return 'arrow-up-circle';
+    case 'hold': return 'lock-closed';
+    case 'release': return 'checkmark-circle';
+    case 'withdrawal': return 'exit-outline';
   }
-};
+}
+
+function getTxColor(tx: Transaction): string {
+  if (tx.isHeld) return C.warning;
+  if (tx.isCredit) return C.success;
+  return C.error;
+}
+
+function useAnimatedBalance(target: number, duration = 900) {
+  const [displayed, setDisplayed] = useState(0);
+
+  useEffect(() => {
+    let start: number | null = null;
+    let raf: ReturnType<typeof setInterval>;
+    const steps = 60;
+    const interval = duration / steps;
+    let step = 0;
+
+    raf = setInterval(() => {
+      step++;
+      const progress = step / steps;
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayed(Math.floor(eased * target));
+      if (step >= steps) {
+        clearInterval(raf);
+        setDisplayed(target);
+      }
+    }, interval);
+
+    return () => clearInterval(raf);
+  }, [target, duration]);
+
+  return displayed;
+}
 
 export default function WalletScreen() {
-  const { user } = useAuth();
-  const wallet = useWalletStore((state) => state.wallet);
-  const [selectedTab, setSelectedTab] = useState('All');
+  const [activeTab, setActiveTab] = useState<TransactionTab>('All');
+  const [showAddMoney, setShowAddMoney] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
+  const [customAmount, setCustomAmount] = useState('');
+  const [showCustom, setShowCustom] = useState(false);
 
-  // Mock wallet data based on role
-  const getMockWalletData = () => {
-    switch (user?.role) {
-      case 'customer':
-        return { balance: 25000, held: 0, earned: 0, spent: 5000 };
-      case 'contractor':
-        return { balance: 500000, held: 50000, earned: 0, spent: 200000 };
-      case 'worker':
-        return { balance: 12000, held: 0, earned: 72000, spent: 0 };
-      case 'shopkeeper':
-        return { balance: 150000, held: 0, earned: 500000, spent: 350000 };
-      case 'driver':
-        return { balance: 8000, held: 0, earned: 50000, spent: 0 };
-      default:
-        return { balance: 0, held: 0, earned: 0, spent: 0 };
-    }
-  };
+  const animatedBalance = useAnimatedBalance(BALANCE);
 
-  const walletData = wallet || getMockWalletData();
-  const balance = typeof walletData === 'object' && 'balance' in walletData
-    ? walletData.balance
-    : getMockWalletData().balance;
-  const heldBalance = typeof walletData === 'object' && 'held_balance' in walletData
-    ? walletData.held_balance
-    : getMockWalletData().held;
-  const totalEarned = typeof walletData === 'object' && 'total_earned' in walletData
-    ? walletData.total_earned
-    : getMockWalletData().earned;
-  const totalSpent = typeof walletData === 'object' && 'total_spent' in walletData
-    ? walletData.total_spent
-    : getMockWalletData().spent;
+  const modalScale = useSharedValue(0.8);
+  const modalOpacity = useSharedValue(0);
 
-  const isEarner = ['worker', 'shopkeeper', 'driver'].includes(user?.role || '');
+  const openModal = useCallback(() => {
+    setShowAddMoney(true);
+    modalScale.value = withSpring(1, { damping: 15 });
+    modalOpacity.value = withTiming(1, { duration: 250 });
+  }, []);
 
-  const filteredTransactions = MOCK_TRANSACTIONS.filter((tx) => {
-    if (selectedTab === 'All') return true;
-    if (selectedTab === 'Credits') return tx.isCredit;
-    if (selectedTab === 'Debits') return !tx.isCredit && tx.status !== 'held';
-    if (selectedTab === 'Held') return tx.status === 'held';
+  const closeModal = useCallback(() => {
+    modalScale.value = withTiming(0.8, { duration: 200 });
+    modalOpacity.value = withTiming(0, { duration: 200 });
+    setTimeout(() => setShowAddMoney(false), 210);
+  }, []);
+
+  const modalStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: modalScale.value }],
+    opacity: modalOpacity.value,
+  }));
+
+  const filteredTx = MOCK_TRANSACTIONS.filter((tx) => {
+    if (activeTab === 'All') return true;
+    if (activeTab === 'Credits') return tx.isCredit && !tx.isHeld;
+    if (activeTab === 'Debits') return !tx.isCredit && !tx.isHeld;
+    if (activeTab === 'On Hold') return tx.isHeld;
     return true;
   });
 
-  const renderTransaction = ({ item: tx }: { item: typeof MOCK_TRANSACTIONS[0] }) => {
-    const iconInfo = getTransactionIcon(tx.type);
-    const isLast = filteredTransactions[filteredTransactions.length - 1]?.id === tx.id;
-
-    return (
-      <View style={[s.txRow, !isLast && s.txRowBorder]}>
-        <View
-          style={[s.txIconWrap, { backgroundColor: `${iconInfo.color}20` }]}
-        >
-          <Ionicons name={iconInfo.icon as any} size={24} color={iconInfo.color} />
-        </View>
-
-        <View style={s.txContent}>
-          <Text style={s.txDescription} numberOfLines={1}>
-            {tx.description}
-          </Text>
-          <View style={s.txMeta}>
-            <Text style={s.txDate}>{tx.date}</Text>
-            {tx.status === 'held' && (
-              <View style={s.heldBadge}>
-                <Text style={s.heldBadgeText}>Held</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <Text
-          style={[
-            s.txAmount,
-            {
-              color: tx.isCredit
-                ? T.success
-                : tx.status === 'held'
-                  ? T.amber
-                  : T.text,
-            },
-          ]}
-        >
-          {tx.isCredit ? '+' : '-'}₹{tx.amount.toLocaleString()}
-        </Text>
-      </View>
-    );
-  };
+  const amountToAdd = showCustom
+    ? parseInt(customAmount || '0', 10)
+    : selectedPreset ?? 0;
 
   return (
-    <SafeAreaView style={s.safeArea}>
-      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Header */}
-        <View style={s.header}>
-          <Text style={s.headerTitle}>Wallet</Text>
-        </View>
+        <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.headerRow}>
+          <Text style={styles.headerTitle}>My Wallet</Text>
+          <Pressable style={styles.headerIconBtn}>
+            <Ionicons name="help-circle-outline" size={22} color={C.textSecondary} />
+          </Pressable>
+        </Animated.View>
 
-        {/* Balance Card */}
-        <View style={s.sectionPad}>
-          <View style={s.balanceCard}>
-            <Text style={s.balanceLabel}>Available Balance</Text>
-            <Text style={s.balanceAmount}>
-              ₹{balance.toLocaleString()}
-            </Text>
+        {/* Wallet Card */}
+        <Animated.View entering={FadeInDown.delay(80).springify().damping(14)} style={styles.walletCard}>
+          {/* Background decorative circles */}
+          <View style={styles.cardCircle1} />
+          <View style={styles.cardCircle2} />
 
-            {heldBalance > 0 && (
-              <View style={s.escrowBadge}>
-                <Ionicons name="lock-closed" size={16} color={T.amber} />
-                <Text style={s.escrowText}>
-                  ₹{heldBalance.toLocaleString()} held in escrow
-                </Text>
-              </View>
-            )}
-
-            {/* Action Buttons */}
-            <View style={s.actionRow}>
-              <TouchableOpacity style={s.actionBtn}>
-                <Ionicons name="add" size={22} color="#FFFFFF" />
-                <Text style={s.actionBtnText}>Add Money</Text>
-              </TouchableOpacity>
-              {isEarner && (
-                <TouchableOpacity style={[s.actionBtn, { marginLeft: 12 }]}>
-                  <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
-                  <Text style={s.actionBtnText}>Withdraw</Text>
-                </TouchableOpacity>
+          <View style={styles.cardTopRow}>
+            <View>
+              <Text style={styles.cardLabel}>Available Balance</Text>
+              <Text style={styles.cardBalance}>₹{formatINR(animatedBalance)}</Text>
+              {HELD > 0 && (
+                <Animated.View entering={ZoomIn.delay(950).duration(300)} style={styles.heldChip}>
+                  <Ionicons name="lock-closed" size={11} color={C.navy} />
+                  <Text style={styles.heldChipText}>₹{formatINR(HELD)} On Hold</Text>
+                </Animated.View>
               )}
             </View>
-          </View>
-        </View>
-
-        {/* Stats Cards */}
-        <View style={s.statsRow}>
-          <View style={s.statCard}>
-            <View style={s.statHeader}>
-              <Ionicons
-                name={isEarner ? 'trending-up' : 'cart'}
-                size={22}
-                color={isEarner ? T.success : T.info}
-              />
-              <Text style={s.statLabel}>
-                {isEarner ? 'Total Earned' : 'Total Spent'}
-              </Text>
+            <View style={styles.walletIconCircle}>
+              <Ionicons name="wallet" size={28} color={C.amber} />
             </View>
-            <Text
-              style={[s.statValue, { color: isEarner ? T.success : T.text }]}
-            >
-              ₹{(isEarner ? totalEarned : totalSpent).toLocaleString()}
-            </Text>
           </View>
 
-          {heldBalance > 0 && (
-            <View style={[s.statCard, { marginLeft: 12 }]}>
-              <View style={s.statHeader}>
-                <Ionicons name="lock-closed" size={22} color={T.amber} />
-                <Text style={s.statLabel}>In Escrow</Text>
+          {/* Action Buttons */}
+          <View style={styles.cardActions}>
+            <Pressable
+              style={({ pressed }) => [styles.cardBtn, styles.cardBtnPrimary, pressed && styles.cardBtnPressed]}
+              onPress={openModal}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={C.navy} />
+              <Text style={styles.cardBtnPrimaryText}>Add Money</Text>
+            </Pressable>
+            <View style={styles.cardBtnDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.cardBtn, pressed && styles.cardBtnPressed]}
+            >
+              <Ionicons name="arrow-up-circle-outline" size={18} color={C.white} />
+              <Text style={styles.cardBtnSecondaryText}>Withdraw</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        {/* Quick Stats */}
+        <Animated.View entering={FadeInDown.delay(180).duration(400)} style={styles.statsRow}>
+          {[
+            { label: 'Total Spent', value: '₹24,210', icon: 'trending-up-outline' as keyof typeof Ionicons.glyphMap, color: C.error },
+            { label: 'Total Earned', value: '₹40,000', icon: 'trending-down-outline' as keyof typeof Ionicons.glyphMap, color: C.success },
+            { label: 'This Month', value: '10 Txns', icon: 'receipt-outline' as keyof typeof Ionicons.glyphMap, color: C.navy },
+          ].map((stat, i) => (
+            <Animated.View key={stat.label} entering={ZoomIn.delay(220 + i * 60).duration(350)} style={styles.statCard}>
+              <View style={[styles.statIconBox, { backgroundColor: stat.color + '18' }]}>
+                <Ionicons name={stat.icon} size={18} color={stat.color} />
               </View>
-              <Text style={[s.statValue, { color: T.amber }]}>
-                ₹{heldBalance.toLocaleString()}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Transaction Tabs */}
-        <View style={s.tabsRow}>
-          {TRANSACTION_TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                s.tab,
-                {
-                  backgroundColor: selectedTab === tab ? T.navy : T.bg,
-                },
-              ]}
-              onPress={() => setSelectedTab(tab)}
-            >
-              <Text
-                style={[
-                  s.tabText,
-                  {
-                    color: selectedTab === tab ? '#FFFFFF' : T.textSecondary,
-                  },
-                ]}
-              >
-                {tab}
-              </Text>
-            </TouchableOpacity>
+              <Text style={styles.statValue}>{stat.value}</Text>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+            </Animated.View>
           ))}
-        </View>
+        </Animated.View>
 
-        {/* Transactions List */}
-        <View style={s.txSection}>
-          <Text style={s.txSectionTitle}>Recent Transactions</Text>
-          <View style={s.txListContainer}>
-            {filteredTransactions.length > 0 ? (
-              filteredTransactions.map((tx) => (
-                <View key={tx.id}>
-                  {renderTransaction({ item: tx })}
+        {/* Transaction Filter Tabs */}
+        <Animated.View entering={FadeInDown.delay(260).duration(400)} style={styles.tabRow}>
+          <Text style={styles.sectionTitle}>Transactions</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScrollContent}>
+            {TRANSACTION_TABS.map((tab) => (
+              <Pressable
+                key={tab}
+                style={[styles.tab, activeTab === tab && styles.tabActive]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </Animated.View>
+
+        {/* Transaction List */}
+        {filteredTx.length === 0 ? (
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.emptyState}>
+            <Ionicons name="receipt-outline" size={48} color={C.textMuted} />
+            <Text style={styles.emptyTitle}>No transactions</Text>
+            <Text style={styles.emptySubtitle}>Nothing to show in this category.</Text>
+          </Animated.View>
+        ) : (
+          filteredTx.map((tx, i) => {
+            const iconColor = getTxColor(tx);
+            const icon = getTxIcon(tx.type);
+            const amountStr = tx.isHeld
+              ? `₹${formatINR(tx.amount)}`
+              : tx.isCredit
+              ? `+₹${formatINR(tx.amount)}`
+              : `-₹${formatINR(tx.amount)}`;
+
+            return (
+              <Animated.View
+                key={tx.id}
+                entering={FadeInDown.delay(300 + i * 50).duration(350)}
+                style={styles.txCard}
+              >
+                <View style={[styles.txIconBox, { backgroundColor: iconColor + '18' }]}>
+                  <Ionicons name={icon} size={22} color={iconColor} />
                 </View>
-              ))
-            ) : (
-              <View style={s.emptyState}>
-                <Ionicons name="receipt" size={48} color={T.textMuted} />
-                <Text style={s.emptyText}>No transactions found</Text>
-              </View>
-            )}
-          </View>
-        </View>
+                <View style={styles.txInfo}>
+                  <Text style={styles.txDescription} numberOfLines={1}>{tx.description}</Text>
+                  <Text style={styles.txDate}>{tx.date}</Text>
+                </View>
+                <View style={styles.txRight}>
+                  <Text style={[styles.txAmount, { color: iconColor }]}>{amountStr}</Text>
+                  <View style={[styles.txBadge, { backgroundColor: iconColor + '18' }]}>
+                    <Text style={[styles.txBadgeText, { color: iconColor }]}>
+                      {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                    </Text>
+                  </View>
+                </View>
+              </Animated.View>
+            );
+          })
+        )}
       </ScrollView>
+
+      {/* Add Money Modal */}
+      <Modal visible={showAddMoney} transparent animationType="none" onRequestClose={closeModal}>
+        <Pressable style={styles.modalOverlay} onPress={closeModal}>
+          <Animated.View
+            entering={SlideInDown.springify().damping(16)}
+            style={styles.modalSheet}
+          >
+            <Pressable onPress={() => {}} style={styles.modalSheetInner}>
+              <View style={styles.modalHandle} />
+              <Text style={styles.modalTitle}>Add Money to Wallet</Text>
+              <Text style={styles.modalSubtitle}>Choose amount or enter custom</Text>
+
+              <View style={styles.presetsGrid}>
+                {ADD_PRESETS.map((preset) => (
+                  <Pressable
+                    key={preset}
+                    style={({ pressed }) => [
+                      styles.presetBtn,
+                      selectedPreset === preset && !showCustom && styles.presetBtnActive,
+                      pressed && styles.presetBtnPressed,
+                    ]}
+                    onPress={() => {
+                      setSelectedPreset(preset);
+                      setShowCustom(false);
+                      setCustomAmount('');
+                    }}
+                  >
+                    <Text style={[styles.presetText, selectedPreset === preset && !showCustom && styles.presetTextActive]}>
+                      ₹{formatINR(preset)}
+                    </Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.presetBtn,
+                    showCustom && styles.presetBtnActive,
+                    pressed && styles.presetBtnPressed,
+                  ]}
+                  onPress={() => {
+                    setShowCustom(true);
+                    setSelectedPreset(null);
+                  }}
+                >
+                  <Text style={[styles.presetText, showCustom && styles.presetTextActive]}>Custom</Text>
+                </Pressable>
+              </View>
+
+              {showCustom && (
+                <Animated.View entering={FadeInDown.duration(250)} style={styles.customInputWrapper}>
+                  <Text style={styles.rupeePrefix}>₹</Text>
+                  <TextInput
+                    style={styles.customInput}
+                    placeholder="Enter amount"
+                    keyboardType="numeric"
+                    value={customAmount}
+                    onChangeText={setCustomAmount}
+                    autoFocus
+                    placeholderTextColor={C.textMuted}
+                  />
+                </Animated.View>
+              )}
+
+              {amountToAdd > 0 && (
+                <Animated.View entering={FadeInDown.duration(200)} style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>You are adding</Text>
+                  <Text style={styles.summaryAmount}>₹{formatINR(amountToAdd)}</Text>
+                </Animated.View>
+              )}
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.creditBtn,
+                  amountToAdd <= 0 && styles.creditBtnDisabled,
+                  pressed && styles.creditBtnPressed,
+                ]}
+                disabled={amountToAdd <= 0}
+                onPress={closeModal}
+              >
+                <Ionicons name="wallet-outline" size={18} color={C.white} />
+                <Text style={styles.creditBtnText}>Credit to Wallet</Text>
+              </Pressable>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const s = {
+const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: T.bg,
-  } as const,
-
+    backgroundColor: C.bg,
+  },
   scroll: {
     flex: 1,
-  } as const,
-
-  /* Header */
-  header: {
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-  } as const,
-
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
   headerTitle: {
-    fontSize: 30,
-    fontWeight: '700' as const,
-    color: T.text,
+    fontSize: 24,
+    fontWeight: '700',
+    color: C.text,
+    letterSpacing: -0.5,
   },
-
-  /* Balance Card */
-  sectionPad: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-  } as const,
-
-  balanceCard: {
-    borderRadius: 16,
+  headerIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: C.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletCard: {
+    marginHorizontal: 20,
+    height: 200,
+    backgroundColor: C.navy,
+    borderRadius: 20,
     padding: 24,
-    backgroundColor: T.navy,
-    shadowColor: T.navy,
+    overflow: 'hidden',
+    justifyContent: 'space-between',
+    shadowColor: C.navy,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
-  } as const,
-
-  balanceLabel: {
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  cardCircle1: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    top: -60,
+    right: -40,
+  },
+  cardCircle2: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(242,150,13,0.12)',
+    bottom: -30,
+    left: 20,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  cardLabel: {
     fontSize: 13,
-    fontWeight: '500' as const,
-    color: 'rgba(255,255,255,0.7)',
-    marginBottom: 8,
+    color: 'rgba(255,255,255,0.65)',
+    fontWeight: '500',
+    letterSpacing: 0.3,
+    marginBottom: 4,
   },
-
-  balanceAmount: {
-    fontSize: 42,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
+  cardBalance: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: C.white,
+    letterSpacing: -1,
   },
-
-  escrowBadge: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginTop: 12,
-    backgroundColor: 'rgba(242,150,13,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  heldChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: C.amber,
     borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    marginTop: 6,
   },
-
-  escrowText: {
-    color: T.amber,
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500' as const,
+  heldChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.navy,
   },
-
-  actionRow: {
-    flexDirection: 'row' as const,
-    marginTop: 24,
+  walletIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-
-  actionBtn: {
-    flex: 1,
-    paddingVertical: 12,
+  cardActions: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    overflow: 'hidden',
+  },
+  cardBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  cardBtnPrimary: {
+    backgroundColor: C.amber,
+  },
+  cardBtnPressed: {
+    opacity: 0.75,
+  },
+  cardBtnDivider: {
+    width: 1,
     backgroundColor: 'rgba(255,255,255,0.15)',
   },
-
-  actionBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700' as const,
-    marginLeft: 8,
-    fontSize: 15,
+  cardBtnPrimaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.navy,
   },
-
-  /* Stats Cards */
+  cardBtnSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: C.white,
+  },
   statsRow: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
     marginTop: 16,
   },
-
   statCard: {
     flex: 1,
-    borderRadius: 16,
-    padding: 20,
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
-  } as const,
-
-  statHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginBottom: 12,
-  },
-
-  statLabel: {
-    color: T.textSecondary,
-    marginLeft: 8,
-    fontWeight: '500' as const,
-    fontSize: 14,
-  },
-
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-  },
-
-  /* Transaction Tabs */
-  tabsRow: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 16,
-  },
-
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-  } as const,
-
-  tabText: {
-    textAlign: 'center' as const,
-    fontWeight: '500' as const,
-    fontSize: 14,
-  },
-
-  /* Transaction List */
-  txSection: {
-    paddingHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 32,
-  } as const,
-
-  txSectionTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: T.text,
-    marginBottom: 12,
-  },
-
-  txListContainer: {
-    backgroundColor: T.surface,
+    backgroundColor: C.surface,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
+    padding: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  statIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.text,
+    textAlign: 'center',
+  },
+  statLabel: {
+    fontSize: 10,
+    color: C.textSecondary,
+    marginTop: 2,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  tabRow: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: C.text,
+    marginBottom: 12,
+  },
+  tabScrollContent: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+  tab: {
     paddingHorizontal: 16,
-  } as const,
-
-  txRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingVertical: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
   },
-
-  txRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-  } as const,
-
-  txIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  tabActive: {
+    backgroundColor: C.navy,
+    borderColor: C.navy,
   },
-
-  txContent: {
-    flex: 1,
-    marginLeft: 16,
-  } as const,
-
-  txDescription: {
-    color: T.text,
-    fontWeight: '500' as const,
-    fontSize: 15,
-  },
-
-  txMeta: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginTop: 4,
-  },
-
-  txDate: {
-    color: T.textMuted,
+  tabText: {
     fontSize: 13,
+    fontWeight: '600',
+    color: C.textSecondary,
   },
-
-  heldBadge: {
-    marginLeft: 8,
-    backgroundColor: 'rgba(242,150,13,0.15)',
+  tabTextActive: {
+    color: C.white,
+  },
+  txCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface,
+    marginHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 14,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  txIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  txInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  txDescription: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: C.text,
+    marginBottom: 3,
+  },
+  txDate: {
+    fontSize: 12,
+    color: C.textSecondary,
+    fontWeight: '400',
+  },
+  txRight: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  txAmount: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  txBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 8,
   },
-
-  heldBadgeText: {
-    color: T.amber,
-    fontSize: 11,
-    fontWeight: '600' as const,
+  txBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
-
-  txAmount: {
-    fontWeight: '700' as const,
-    fontSize: 17,
-  },
-
-  /* Empty State */
   emptyState: {
-    paddingVertical: 48,
-    alignItems: 'center' as const,
+    alignItems: 'center',
+    paddingVertical: 60,
+    gap: 8,
   },
-
-  emptyText: {
-    color: T.textSecondary,
-    marginTop: 16,
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: C.textSecondary,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: C.textMuted,
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: C.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+  },
+  modalSheetInner: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: C.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: C.text,
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: C.textSecondary,
+    marginBottom: 20,
+  },
+  presetsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  presetBtn: {
+    width: (SCREEN_WIDTH - 48 - 30) / 3,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: C.bg,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    alignItems: 'center',
+  },
+  presetBtnActive: {
+    borderColor: C.navy,
+    backgroundColor: C.navy,
+  },
+  presetBtnPressed: {
+    opacity: 0.7,
+  },
+  presetText: {
     fontSize: 15,
+    fontWeight: '600',
+    color: C.text,
   },
-};
+  presetTextActive: {
+    color: C.white,
+  },
+  customInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.navy,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    backgroundColor: C.bg,
+  },
+  rupeePrefix: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: C.text,
+    marginRight: 6,
+  },
+  customInput: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '700',
+    color: C.text,
+    paddingVertical: 14,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: C.bg,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  summaryLabel: {
+    fontSize: 13,
+    color: C.textSecondary,
+    fontWeight: '500',
+  },
+  summaryAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.success,
+  },
+  creditBtn: {
+    backgroundColor: C.navy,
+    borderRadius: 14,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  creditBtnDisabled: {
+    opacity: 0.4,
+  },
+  creditBtnPressed: {
+    opacity: 0.85,
+  },
+  creditBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.white,
+  },
+});

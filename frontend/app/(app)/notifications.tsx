@@ -1,401 +1,377 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../src/theme/colors';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
-const T = LightTheme;
+const C = {
+  navy: '#1A1D2E',
+  amber: '#F2960D',
+  amberBg: '#FEF3C7',
+  bg: '#F5F6FA',
+  surface: '#FFFFFF',
+  success: '#10B981',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+  purple: '#8B5CF6',
+  border: '#E5E7EB',
+  text: '#1A1D2E',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  white: '#FFFFFF',
+};
 
-type NotificationType = 'order_update' | 'job_request' | 'payment' | 'verification' | 'agreement' | 'system';
+type NotifType = 'order' | 'payment' | 'agreement' | 'worker' | 'system';
+type NotifGroup = 'Today' | 'Yesterday' | 'Earlier';
 
 interface Notification {
   id: string;
-  type: NotificationType;
+  type: NotifType;
   title: string;
   message: string;
   time: string;
-  group: 'Today' | 'Yesterday' | 'Earlier';
+  group: NotifGroup;
   read: boolean;
+  route?: string;
 }
 
-const FILTER_TABS = ['All', 'Orders', 'Jobs', 'Payments', 'System'];
-
-const TYPE_CONFIG: Record<NotificationType, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  order_update: { icon: 'cube-outline', color: '#3B82F6' },
-  job_request: { icon: 'hammer-outline', color: '#8B5CF6' },
-  payment: { icon: 'wallet-outline', color: '#10B981' },
-  verification: { icon: 'shield-checkmark-outline', color: '#F59E0B' },
-  agreement: { icon: 'document-text-outline', color: '#EC4899' },
-  system: { icon: 'settings-outline', color: '#6B7280' },
+const TYPE_CONFIG: Record<NotifType, { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string }> = {
+  order: { icon: 'receipt-outline', color: C.info, bgColor: '#EFF6FF' },
+  payment: { icon: 'wallet-outline', color: C.success, bgColor: '#ECFDF5' },
+  agreement: { icon: 'document-text-outline', color: C.purple, bgColor: '#F5F3FF' },
+  worker: { icon: 'person-circle-outline', color: C.amber, bgColor: '#FFFBEB' },
+  system: { icon: 'settings-outline', color: C.textSecondary, bgColor: C.bg },
 };
 
-const TAB_TYPE_MAP: Record<string, NotificationType[]> = {
-  All: ['order_update', 'job_request', 'payment', 'verification', 'agreement', 'system'],
-  Orders: ['order_update'],
-  Jobs: ['job_request'],
-  Payments: ['payment'],
-  System: ['system', 'verification', 'agreement'],
-};
-
-const INITIAL_NOTIFICATIONS: Notification[] = [
+const MOCK_NOTIFICATIONS: Notification[] = [
   {
-    id: '1',
-    type: 'order_update',
-    title: 'Order #BM-2847 Shipped',
-    message: 'Your UltraTech Cement order has been dispatched and is on its way to the delivery address.',
-    time: '12 min ago',
+    id: 'n1',
+    type: 'order',
+    title: 'Order Out for Delivery',
+    message: 'Your order ORD-2024-0041 is on the way. Driver Ramesh Yadav is 22 min away.',
+    time: '10 min ago',
     group: 'Today',
     read: false,
+    route: '/order-tracking',
   },
   {
-    id: '2',
-    type: 'job_request',
-    title: 'New Job Request',
-    message: 'Rajesh Kumar has requested 3 masons for a residential project in Sector 45, Gurugram.',
-    time: '45 min ago',
-    group: 'Today',
-    read: false,
-  },
-  {
-    id: '3',
+    id: 'n2',
     type: 'payment',
     title: 'Payment Received',
-    message: 'Rs.24,500 has been credited to your wallet for Order #BM-2831.',
-    time: '2 hrs ago',
+    message: '₹3,200 credited to your wallet for order ORD-2024-0039. Escrow released.',
+    time: '1 hr ago',
     group: 'Today',
     read: false,
+    route: '/wallet',
   },
   {
-    id: '4',
-    type: 'verification',
-    title: 'KYC Verification Complete',
-    message: 'Your Aadhaar and PAN verification has been approved. You can now accept high-value orders.',
-    time: '5 hrs ago',
+    id: 'n3',
+    type: 'worker',
+    title: 'Worker Hired',
+    message: 'Suresh Kumar (Mason) has accepted your hire request for Site 3, Kondapur.',
+    time: '3 hr ago',
+    group: 'Today',
+    read: false,
+    route: '/hire',
+  },
+  {
+    id: 'n4',
+    type: 'agreement',
+    title: 'Agreement Signed',
+    message: 'Rajesh Constructions has signed the labour agreement AGR-2024-012. ₹15,000 escrowed.',
+    time: '5 hr ago',
     group: 'Today',
     read: true,
+    route: '/agreement',
   },
   {
-    id: '5',
-    type: 'order_update',
-    title: 'Order #BM-2839 Delivered',
-    message: 'TMT Steel Bars delivery has been confirmed. Please rate your experience.',
+    id: 'n5',
+    type: 'order',
+    title: 'Order Confirmed',
+    message: 'Sri Lakshmi Traders confirmed your order ORD-2024-0040. Preparing for dispatch.',
     time: 'Yesterday, 4:30 PM',
     group: 'Yesterday',
     read: true,
+    route: '/order-tracking',
   },
   {
-    id: '6',
-    type: 'agreement',
-    title: 'Agreement Signed',
-    message: 'Labour agreement with Sharma Constructions has been signed by both parties.',
-    time: 'Yesterday, 11:20 AM',
-    group: 'Yesterday',
-    read: true,
-  },
-  {
-    id: '7',
+    id: 'n6',
     type: 'payment',
-    title: 'Payment Pending',
-    message: 'Invoice #INV-4521 of Rs.18,200 is pending. Due date: 28 Feb 2026.',
-    time: 'Yesterday, 9:00 AM',
+    title: 'Wallet Top-Up',
+    message: '₹20,000 successfully added to your BuildMart wallet via UPI.',
+    time: 'Yesterday, 2:00 PM',
     group: 'Yesterday',
-    read: false,
+    read: true,
+    route: '/wallet',
   },
   {
-    id: '8',
+    id: 'n7',
     type: 'system',
-    title: 'App Update Available',
-    message: 'BuildMart v2.4.0 is available with improved order tracking and new payment options.',
-    time: '2 days ago',
-    group: 'Earlier',
+    title: 'Profile Verified',
+    message: 'Your contractor profile has been verified by the BuildMart team. You can now post tenders.',
+    time: 'Yesterday, 10:00 AM',
+    group: 'Yesterday',
     read: true,
   },
   {
-    id: '9',
-    type: 'job_request',
-    title: 'Job Completed',
-    message: 'Plumbing work at Green Valley Apartments has been marked complete by the contractor.',
-    time: '3 days ago',
+    id: 'n8',
+    type: 'worker',
+    title: 'New Job Request',
+    message: 'Priya Sharma needs an electrician for 3 days at Banjara Hills. Payout: ₹3,600.',
+    time: '21 Apr, 6:00 PM',
     group: 'Earlier',
     read: true,
+    route: '/jobs',
   },
   {
-    id: '10',
-    type: 'system',
-    title: 'Scheduled Maintenance',
-    message: 'Payment services will be under maintenance on 1 March, 2-4 AM IST. Plan transactions accordingly.',
-    time: '4 days ago',
+    id: 'n9',
+    type: 'agreement',
+    title: 'Milestone Released',
+    message: 'Milestone 2 payment of ₹12,000 released for AGR-2024-009. Rajesh approved delivery.',
+    time: '20 Apr, 3:30 PM',
+    group: 'Earlier',
+    read: true,
+    route: '/earnings-history',
+  },
+  {
+    id: 'n10',
+    type: 'order',
+    title: 'Order Delivered',
+    message: 'Order ORD-2024-0035 was delivered to Deepa Menon. Rate your experience!',
+    time: '19 Apr, 9:00 AM',
     group: 'Earlier',
     read: true,
   },
 ];
 
+const GROUPS: NotifGroup[] = ['Today', 'Yesterday', 'Earlier'];
+
 export default function NotificationsScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('All');
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
-
-  const filtered = notifications.filter((n) => TAB_TYPE_MAP[activeTab]?.includes(n.type));
-
-  const groups: ('Today' | 'Yesterday' | 'Earlier')[] = ['Today', 'Yesterday', 'Earlier'];
-
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  function markAllRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }
+
+  function markRead(id: string) {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  }
+
+  function handleTap(notif: Notification) {
+    markRead(notif.id);
+    if (notif.route) {
+      router.push(notif.route as any);
+    }
+  }
+
+  const groupedNotifs = GROUPS.reduce<Record<NotifGroup, Notification[]>>(
+    (acc, g) => ({ ...acc, [g]: notifications.filter((n) => n.group === g) }),
+    { Today: [], Yesterday: [], Earlier: [] }
+  );
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Notifications</Text>
-        {unreadCount > 0 ? (
-          <TouchableOpacity onPress={markAllRead} style={s.markAllBtn}>
-            <Ionicons name="checkmark-done-outline" size={18} color={T.amber} />
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 42 }} />
-        )}
-      </View>
-
-      {/* Filter Tabs */}
-      <View style={s.tabRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-          {FILTER_TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[s.tab, activeTab === tab && s.tabActive]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Notifications List */}
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {filtered.length === 0 ? (
-          <View style={s.empty}>
-            <View style={s.emptyIcon}>
-              <Ionicons name="notifications-off-outline" size={48} color={T.textMuted} />
+      <Animated.View entering={FadeInDown.duration(350)} style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color={C.text} />
+        </Pressable>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          {unreadCount > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
             </View>
-            <Text style={s.emptyTitle}>No notifications</Text>
-            <Text style={s.emptyDesc}>
-              {activeTab === 'All'
-                ? 'You are all caught up! New notifications will appear here.'
-                : `No ${activeTab.toLowerCase()} notifications to show.`}
-            </Text>
-          </View>
-        ) : (
-          groups.map((group) => {
-            const groupItems = filtered.filter((n) => n.group === group);
-            if (groupItems.length === 0) return null;
-            return (
-              <View key={group} style={s.section}>
-                <Text style={s.sectionTitle}>{group}</Text>
-                <View style={{ gap: 10 }}>
-                  {groupItems.map((notification) => {
-                    const config = TYPE_CONFIG[notification.type];
-                    return (
-                      <TouchableOpacity
-                        key={notification.id}
-                        style={[
-                          s.card,
-                          !notification.read && s.cardUnread,
-                        ]}
-                        onPress={() => markAsRead(notification.id)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={s.cardContent}>
-                          {/* Icon */}
-                          <View style={[s.iconCircle, { backgroundColor: config.color + '26' }]}>
-                            <Ionicons name={config.icon} size={20} color={config.color} />
-                          </View>
+          )}
+        </View>
+        <Pressable onPress={markAllRead} style={styles.markAllBtn}>
+          <Text style={styles.markAllText}>Mark all read</Text>
+        </Pressable>
+      </Animated.View>
 
-                          {/* Text Content */}
-                          <View style={s.textContent}>
-                            <View style={s.titleRow}>
-                              <Text style={s.notifTitle} numberOfLines={1}>
-                                {notification.title}
-                              </Text>
-                              {!notification.read && <View style={s.unreadDot} />}
-                            </View>
-                            <Text style={s.notifMessage} numberOfLines={2}>
-                              {notification.message}
-                            </Text>
-                            <Text style={s.notifTime}>{notification.time}</Text>
-                          </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {GROUPS.map((group) => {
+          const items = groupedNotifs[group];
+          if (items.length === 0) return null;
+
+          return (
+            <Animated.View key={group} entering={FadeInDown.delay(80).duration(350)}>
+              <Text style={styles.groupLabel}>{group}</Text>
+              {items.map((notif, i) => {
+                const cfg = TYPE_CONFIG[notif.type];
+                return (
+                  <Animated.View
+                    key={notif.id}
+                    entering={FadeInDown.delay(100 + i * 50).duration(350)}
+                  >
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.notifCard,
+                        !notif.read && styles.notifCardUnread,
+                        pressed && styles.notifCardPressed,
+                      ]}
+                      onPress={() => handleTap(notif)}
+                    >
+                      {!notif.read && <View style={styles.unreadBar} />}
+
+                      <View style={[styles.notifIconBox, { backgroundColor: cfg.bgColor }]}>
+                        <Ionicons name={cfg.icon} size={22} color={cfg.color} />
+                      </View>
+
+                      <View style={styles.notifContent}>
+                        <View style={styles.notifTopRow}>
+                          <Text style={[styles.notifTitle, !notif.read && styles.notifTitleUnread]} numberOfLines={1}>
+                            {notif.title}
+                          </Text>
+                          <Text style={styles.notifTime}>{notif.time}</Text>
                         </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            );
-          })
+                        <Text style={styles.notifMessage} numberOfLines={2}>
+                          {notif.message}
+                        </Text>
+                        {notif.route && (
+                          <View style={styles.tapHint}>
+                            <Text style={styles.tapHintText}>Tap to view</Text>
+                            <Ionicons name="chevron-forward" size={12} color={cfg.color} />
+                          </View>
+                        )}
+                      </View>
+
+                      {!notif.read && <View style={styles.unreadDot} />}
+                    </Pressable>
+                  </Animated.View>
+                );
+              })}
+            </Animated.View>
+          );
+        })}
+
+        {notifications.length === 0 && (
+          <Animated.View entering={FadeIn.duration(400)} style={styles.emptyState}>
+            <Ionicons name="notifications-off-outline" size={56} color={C.textMuted} />
+            <Text style={styles.emptyTitle}>All caught up!</Text>
+            <Text style={styles.emptySubtitle}>No new notifications right now.</Text>
+          </Animated.View>
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = {
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: C.bg },
+  scrollContent: { paddingBottom: 40 },
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: T.surface,
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: C.border,
   },
-  backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+  backBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: C.text },
+  unreadBadge: {
+    backgroundColor: C.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
+  unreadBadgeText: { fontSize: 11, fontWeight: '800', color: C.white },
   markAllBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    backgroundColor: T.bg,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  tabRow: {
-    paddingVertical: 12,
-    backgroundColor: T.surface,
-  },
-  tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: T.bg,
-  },
-  tabActive: {
-    backgroundColor: T.navy,
-  },
-  tabText: {
+  markAllText: { fontSize: 13, fontWeight: '600', color: C.navy },
+  groupLabel: {
     fontSize: 13,
-    fontWeight: '600' as const,
-    color: T.textSecondary,
+    fontWeight: '700',
+    color: C.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
-  tabTextActive: {
-    color: T.white,
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: T.textMuted,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.8,
-    marginBottom: 10,
-    paddingLeft: 4,
-  },
-  card: {
-    backgroundColor: T.surface,
+  notifCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: C.surface,
+    marginHorizontal: 16,
+    marginBottom: 8,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
     padding: 14,
+    paddingLeft: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  cardUnread: {
-    borderLeftWidth: 3,
-    borderLeftColor: T.amber,
+  notifCardUnread: {
+    backgroundColor: C.surface,
+    shadowOpacity: 0.06,
   },
-  cardContent: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-start' as const,
+  notifCardPressed: { opacity: 0.85 },
+  unreadBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: C.amber,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
-  iconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+  notifIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 12,
+    flexShrink: 0,
   },
-  textContent: {
-    flex: 1,
+  notifContent: { flex: 1 },
+  notifTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+    gap: 8,
   },
-  titleRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-  },
-  notifTitle: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: T.text,
-    flex: 1,
-    marginRight: 8,
-  },
+  notifTitle: { fontSize: 14, fontWeight: '600', color: C.text, flex: 1 },
+  notifTitleUnread: { fontWeight: '700' },
+  notifTime: { fontSize: 11, color: C.textMuted, fontWeight: '400', flexShrink: 0 },
+  notifMessage: { fontSize: 13, color: C.textSecondary, lineHeight: 18, marginBottom: 4 },
+  tapHint: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
+  tapHintText: { fontSize: 11, color: C.info, fontWeight: '600' },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: T.amber,
-  },
-  notifMessage: {
-    fontSize: 13,
-    fontWeight: '400' as const,
-    color: T.textSecondary,
-    lineHeight: 19,
+    backgroundColor: C.amber,
     marginTop: 4,
+    marginLeft: 8,
+    flexShrink: 0,
   },
-  notifTime: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    color: T.textMuted,
-    marginTop: 6,
-  },
-  empty: {
-    alignItems: 'center' as const,
-    paddingTop: 80,
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 80,
     gap: 10,
   },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginBottom: 8,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  emptyDesc: {
-    fontSize: 14,
-    color: T.textSecondary,
-    textAlign: 'center' as const,
-    paddingHorizontal: 40,
-    lineHeight: 20,
-  },
-};
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: C.textSecondary },
+  emptySubtitle: { fontSize: 14, color: C.textMuted },
+});

@@ -1,643 +1,544 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../../src/theme/colors';
+import Animated, { FadeInDown, ZoomIn, FadeInUp } from 'react-native-reanimated';
 
-const T = LightTheme;
+const C = {
+  navy: '#1A1D2E',
+  navyLight: '#252838',
+  amber: '#F2960D',
+  amberBg: '#FEF3C7',
+  bg: '#F5F6FA',
+  surface: '#FFFFFF',
+  success: '#10B981',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  border: '#E5E7EB',
+  text: '#1A1D2E',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  white: '#FFFFFF',
+};
 
-const DELIVERY_TABS = ['Active', 'Available', 'Completed'];
+type DeliveryStatus = 'available' | 'accepted' | 'picked_up' | 'completed';
+type TabKey = 'available' | 'active' | 'completed';
 
-const MOCK_DELIVERIES = [
+interface Delivery {
+  id: string;
+  orderNumber: string;
+  status: DeliveryStatus;
+  pickupName: string;
+  pickupAddress: string;
+  dropName: string;
+  dropAddress: string;
+  distance: string;
+  eta: string;
+  items: string;
+  payout: number;
+  assignedAt: string;
+  completedAt?: string;
+}
+
+const MOCK_DELIVERIES: Delivery[] = [
   {
     id: 'd1',
-    orderNumber: 'ORD-2024-0002',
-    type: 'order',
-    customer: 'Rajesh Constructions',
-    shop: 'Sri Lakshmi Traders',
-    pickupAddress: '25 Chickpet, Bangalore',
-    deliveryAddress: '100 Industrial Area, Bangalore',
-    items: '50x Cement bags, 20x TMT Bars',
+    orderNumber: 'ORD-2024-0044',
+    status: 'available',
+    pickupName: 'Sri Lakshmi Traders',
+    pickupAddress: 'Dilsukhnagar, Hyderabad',
+    dropName: 'Rajesh Constructions',
+    dropAddress: 'LB Nagar, Hyderabad',
     distance: '5.2 km',
-    earnings: 200,
-    status: 'pickup',
-    assignedAt: '10:30 AM',
+    eta: '18 min',
+    items: '5 bags cement, 2 TMT rods',
+    payout: 150,
+    assignedAt: '',
   },
   {
     id: 'd2',
-    orderNumber: 'ORD-2024-0005',
-    type: 'order',
-    customer: 'Amit Kumar',
-    shop: 'Anand Hardware',
-    pickupAddress: '10 KR Market, Bangalore',
-    deliveryAddress: '78 Brigade Road, Bangalore',
-    items: '2x Wooden Doors, 4x Door Hinges',
-    distance: '3.8 km',
-    earnings: 150,
-    status: 'delivering',
-    assignedAt: '09:45 AM',
+    orderNumber: 'ORD-2024-0043',
+    status: 'available',
+    pickupName: 'Anand Hardware',
+    pickupAddress: 'Ameerpet, Hyderabad',
+    dropName: 'Priya Sharma',
+    dropAddress: 'Banjara Hills, Hyderabad',
+    distance: '4.8 km',
+    eta: '15 min',
+    items: '10 tiles boxes, 2 kg adhesive',
+    payout: 130,
+    assignedAt: '',
   },
   {
     id: 'd3',
-    orderNumber: 'ORD-2024-0010',
-    type: 'order',
-    customer: 'Priya Patel',
-    shop: 'Balaji Construction',
-    pickupAddress: '40 Yeshwanthpur, Bangalore',
-    deliveryAddress: '45 Park Street, Bangalore',
-    items: '5x Copper Wire coils',
-    distance: '6.5 km',
-    earnings: 180,
-    status: 'available',
-    assignedAt: null,
+    orderNumber: 'ORD-2024-0041',
+    status: 'accepted',
+    pickupName: 'Balaji Construction Store',
+    pickupAddress: 'KPHB, Hyderabad',
+    dropName: 'Suresh Reddy',
+    dropAddress: 'Kondapur, Hyderabad',
+    distance: '7.1 km',
+    eta: '24 min',
+    items: '3 paint buckets (20L each)',
+    payout: 200,
+    assignedAt: '10:30 AM',
   },
   {
     id: 'd4',
-    orderNumber: 'CON-2024-001',
-    type: 'concierge',
-    customer: 'Vikram Singh',
-    shop: 'Sri Lakshmi Traders',
-    originalShop: 'Anand Hardware',
-    pickupAddress: '25 Chickpet, Bangalore',
-    deliveryAddress: '90 Whitefield, Bangalore',
-    items: '5x UltraTech Cement (from alternate shop)',
-    distance: '12.3 km',
-    earnings: 350,
-    bonusEarnings: 100,
-    status: 'available',
-    assignedAt: null,
+    orderNumber: 'ORD-2024-0039',
+    status: 'picked_up',
+    pickupName: 'Ravi Cement Depot',
+    pickupAddress: 'Secunderabad',
+    dropName: 'Anil Kumar',
+    dropAddress: 'Begumpet, Hyderabad',
+    distance: '3.5 km',
+    eta: '12 min',
+    items: '8 bags sand, 4 bags cement',
+    payout: 170,
+    assignedAt: '09:45 AM',
   },
   {
     id: 'd5',
-    orderNumber: 'ORD-2024-0001',
-    type: 'order',
-    customer: 'Rahul Sharma',
-    shop: 'Anand Hardware',
-    pickupAddress: '10 KR Market, Bangalore',
-    deliveryAddress: '123 MG Road, Koramangala',
-    items: '10x Cement bags, 5kg Nails',
-    distance: '4.1 km',
-    earnings: 150,
+    orderNumber: 'ORD-2024-0035',
     status: 'completed',
-    completedAt: '11:30 AM',
+    pickupName: 'Metro Hardware',
+    pickupAddress: 'Gachibowli, Hyderabad',
+    dropName: 'Deepa Menon',
+    dropAddress: 'Madhapur, Hyderabad',
+    distance: '2.9 km',
+    eta: '—',
+    items: '1 set aluminium windows',
+    payout: 120,
+    assignedAt: '08:00 AM',
+    completedAt: '08:30 AM',
   },
 ];
 
-const getStatusStyle = (status: string) => {
-  switch (status) {
-    case 'pickup':
-      return { bg: 'rgba(59,130,246,0.15)', color: '#3B82F6', label: 'Pickup' };
-    case 'delivering':
-      return { bg: 'rgba(16,185,129,0.15)', color: '#10B981', label: 'Delivering' };
-    case 'available':
-      return { bg: 'rgba(242,150,13,0.15)', color: '#F2960D', label: 'Available' };
-    case 'completed':
-      return { bg: 'rgba(156,163,175,0.15)', color: '#9CA3AF', label: 'Completed' };
-    default:
-      return { bg: 'rgba(156,163,175,0.15)', color: '#9CA3AF', label: status };
-  }
-};
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'available', label: 'Available Pickups' },
+  { key: 'active', label: 'My Active' },
+  { key: 'completed', label: 'Completed' },
+];
+
+function filterByTab(tab: TabKey, deliveries: Delivery[]): Delivery[] {
+  if (tab === 'available') return deliveries.filter((d) => d.status === 'available');
+  if (tab === 'active') return deliveries.filter((d) => d.status === 'accepted' || d.status === 'picked_up');
+  return deliveries.filter((d) => d.status === 'completed');
+}
+
+function todayEarnings(deliveries: Delivery[]): number {
+  return deliveries.filter((d) => d.status === 'completed').reduce((s, d) => s + d.payout, 0);
+}
 
 export default function DeliveriesScreen() {
   const router = useRouter();
-  const [selectedTab, setSelectedTab] = useState('Active');
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabKey>('available');
+  const [deliveries, setDeliveries] = useState<Delivery[]>(MOCK_DELIVERIES);
 
-  const filteredDeliveries = MOCK_DELIVERIES.filter((delivery) => {
-    if (selectedTab === 'Active') return ['pickup', 'delivering'].includes(delivery.status);
-    if (selectedTab === 'Available') return delivery.status === 'available';
-    if (selectedTab === 'Completed') return delivery.status === 'completed';
-    return true;
-  });
+  const visible = filterByTab(activeTab, deliveries);
+  const earnings = todayEarnings(deliveries);
 
-  const activeCount = MOCK_DELIVERIES.filter((d) => ['pickup', 'delivering'].includes(d.status)).length;
-  const availableCount = MOCK_DELIVERIES.filter((d) => d.status === 'available').length;
-
-  const renderDelivery = ({ item: delivery }: { item: typeof MOCK_DELIVERIES[0] }) => {
-    const statusStyle = getStatusStyle(delivery.status);
-    const isConcierge = delivery.type === 'concierge';
-    const isActive = ['pickup', 'delivering'].includes(delivery.status);
-    const isAvailable = delivery.status === 'available';
-
-    return (
-      <View
-        style={[
-          s.card,
-          isConcierge
-            ? { borderLeftWidth: 4, borderLeftColor: '#A855F7' }
-            : isActive
-            ? { borderLeftWidth: 4, borderLeftColor: T.success }
-            : null,
-        ]}
-      >
-        {/* Header */}
-        <View style={s.cardHeader}>
-          <View style={{ flex: 1 }}>
-            <View style={s.row}>
-              {isConcierge && (
-                <View style={s.conciergeBadge}>
-                  <Ionicons name="flash" size={12} color="#A855F7" />
-                  <Text style={s.conciergeBadgeText}>CONCIERGE</Text>
-                </View>
-              )}
-              <Text style={s.orderNumber}>{delivery.orderNumber}</Text>
-            </View>
-            <Text style={s.customerName}>{delivery.customer}</Text>
-          </View>
-          <View style={[s.statusBadge, { backgroundColor: statusStyle.bg }]}>
-            <Text style={[s.statusBadgeText, { color: statusStyle.color }]}>
-              {statusStyle.label}
-            </Text>
-          </View>
-        </View>
-
-        {/* Pickup Location */}
-        <View style={s.locationRow}>
-          <View style={s.dotColumn}>
-            <View style={s.pickupDot} />
-            <View style={s.connectorLine} />
-          </View>
-          <View style={s.locationInfo}>
-            <Text style={s.locationLabel}>PICKUP</Text>
-            <Text style={s.locationPrimary}>{delivery.shop}</Text>
-            <Text style={s.locationSecondary} numberOfLines={1}>
-              {delivery.pickupAddress}
-            </Text>
-          </View>
-        </View>
-
-        {/* Delivery Location */}
-        <View style={[s.locationRow, { marginBottom: 12 }]}>
-          <View style={s.dotColumn}>
-            <View style={s.deliveryDot} />
-          </View>
-          <View style={s.locationInfo}>
-            <Text style={s.locationLabel}>DELIVER TO</Text>
-            <Text style={s.locationPrimary}>{delivery.customer}</Text>
-            <Text style={s.locationSecondary} numberOfLines={1}>
-              {delivery.deliveryAddress}
-            </Text>
-          </View>
-        </View>
-
-        {/* Items */}
-        <View style={s.itemsRow}>
-          <Ionicons name="cube" size={16} color={T.textMuted} />
-          <Text style={s.itemsText} numberOfLines={1}>
-            {delivery.items}
-          </Text>
-        </View>
-
-        {/* Stats */}
-        <View style={s.statsRow}>
-          <View style={s.row}>
-            <Ionicons name="navigate" size={16} color={T.amber} />
-            <Text style={s.distanceText}>{delivery.distance}</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={s.earningsText}>₹{delivery.earnings}</Text>
-            {isConcierge && (delivery as any).bonusEarnings && (
-              <Text style={s.bonusText}>+₹{(delivery as any).bonusEarnings} bonus</Text>
-            )}
-          </View>
-        </View>
-
-        {/* Actions for Active */}
-        {isActive && (
-          <View style={s.actionsRow}>
-            <TouchableOpacity style={[s.actionBtn, { backgroundColor: T.info }]}>
-              <Ionicons name="navigate" size={18} color="#FFFFFF" />
-              <Text style={s.actionBtnText}>Navigate</Text>
-            </TouchableOpacity>
-            <View style={{ width: 12 }} />
-            <TouchableOpacity style={[s.actionBtn, { backgroundColor: T.success }]}>
-              <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
-              <Text style={s.actionBtnText}>
-                {delivery.status === 'pickup' ? 'Picked Up' : 'Delivered'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Actions for Available */}
-        {isAvailable && (
-          <View style={s.actionsRowSingle}>
-            <TouchableOpacity
-              style={[
-                s.actionBtnFull,
-                { backgroundColor: isConcierge ? '#A855F7' : T.amber },
-              ]}
-            >
-              <Ionicons name="hand-right" size={18} color="#FFFFFF" />
-              <Text style={s.actionBtnText}>Accept Delivery</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Completed Info */}
-        {delivery.status === 'completed' && (
-          <View style={s.completedRow}>
-            <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
-            <Text style={s.completedText}>Completed at {(delivery as any).completedAt}</Text>
-          </View>
-        )}
-      </View>
+  function handleAccept(id: string) {
+    setDeliveries((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, status: 'accepted', assignedAt: 'Just now' } : d))
     );
-  };
+    setActiveTab('active');
+  }
+
+  function handlePickedUp(id: string) {
+    setDeliveries((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, status: 'picked_up' } : d))
+    );
+  }
+
+  function handleDeliver(id: string) {
+    router.push('/delivery-proof');
+  }
+
+  function handleNavigate(id: string) {
+    router.push('/order-tracking');
+  }
 
   return (
-    <SafeAreaView style={s.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Deliveries</Text>
-      </View>
+      <Animated.View entering={FadeInDown.duration(350)} style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>My Deliveries</Text>
+          <Text style={styles.headerSub}>
+            {earnings > 0 ? `Today's earnings: ₹${earnings}` : 'No earnings yet today'}
+          </Text>
+        </View>
+        <Pressable onPress={() => router.push('/scan')} style={styles.scanBtn}>
+          <Ionicons name="qr-code-outline" size={22} color={C.white} />
+        </Pressable>
+      </Animated.View>
 
-      {/* Stats */}
-      <View style={s.statsContainer}>
-        <View style={s.statCardActive}>
-          <View style={s.statCardInner}>
-            <Text style={s.statNumberGreen}>{activeCount}</Text>
-            <Ionicons name="car" size={24} color="#22C55E" />
+      {/* Availability Toggle */}
+      <Animated.View entering={FadeInDown.delay(60).duration(350)} style={styles.availabilityBar}>
+        <View style={styles.availabilityInfo}>
+          <View style={[styles.availabilityDot, { backgroundColor: isAvailable ? C.success : C.error }]} />
+          <View>
+            <Text style={styles.availabilityStatus}>{isAvailable ? 'Available for Deliveries' : 'Not Available'}</Text>
+            <Text style={styles.availabilityHint}>
+              {isAvailable ? 'You will receive new delivery requests' : 'Toggle to start receiving requests'}
+            </Text>
           </View>
-          <Text style={s.statLabel}>Active Now</Text>
         </View>
-        <View style={{ width: 12 }} />
-        <View style={s.statCardAvailable}>
-          <View style={s.statCardInner}>
-            <Text style={s.statNumberAmber}>{availableCount}</Text>
-            <Ionicons name="list" size={24} color={T.amber} />
-          </View>
-          <Text style={s.statLabel}>Available</Text>
-        </View>
-      </View>
+        <Switch
+          value={isAvailable}
+          onValueChange={setIsAvailable}
+          trackColor={{ false: C.border, true: C.success + '55' }}
+          thumbColor={isAvailable ? C.success : C.textMuted}
+        />
+      </Animated.View>
 
       {/* Tabs */}
-      <View style={s.tabsContainer}>
-        {DELIVERY_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              s.tab,
-              selectedTab === tab ? s.tabActive : s.tabInactive,
-            ]}
-            onPress={() => setSelectedTab(tab)}
-          >
-            <Text
-              style={[
-                s.tabText,
-                selectedTab === tab ? s.tabTextActive : s.tabTextInactive,
-              ]}
+      <Animated.View entering={FadeInDown.delay(100).duration(350)} style={styles.tabBar}>
+        {TABS.map((tab) => {
+          const count = filterByTab(tab.key, deliveries).length;
+          return (
+            <Pressable
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
             >
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                {tab.label}
+              </Text>
+              {count > 0 && (
+                <View style={[styles.tabBadge, activeTab === tab.key && styles.tabBadgeActive]}>
+                  <Text style={[styles.tabBadgeText, activeTab === tab.key && styles.tabBadgeTextActive]}>
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </Animated.View>
 
-      {/* Deliveries List */}
-      <FlatList
-        data={filteredDeliveries}
-        renderItem={renderDelivery}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={s.emptyContainer}>
-            <Ionicons name="car" size={48} color={T.textMuted} />
-            <Text style={s.emptyText}>
-              {selectedTab === 'Active'
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
+        {visible.length === 0 ? (
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.emptyState}>
+            <Ionicons
+              name={activeTab === 'available' ? 'bicycle-outline' : activeTab === 'active' ? 'navigate-outline' : 'checkmark-done-circle-outline'}
+              size={56}
+              color={C.textMuted}
+            />
+            <Text style={styles.emptyTitle}>
+              {activeTab === 'available'
+                ? 'No pickups available'
+                : activeTab === 'active'
                 ? 'No active deliveries'
-                : selectedTab === 'Available'
-                ? 'No available deliveries'
                 : 'No completed deliveries'}
             </Text>
-          </View>
-        }
-      />
+            <Text style={styles.emptySubtitle}>
+              {activeTab === 'available'
+                ? isAvailable
+                  ? 'Check back soon for new requests'
+                  : 'Toggle to Available to see requests'
+                : ''}
+            </Text>
+          </Animated.View>
+        ) : (
+          visible.map((delivery, i) => (
+            <Animated.View
+              key={delivery.id}
+              entering={FadeInDown.delay(i * 70).duration(380)}
+              style={styles.deliveryCard}
+            >
+              {/* Card Header */}
+              <View style={styles.cardHeader}>
+                <View style={styles.orderBadge}>
+                  <Ionicons name="cube-outline" size={13} color={C.navy} />
+                  <Text style={styles.orderNumber}>{delivery.orderNumber}</Text>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(delivery.status) + '18' }]}>
+                  <Text style={[styles.statusText, { color: getStatusColor(delivery.status) }]}>
+                    {getStatusLabel(delivery.status)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Route */}
+              <View style={styles.routeSection}>
+                <View style={styles.routePoint}>
+                  <View style={[styles.routeDot, { backgroundColor: C.amber }]} />
+                  <View style={styles.routeTextCol}>
+                    <Text style={styles.routePointName}>{delivery.pickupName}</Text>
+                    <Text style={styles.routePointAddr}>{delivery.pickupAddress}</Text>
+                  </View>
+                </View>
+                <View style={styles.routeLine} />
+                <View style={styles.routePoint}>
+                  <View style={[styles.routeDot, { backgroundColor: C.success }]} />
+                  <View style={styles.routeTextCol}>
+                    <Text style={styles.routePointName}>{delivery.dropName}</Text>
+                    <Text style={styles.routePointAddr}>{delivery.dropAddress}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Meta Row */}
+              <View style={styles.metaRow}>
+                <View style={styles.metaItem}>
+                  <Ionicons name="location-outline" size={14} color={C.textMuted} />
+                  <Text style={styles.metaText}>{delivery.distance}</Text>
+                </View>
+                {delivery.status !== 'completed' && (
+                  <View style={styles.metaItem}>
+                    <Ionicons name="time-outline" size={14} color={C.textMuted} />
+                    <Text style={styles.metaText}>{delivery.eta}</Text>
+                  </View>
+                )}
+                <View style={styles.metaItem}>
+                  <Ionicons name="layers-outline" size={14} color={C.textMuted} />
+                  <Text style={styles.metaText} numberOfLines={1}>{delivery.items}</Text>
+                </View>
+              </View>
+
+              {/* Payout + Actions */}
+              <View style={styles.cardFooter}>
+                <View style={styles.payoutBox}>
+                  <Text style={styles.payoutLabel}>Payout</Text>
+                  <Text style={styles.payoutAmount}>₹{delivery.payout}</Text>
+                </View>
+                <View style={styles.actionBtns}>
+                  {delivery.status === 'available' && (
+                    <Pressable
+                      style={({ pressed }) => [styles.acceptBtn, pressed && styles.btnPressed]}
+                      onPress={() => handleAccept(delivery.id)}
+                    >
+                      <Ionicons name="checkmark-circle" size={18} color={C.white} />
+                      <Text style={styles.acceptBtnText}>Accept</Text>
+                    </Pressable>
+                  )}
+                  {delivery.status === 'accepted' && (
+                    <>
+                      <Pressable
+                        style={({ pressed }) => [styles.secondaryBtn, pressed && styles.btnPressed]}
+                        onPress={() => handleNavigate(delivery.id)}
+                      >
+                        <Ionicons name="navigate-outline" size={15} color={C.navy} />
+                        <Text style={styles.secondaryBtnText}>Navigate</Text>
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [styles.primarySmallBtn, pressed && styles.btnPressed]}
+                        onPress={() => handlePickedUp(delivery.id)}
+                      >
+                        <Text style={styles.primarySmallBtnText}>Picked Up</Text>
+                      </Pressable>
+                    </>
+                  )}
+                  {delivery.status === 'picked_up' && (
+                    <>
+                      <Pressable
+                        style={({ pressed }) => [styles.secondaryBtn, pressed && styles.btnPressed]}
+                        onPress={() => handleNavigate(delivery.id)}
+                      >
+                        <Ionicons name="navigate-outline" size={15} color={C.navy} />
+                        <Text style={styles.secondaryBtnText}>Navigate</Text>
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [styles.deliverBtn, pressed && styles.btnPressed]}
+                        onPress={() => handleDeliver(delivery.id)}
+                      >
+                        <Ionicons name="checkmark-done-circle" size={16} color={C.white} />
+                        <Text style={styles.deliverBtnText}>Deliver</Text>
+                      </Pressable>
+                    </>
+                  )}
+                  {delivery.status === 'completed' && (
+                    <View style={styles.completedBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color={C.success} />
+                      <Text style={styles.completedText}>Done · {delivery.completedAt}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </Animated.View>
+          ))
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = {
-  safeArea: {
-    flex: 1,
-    backgroundColor: T.bg,
-  } as const,
+function getStatusColor(status: DeliveryStatus): string {
+  switch (status) {
+    case 'available': return '#3B82F6';
+    case 'accepted': return '#F59E0B';
+    case 'picked_up': return '#8B5CF6';
+    case 'completed': return '#10B981';
+  }
+}
 
+function getStatusLabel(status: DeliveryStatus): string {
+  switch (status) {
+    case 'available': return 'Available';
+    case 'accepted': return 'Accepted';
+    case 'picked_up': return 'Picked Up';
+    case 'completed': return 'Completed';
+  }
+}
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: C.bg },
   header: {
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: C.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
+  headerSub: { fontSize: 13, color: C.success, fontWeight: '600', marginTop: 2 },
+  scanBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: C.navy,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  availabilityBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: C.surface,
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
-    backgroundColor: T.surface,
-  } as const,
-
-  headerTitle: {
-    color: T.text,
-    fontSize: 24,
-    fontWeight: '700' as const,
+    borderBottomColor: C.border,
   },
-
-  statsContainer: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-
-  statCardActive: {
-    flex: 1,
-    backgroundColor: 'rgba(16,185,129,0.08)',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.3)',
-  } as const,
-
-  statCardAvailable: {
-    flex: 1,
-    backgroundColor: 'rgba(242,150,13,0.08)',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(242,150,13,0.3)',
-  } as const,
-
-  statCardInner: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-  },
-
-  statNumberGreen: {
-    color: T.success,
-    fontWeight: '700' as const,
-    fontSize: 24,
-  },
-
-  statNumberAmber: {
-    color: T.amber,
-    fontWeight: '700' as const,
-    fontSize: 24,
-  },
-
-  statLabel: {
-    color: T.textSecondary,
-    fontSize: 14,
-    marginTop: 4,
-  },
-
-  tabsContainer: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+  availabilityInfo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  availabilityDot: { width: 10, height: 10, borderRadius: 5 },
+  availabilityStatus: { fontSize: 14, fontWeight: '600', color: C.text },
+  availabilityHint: { fontSize: 11, color: C.textSecondary, marginTop: 1 },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: C.border,
+    paddingHorizontal: 16,
   },
-
   tab: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-  } as const,
-
-  tabActive: {
-    backgroundColor: T.navy,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-
-  tabInactive: {
-    backgroundColor: T.bg,
+  tabActive: { borderBottomColor: C.navy },
+  tabText: { fontSize: 12, fontWeight: '600', color: C.textSecondary },
+  tabTextActive: { color: C.navy },
+  tabBadge: {
+    backgroundColor: C.border,
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    minWidth: 18,
+    alignItems: 'center',
   },
-
-  tabText: {
-    textAlign: 'center' as const,
-    fontWeight: '500' as const,
-  },
-
-  tabTextActive: {
-    color: T.white,
-  },
-
-  tabTextInactive: {
-    color: T.textSecondary,
-  },
-
-  card: {
-    backgroundColor: T.surface,
-    borderRadius: 14,
+  tabBadgeActive: { backgroundColor: C.navy },
+  tabBadgeText: { fontSize: 10, fontWeight: '700', color: C.textSecondary },
+  tabBadgeTextActive: { color: C.white },
+  listContent: { padding: 16, gap: 12, paddingBottom: 40 },
+  emptyState: { alignItems: 'center', paddingVertical: 80, gap: 10 },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: C.textSecondary },
+  emptySubtitle: { fontSize: 13, color: C.textMuted, textAlign: 'center' },
+  deliveryCard: {
+    backgroundColor: C.surface,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: T.border,
-  } as const,
-
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   cardHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'flex-start' as const,
-    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
-
-  row: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
-
-  conciergeBadge: {
-    backgroundColor: 'rgba(168,85,247,0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginRight: 8,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
-
-  conciergeBadgeText: {
-    color: '#A855F7',
-    fontSize: 12,
-    fontWeight: '700' as const,
-    marginLeft: 4,
-  },
-
-  orderNumber: {
-    color: T.textSecondary,
-    fontSize: 14,
-  },
-
-  customerName: {
-    color: T.text,
-    fontWeight: '600' as const,
-    marginTop: 4,
-    fontSize: 16,
-  },
-
-  statusBadge: {
-    paddingHorizontal: 8,
+  orderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: C.navy + '10',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
-  } as const,
-
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
+    borderRadius: 8,
   },
-
-  locationRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-start' as const,
-    marginBottom: 8,
-  },
-
-  dotColumn: {
-    width: 24,
-    alignItems: 'center' as const,
-  },
-
-  pickupDot: {
-    width: 12,
-    height: 12,
-    backgroundColor: '#3B82F6',
-    borderRadius: 6,
-  },
-
-  connectorLine: {
-    width: 2,
-    height: 32,
-    backgroundColor: T.border,
-    marginVertical: 4,
-  },
-
-  deliveryDot: {
-    width: 12,
-    height: 12,
-    backgroundColor: T.success,
-    borderRadius: 6,
-  },
-
-  locationInfo: {
-    flex: 1,
-    marginLeft: 8,
-  } as const,
-
-  locationLabel: {
-    color: T.textMuted,
-    fontSize: 12,
-  },
-
-  locationPrimary: {
-    color: T.text,
-    fontSize: 15,
-  },
-
-  locationSecondary: {
-    color: T.textSecondary,
-    fontSize: 14,
-  },
-
-  itemsRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginBottom: 12,
-    backgroundColor: T.bg,
-    padding: 8,
+  orderNumber: { fontSize: 12, fontWeight: '700', color: C.navy },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  statusText: { fontSize: 11, fontWeight: '700' },
+  routeSection: { marginBottom: 12 },
+  routePoint: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 4 },
+  routeDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
+  routeTextCol: { flex: 1 },
+  routePointName: { fontSize: 13, fontWeight: '700', color: C.text },
+  routePointAddr: { fontSize: 11, color: C.textSecondary, marginTop: 1 },
+  routeLine: { width: 1, height: 14, backgroundColor: C.border, marginLeft: 4, marginVertical: 2 },
+  metaRow: { flexDirection: 'row', gap: 12, marginBottom: 14, flexWrap: 'wrap' },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { fontSize: 12, color: C.textSecondary, fontWeight: '500', maxWidth: 120 },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: C.border, paddingTop: 12 },
+  payoutBox: {},
+  payoutLabel: { fontSize: 11, color: C.textSecondary, fontWeight: '500' },
+  payoutAmount: { fontSize: 18, fontWeight: '800', color: C.navy },
+  actionBtns: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  acceptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: C.success,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 10,
   },
-
-  itemsText: {
-    color: T.textSecondary,
-    marginLeft: 8,
-    fontSize: 14,
-    flex: 1,
-  } as const,
-
-  statsRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-
-  distanceText: {
-    color: T.amber,
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-
-  earningsText: {
-    color: T.success,
-    fontWeight: '700' as const,
-    fontSize: 18,
-  },
-
-  bonusText: {
-    color: '#A855F7',
-    fontSize: 12,
-  },
-
-  actionsRow: {
-    flexDirection: 'row' as const,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-
-  actionsRowSingle: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  } as const,
-
-  actionBtn: {
-    flex: 1,
-    paddingVertical: 12,
+  acceptBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
+  secondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: C.bg,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     borderRadius: 10,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    borderWidth: 1,
+    borderColor: C.border,
   },
-
-  actionBtnFull: {
-    paddingVertical: 12,
+  secondaryBtnText: { fontSize: 13, fontWeight: '600', color: C.navy },
+  primarySmallBtn: {
+    backgroundColor: C.navy,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 10,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
   },
-
-  actionBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '600' as const,
-    marginLeft: 8,
-    fontSize: 15,
+  primarySmallBtnText: { fontSize: 13, fontWeight: '700', color: C.white },
+  deliverBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: C.amber,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
   },
-
-  completedRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-
-  completedText: {
-    color: T.textSecondary,
-    marginLeft: 8,
-    fontSize: 14,
-  },
-
-  emptyContainer: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    paddingVertical: 48,
-  },
-
-  emptyText: {
-    color: T.textSecondary,
-    marginTop: 16,
-    fontSize: 15,
-  },
-};
+  deliverBtnText: { fontSize: 13, fontWeight: '700', color: C.white },
+  completedBadge: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  completedText: { fontSize: 13, fontWeight: '600', color: C.success },
+  btnPressed: { opacity: 0.75 },
+});

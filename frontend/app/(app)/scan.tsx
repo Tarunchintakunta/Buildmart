@@ -1,550 +1,398 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, Dimensions, Animated as RNAnimated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import QRScanner from '../../src/components/QRScanner';
-import { LightTheme } from '../../src/theme/colors';
+import Animated, { FadeInDown, ZoomIn, FadeIn } from 'react-native-reanimated';
 
-const T = LightTheme;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const FRAME_SIZE = SCREEN_WIDTH * 0.65;
 
-interface ScannedData {
-  raw: string;
-  type: string;
-  parsed: {
-    type: 'order' | 'delivery' | 'worker' | 'payment' | 'product' | 'url' | 'text' | 'unknown';
-    data: Record<string, any>;
-  };
-}
+const C = {
+  navy: '#1A1D2E',
+  amber: '#F2960D',
+  amberBg: '#FEF3C7',
+  bg: '#F5F6FA',
+  surface: '#FFFFFF',
+  success: '#10B981',
+  error: '#EF4444',
+  border: '#E5E7EB',
+  text: '#1A1D2E',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  white: '#FFFFFF',
+};
 
-function parseQRData(rawData: string): ScannedData['parsed'] {
-  // Try to parse as JSON
-  try {
-    const jsonData = JSON.parse(rawData);
+type ScanState = 'idle' | 'scanning' | 'success' | 'error';
 
-    // Check for known types
-    if (jsonData.orderId || jsonData.order_id) {
-      return {
-        type: 'order',
-        data: {
-          orderId: jsonData.orderId || jsonData.order_id,
-          ...jsonData
-        }
-      };
-    }
+const MOCK_SCANNED_ORDER = {
+  orderNumber: 'ORD-2024-0041',
+  customer: 'Rajesh Kumar',
+  items: '5 bags cement, 2 TMT rods',
+  payout: 200,
+};
 
-    if (jsonData.deliveryId || jsonData.delivery_id) {
-      return {
-        type: 'delivery',
-        data: {
-          deliveryId: jsonData.deliveryId || jsonData.delivery_id,
-          ...jsonData
-        }
-      };
-    }
-
-    if (jsonData.workerId || jsonData.worker_id) {
-      return {
-        type: 'worker',
-        data: {
-          workerId: jsonData.workerId || jsonData.worker_id,
-          ...jsonData
-        }
-      };
-    }
-
-    if (jsonData.paymentId || jsonData.payment_id || jsonData.amount) {
-      return {
-        type: 'payment',
-        data: jsonData
-      };
-    }
-
-    if (jsonData.productId || jsonData.product_id || jsonData.sku) {
-      return {
-        type: 'product',
-        data: jsonData
-      };
-    }
-
-    return {
-      type: 'unknown',
-      data: jsonData
-    };
-  } catch {
-    // Not JSON, try other formats
-  }
-
-  // Check if URL
-  if (rawData.startsWith('http://') || rawData.startsWith('https://')) {
-    return {
-      type: 'url',
-      data: { url: rawData }
-    };
-  }
-
-  // Check for known prefixes
-  if (rawData.startsWith('ORD-') || rawData.startsWith('ORDER-')) {
-    return {
-      type: 'order',
-      data: { orderId: rawData }
-    };
-  }
-
-  if (rawData.startsWith('DEL-') || rawData.startsWith('DELIVERY-')) {
-    return {
-      type: 'delivery',
-      data: { deliveryId: rawData }
-    };
-  }
-
-  if (rawData.startsWith('WRK-') || rawData.startsWith('WORKER-')) {
-    return {
-      type: 'worker',
-      data: { workerId: rawData }
-    };
-  }
-
-  if (rawData.startsWith('PAY-') || rawData.startsWith('PAYMENT-')) {
-    return {
-      type: 'payment',
-      data: { paymentId: rawData }
-    };
-  }
-
-  if (rawData.startsWith('PRD-') || rawData.startsWith('PRODUCT-') || rawData.startsWith('SKU-')) {
-    return {
-      type: 'product',
-      data: { productId: rawData }
-    };
-  }
-
-  // Default to text
-  return {
-    type: 'text',
-    data: { text: rawData }
-  };
-}
-
-function getTypeIcon(type: ScannedData['parsed']['type']): string {
-  switch (type) {
-    case 'order': return 'receipt';
-    case 'delivery': return 'car';
-    case 'worker': return 'person';
-    case 'payment': return 'wallet';
-    case 'product': return 'cube';
-    case 'url': return 'link';
-    default: return 'document-text';
-  }
-}
-
-function getTypeColor(type: ScannedData['parsed']['type']): string {
-  switch (type) {
-    case 'order': return '#3B82F6';
-    case 'delivery': return '#22C55E';
-    case 'worker': return '#8B5CF6';
-    case 'payment': return '#F97316';
-    case 'product': return '#EC4899';
-    case 'url': return '#06B6D4';
-    default: return '#6B7280';
-  }
-}
-
-function getTypeLabel(type: ScannedData['parsed']['type']): string {
-  switch (type) {
-    case 'order': return 'Order';
-    case 'delivery': return 'Delivery';
-    case 'worker': return 'Worker';
-    case 'payment': return 'Payment';
-    case 'product': return 'Product';
-    case 'url': return 'Website Link';
-    case 'text': return 'Text Data';
-    default: return 'Unknown Data';
-  }
+function CornerBracket({ pos }: { pos: 'tl' | 'tr' | 'bl' | 'br' }) {
+  const isTop = pos === 'tl' || pos === 'tr';
+  const isLeft = pos === 'tl' || pos === 'bl';
+  return (
+    <View
+      style={[
+        styles.cornerBracket,
+        isTop ? { top: 0 } : { bottom: 0 },
+        isLeft ? { left: 0 } : { right: 0 },
+        !isLeft && { transform: [{ scaleX: -1 }] },
+        !isTop && { transform: [{ scaleY: -1 }] },
+        !isLeft && !isTop && { transform: [{ scaleX: -1 }, { scaleY: -1 }] },
+      ]}
+    >
+      <View style={[styles.cornerH, { backgroundColor: C.amber }]} />
+      <View style={[styles.cornerV, { backgroundColor: C.amber }]} />
+    </View>
+  );
 }
 
 export default function ScanScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ mode?: string }>();
-  const [scannedData, setScannedData] = useState<ScannedData | null>(null);
-  const [showScanner, setShowScanner] = useState(true);
+  const [scanState, setScanState] = useState<ScanState>('idle');
+  const scanLineAnim = useRef(new RNAnimated.Value(0)).current;
+  const pulseAnim = useRef(new RNAnimated.Value(1)).current;
 
-  const handleScan = (data: string, type: string) => {
-    const parsed = parseQRData(data);
-    setScannedData({
-      raw: data,
-      type,
-      parsed
-    });
-    setShowScanner(false);
-  };
-
-  const handleClose = () => {
-    router.back();
-  };
-
-  const handleScanAgain = () => {
-    setScannedData(null);
-    setShowScanner(true);
-  };
-
-  const handleAction = () => {
-    if (!scannedData) return;
-
-    const { parsed } = scannedData;
-
-    switch (parsed.type) {
-      case 'order':
-        if (parsed.data.orderId) {
-          router.push(`/order/${parsed.data.orderId}`);
-        }
-        break;
-      case 'worker':
-        if (parsed.data.workerId) {
-          router.push(`/worker/${parsed.data.workerId}`);
-        }
-        break;
-      case 'url':
-        Alert.alert(
-          'Open Link',
-          `Do you want to open this link?\n${parsed.data.url}`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open', onPress: () => {
-              // In a real app, use Linking.openURL
-              Alert.alert('Link', parsed.data.url);
-            }}
-          ]
-        );
-        break;
-      default:
-        Alert.alert(
-          'Data Scanned',
-          `Type: ${getTypeLabel(parsed.type)}\n\n${JSON.stringify(parsed.data, null, 2)}`
-        );
+  useEffect(() => {
+    if (scanState === 'scanning' || scanState === 'idle') {
+      RNAnimated.loop(
+        RNAnimated.sequence([
+          RNAnimated.timing(scanLineAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
+          RNAnimated.timing(scanLineAnim, { toValue: 0, duration: 1800, useNativeDriver: true }),
+        ])
+      ).start();
     }
-  };
 
-  if (showScanner) {
-    return (
-      <QRScanner
-        onScan={handleScan}
-        onClose={handleClose}
-        title={params.mode === 'delivery' ? 'Scan Delivery QR' : 'Scan QR Code'}
-        subtitle={params.mode === 'delivery'
-          ? 'Scan the delivery confirmation QR code'
-          : 'Position the QR code within the frame'
-        }
-      />
-    );
+    if (scanState === 'scanning') {
+      RNAnimated.loop(
+        RNAnimated.sequence([
+          RNAnimated.timing(pulseAnim, { toValue: 1.08, duration: 600, useNativeDriver: true }),
+          RNAnimated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        ])
+      ).start();
+    }
+  }, [scanState]);
+
+  function handleSimulateScan() {
+    setScanState('scanning');
+    setTimeout(() => setScanState('success'), 2000);
   }
 
-  // Result view
+  function handleReset() {
+    setScanState('idle');
+    scanLineAnim.setValue(0);
+  }
+
+  const scanLineY = scanLineAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, FRAME_SIZE - 4],
+  });
+
+  const isSuccess = scanState === 'success';
+
   return (
-    <SafeAreaView style={s.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={handleClose} style={s.closeButton}>
-          <Ionicons name="close" size={24} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Scan Result</Text>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color={C.white} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Scan QR Code</Text>
+        <Pressable style={styles.backBtn}>
+          <Ionicons name="flash-off-outline" size={20} color={C.white} />
+        </Pressable>
       </View>
 
-      <ScrollView style={s.scrollView}>
-        {scannedData && (
-          <>
-            {/* Type Badge */}
-            <View style={s.badgeContainer}>
-              <View
+      {/* Dark camera area */}
+      <View style={styles.cameraArea}>
+        {/* Dark overlay top */}
+        <View style={styles.overlayTop} />
+
+        {/* Middle row: overlay left + frame + overlay right */}
+        <View style={styles.middleRow}>
+          <View style={styles.overlaySide} />
+
+          {/* Scan Frame */}
+          <RNAnimated.View
+            style={[
+              styles.scanFrame,
+              { transform: [{ scale: scanState === 'scanning' ? pulseAnim : 1 }] },
+              isSuccess && styles.scanFrameSuccess,
+            ]}
+          >
+            <CornerBracket pos="tl" />
+            <CornerBracket pos="tr" />
+            <CornerBracket pos="bl" />
+            <CornerBracket pos="br" />
+
+            {/* Scan Line */}
+            {!isSuccess && (
+              <RNAnimated.View
                 style={[
-                  s.badgeCircle,
-                  { backgroundColor: `${getTypeColor(scannedData.parsed.type)}26` },
+                  styles.scanLine,
+                  { transform: [{ translateY: scanLineY }] },
                 ]}
-              >
-                <Ionicons
-                  name={getTypeIcon(scannedData.parsed.type) as any}
-                  size={40}
-                  color={getTypeColor(scannedData.parsed.type)}
-                />
+              />
+            )}
+
+            {/* Success overlay */}
+            {isSuccess && (
+              <Animated.View entering={ZoomIn.duration(400)} style={styles.successOverlay}>
+                <View style={styles.successIconCircle}>
+                  <Ionicons name="checkmark" size={40} color={C.white} />
+                </View>
+              </Animated.View>
+            )}
+
+            {/* QR grid dots (decorative) */}
+            {!isSuccess && (
+              <View style={styles.qrDecoGrid}>
+                {Array(5).fill(0).map((_, r) =>
+                  Array(5).fill(0).map((__, c) => (
+                    <View
+                      key={`${r}-${c}`}
+                      style={[
+                        styles.qrDot,
+                        {
+                          opacity: Math.random() > 0.4 ? 0.15 : 0.05,
+                        },
+                      ]}
+                    />
+                  ))
+                )}
               </View>
-              <Text style={s.typeLabel}>
-                {getTypeLabel(scannedData.parsed.type)}
+            )}
+          </RNAnimated.View>
+
+          <View style={styles.overlaySide} />
+        </View>
+
+        {/* Dark overlay bottom */}
+        <View style={styles.overlayBottom}>
+          {/* Instruction */}
+          {!isSuccess && (
+            <Animated.View entering={FadeIn.duration(500)} style={styles.instructionBox}>
+              <Text style={styles.instructionText}>
+                {scanState === 'scanning'
+                  ? 'Scanning...'
+                  : 'Position the QR code inside the frame'}
               </Text>
-              <Text style={s.successText}>
-                Successfully scanned
-              </Text>
-            </View>
+              {scanState === 'idle' && (
+                <Text style={styles.instructionSub}>The QR code will be scanned automatically</Text>
+              )}
+            </Animated.View>
+          )}
 
-            {/* Data Card */}
-            <View style={s.dataCard}>
-              <Text style={s.cardLabel}>Scanned Data</Text>
-
-              {scannedData.parsed.type === 'order' && (
-                <View>
-                  <Text style={s.primaryText}>
-                    Order: {scannedData.parsed.data.orderId}
-                  </Text>
-                  {scannedData.parsed.data.customer && (
-                    <Text style={s.secondaryText}>
-                      Customer: {scannedData.parsed.data.customer}
-                    </Text>
-                  )}
-                  {scannedData.parsed.data.total && (
-                    <Text style={s.greenAmount}>
-                      Total: {scannedData.parsed.data.total}
-                    </Text>
-                  )}
+          {/* Success Result */}
+          {isSuccess && (
+            <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.resultCard}>
+              <View style={styles.resultHeader}>
+                <View style={styles.resultSuccessBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color={C.success} />
+                  <Text style={styles.resultSuccessText}>Scan Successful</Text>
                 </View>
-              )}
-
-              {scannedData.parsed.type === 'delivery' && (
-                <View>
-                  <Text style={s.primaryText}>
-                    Delivery: {scannedData.parsed.data.deliveryId}
-                  </Text>
-                  {scannedData.parsed.data.status && (
-                    <Text style={s.secondaryText}>
-                      Status: {scannedData.parsed.data.status}
-                    </Text>
-                  )}
-                </View>
-              )}
-
-              {scannedData.parsed.type === 'worker' && (
-                <View>
-                  <Text style={s.primaryText}>
-                    Worker: {scannedData.parsed.data.workerId}
-                  </Text>
-                  {scannedData.parsed.data.name && (
-                    <Text style={s.secondaryText}>
-                      Name: {scannedData.parsed.data.name}
-                    </Text>
-                  )}
-                </View>
-              )}
-
-              {scannedData.parsed.type === 'payment' && (
-                <View>
-                  <Text style={s.primaryText}>
-                    Payment: {scannedData.parsed.data.paymentId || 'Pending'}
-                  </Text>
-                  {scannedData.parsed.data.amount && (
-                    <Text style={s.greenAmountLarge}>
-                      {scannedData.parsed.data.amount}
-                    </Text>
-                  )}
-                </View>
-              )}
-
-              {scannedData.parsed.type === 'product' && (
-                <View>
-                  <Text style={s.primaryText}>
-                    Product: {scannedData.parsed.data.productId || scannedData.parsed.data.sku}
-                  </Text>
-                  {scannedData.parsed.data.name && (
-                    <Text style={s.secondaryText}>
-                      {scannedData.parsed.data.name}
-                    </Text>
-                  )}
-                </View>
-              )}
-
-              {scannedData.parsed.type === 'url' && (
-                <Text style={s.urlText} numberOfLines={3}>
-                  {scannedData.parsed.data.url}
-                </Text>
-              )}
-
-              {(scannedData.parsed.type === 'text' || scannedData.parsed.type === 'unknown') && (
-                <Text style={s.plainText}>
-                  {scannedData.raw}
-                </Text>
-              )}
-            </View>
-
-            {/* Raw Data */}
-            <View style={s.rawCard}>
-              <Text style={s.cardLabel}>Raw Content</Text>
-              <Text style={s.rawText} numberOfLines={5}>
-                {scannedData.raw}
-              </Text>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={s.actionsContainer}>
-              {(scannedData.parsed.type === 'order' ||
-                scannedData.parsed.type === 'worker' ||
-                scannedData.parsed.type === 'url') && (
-                <TouchableOpacity
-                  style={[
-                    s.actionButton,
-                    { backgroundColor: getTypeColor(scannedData.parsed.type) },
-                  ]}
-                  onPress={handleAction}
+              </View>
+              <Text style={styles.resultOrderNo}>{MOCK_SCANNED_ORDER.orderNumber}</Text>
+              <Text style={styles.resultCustomer}>{MOCK_SCANNED_ORDER.customer}</Text>
+              <Text style={styles.resultItems}>{MOCK_SCANNED_ORDER.items}</Text>
+              <View style={styles.resultPayoutRow}>
+                <Text style={styles.resultPayoutLabel}>Payout</Text>
+                <Text style={styles.resultPayout}>₹{MOCK_SCANNED_ORDER.payout}</Text>
+              </View>
+              <View style={styles.resultActions}>
+                <Pressable
+                  style={({ pressed }) => [styles.resultBtnSecondary, pressed && styles.btnPressed]}
+                  onPress={handleReset}
                 >
-                  <Ionicons
-                    name={scannedData.parsed.type === 'url' ? 'open-outline' : 'arrow-forward'}
-                    size={20}
-                    color="#FFFFFF"
-                  />
-                  <Text style={s.actionButtonText}>
-                    {scannedData.parsed.type === 'order' ? 'View Order' :
-                     scannedData.parsed.type === 'worker' ? 'View Worker' :
-                     scannedData.parsed.type === 'url' ? 'Open Link' :
-                     'View Details'}
-                  </Text>
-                </TouchableOpacity>
-              )}
+                  <Text style={styles.resultBtnSecondaryText}>Rescan</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.resultBtnPrimary, pressed && styles.btnPressed]}
+                  onPress={() => router.push('/delivery-proof')}
+                >
+                  <Text style={styles.resultBtnPrimaryText}>Continue to Delivery</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          )}
 
-              <TouchableOpacity
-                style={s.scanAgainButton}
-                onPress={handleScanAgain}
+          {/* Simulate Button */}
+          {!isSuccess && (
+            <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.simulateBtnWrapper}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.simulateBtn,
+                  scanState === 'scanning' && styles.simulateBtnDisabled,
+                  pressed && styles.btnPressed,
+                ]}
+                onPress={handleSimulateScan}
+                disabled={scanState === 'scanning'}
               >
-                <Ionicons name="scan" size={20} color={T.text} />
-                <Text style={s.scanAgainText}>
-                  Scan Another
+                <Ionicons name="qr-code" size={18} color={C.navy} />
+                <Text style={styles.simulateBtnText}>
+                  {scanState === 'scanning' ? 'Scanning...' : 'Simulate Scan'}
                 </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </ScrollView>
+              </Pressable>
+              <Text style={styles.simulateNote}>
+                Demo mode — tap to simulate a successful QR scan
+              </Text>
+            </Animated.View>
+          )}
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
 
-const s = {
-  safeArea: {
-    flex: 1 as const,
-    backgroundColor: T.bg,
-  },
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#000' },
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    backgroundColor: 'transparent',
+    zIndex: 10,
   },
-  closeButton: {
-    marginRight: 16,
+  backBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: C.white },
+  cameraArea: { flex: 1, backgroundColor: '#0A0A0A' },
+  overlayTop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
+  overlayBottom: {
+    flex: 1.4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    gap: 16,
   },
-  headerTitle: {
-    color: T.text,
-    fontSize: 18,
-    fontWeight: '600' as const,
-    flex: 1,
+  middleRow: { flexDirection: 'row', height: FRAME_SIZE },
+  overlaySide: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
+  scanFrame: {
+    width: FRAME_SIZE,
+    height: FRAME_SIZE,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  scrollView: {
-    flex: 1 as const,
-    paddingHorizontal: 16,
-    paddingVertical: 24,
+  scanFrameSuccess: {},
+  cornerBracket: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
   },
-  badgeContainer: {
-    alignItems: 'center' as const,
-    marginBottom: 24,
+  cornerH: { position: 'absolute', top: 0, left: 0, width: 28, height: 4, borderRadius: 2 },
+  cornerV: { position: 'absolute', top: 0, left: 0, width: 4, height: 28, borderRadius: 2 },
+  scanLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: C.amber,
+    shadowColor: C.amber,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
   },
-  badgeCircle: {
+  successOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(16,185,129,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successIconCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginBottom: 16,
+    backgroundColor: C.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: C.success,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  typeLabel: {
-    color: T.text,
-    fontSize: 20,
-    fontWeight: '700' as const,
-  },
-  successText: {
-    color: T.textSecondary,
-    fontSize: 14,
-    marginTop: 4,
-  },
-  dataCard: {
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardLabel: {
-    color: T.textMuted,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  primaryText: {
-    color: T.text,
-    fontSize: 18,
-    fontWeight: '600' as const,
-  },
-  secondaryText: {
-    color: T.textSecondary,
-    marginTop: 4,
-  },
-  greenAmount: {
-    color: T.success,
-    fontWeight: '700' as const,
-    marginTop: 4,
-  },
-  greenAmountLarge: {
-    color: T.success,
-    fontWeight: '700' as const,
-    fontSize: 20,
-    marginTop: 4,
-  },
-  urlText: {
-    color: '#3B82F6',
-    fontSize: 16,
-  },
-  plainText: {
-    color: T.text,
-    fontSize: 16,
-  },
-  rawCard: {
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: 16,
-    marginBottom: 24,
-  },
-  rawText: {
-    color: T.textSecondary,
-    fontSize: 14,
-    fontFamily: 'monospace' as const,
-  },
-  actionsContainer: {
+  qrDecoGrid: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 20,
     gap: 12,
+    alignContent: 'center',
+    justifyContent: 'center',
   },
-  actionButton: {
-    paddingVertical: 16,
+  qrDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 2,
+    backgroundColor: C.white,
+    margin: 10,
+  },
+  instructionBox: { alignItems: 'center', gap: 6 },
+  instructionText: { fontSize: 16, fontWeight: '600', color: C.white, textAlign: 'center' },
+  instructionSub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', textAlign: 'center' },
+  resultCard: {
+    backgroundColor: C.surface,
+    borderRadius: 20,
+    padding: 18,
+    width: '100%',
+  },
+  resultHeader: { marginBottom: 10 },
+  resultSuccessBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  resultSuccessText: { fontSize: 13, fontWeight: '700', color: C.success },
+  resultOrderNo: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: 4 },
+  resultCustomer: { fontSize: 14, color: C.textSecondary, marginBottom: 4 },
+  resultItems: { fontSize: 13, color: C.textMuted, marginBottom: 12 },
+  resultPayoutRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    paddingTop: 10,
+    marginBottom: 14,
+  },
+  resultPayoutLabel: { fontSize: 13, color: C.textSecondary, fontWeight: '500' },
+  resultPayout: { fontSize: 20, fontWeight: '800', color: C.navy },
+  resultActions: { flexDirection: 'row', gap: 10 },
+  resultBtnSecondary: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: C.bg,
+    borderWidth: 1,
+    borderColor: C.border,
+    alignItems: 'center',
+  },
+  resultBtnSecondaryText: { fontSize: 14, fontWeight: '600', color: C.text },
+  resultBtnPrimary: {
+    flex: 2,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: C.navy,
+    alignItems: 'center',
+  },
+  resultBtnPrimaryText: { fontSize: 14, fontWeight: '700', color: C.white },
+  simulateBtnWrapper: { alignItems: 'center', gap: 10, width: '100%' },
+  simulateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: C.amber,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
     borderRadius: 14,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    width: '100%',
+    justifyContent: 'center',
   },
-  actionButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600' as const,
-    fontSize: 18,
-    marginLeft: 8,
-  },
-  scanAgainButton: {
-    backgroundColor: T.bg,
-    paddingVertical: 16,
-    borderRadius: 14,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  scanAgainText: {
-    color: T.text,
-    fontWeight: '600' as const,
-    fontSize: 18,
-    marginLeft: 8,
-  },
-};
+  simulateBtnDisabled: { opacity: 0.5 },
+  simulateBtnText: { fontSize: 15, fontWeight: '700', color: C.navy },
+  simulateNote: { fontSize: 12, color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
+  btnPressed: { opacity: 0.75 },
+});
