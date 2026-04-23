@@ -1,616 +1,479 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown, FadeInLeft } from 'react-native-reanimated';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { LightTheme } from '../../../src/theme/colors';
 
 const T = LightTheme;
 
-// Mock agreement data
-const MOCK_AGREEMENT = {
-  id: 'a1',
-  agreementNumber: 'AGR-2024-001',
-  title: 'Site Labor for Brigade Project',
-  status: 'active',
-  contractor: {
-    id: 'c1',
-    name: 'Rajesh Constructions',
-    phone: '9876543201',
-  },
-  worker: {
-    id: 'w1',
-    name: 'Ramu Yadav',
-    phone: '9876543301',
-    skills: ['Coolie', 'Helper'],
-  },
-  scopeOfWork: 'Loading, unloading, and general site assistance for residential construction. Worker will help with material handling, site cleanup, and support skilled workers as needed.',
-  startDate: '2024-01-15',
-  endDate: '2024-03-15',
-  rateType: 'daily',
-  rateAmount: 600,
-  workingHoursPerDay: 8,
-  workLocation: 'Brigade Road Construction Site, Bangalore',
-  terminationNoticeDays: 7,
-  terminationTerms: 'Either party may terminate with 7 days written notice. In case of misconduct, immediate termination without notice.',
-  additionalTerms: 'Worker must report at 8 AM sharp. Safety gear will be provided. One meal per day included.',
-  totalValue: 36000,
-  paidAmount: 12000,
-  escrowBalance: 6000,
-  contractorSignedAt: '2024-01-14 10:30 AM',
-  workerSignedAt: '2024-01-14 02:15 PM',
-  createdAt: '2024-01-14 10:00 AM',
+type AgreementStatus = 'draft' | 'pending_signature' | 'active' | 'completed' | 'terminated';
+
+const STATUS_CONFIG: Record<AgreementStatus, { label: string; color: string }> = {
+  draft:             { label: 'Draft',         color: '#6B7280' },
+  pending_signature: { label: 'Pending Sign',  color: '#F59E0B' },
+  active:            { label: 'Active',        color: '#10B981' },
+  completed:         { label: 'Completed',     color: '#3B82F6' },
+  terminated:        { label: 'Terminated',    color: '#EF4444' },
 };
 
-const getStatusInfo = (status: string) => {
-  const statusMap: Record<string, { label: string; color: string; bg: string }> = {
-    draft: { label: 'Draft', color: '#6B7280', bg: 'rgba(107,114,128,0.15)' },
-    pending_signature: { label: 'Pending Signature', color: '#EAB308', bg: 'rgba(234,179,8,0.15)' },
-    active: { label: 'Active', color: '#22C55E', bg: 'rgba(34,197,94,0.15)' },
-    completed: { label: 'Completed', color: '#3B82F6', bg: 'rgba(59,130,246,0.15)' },
-    terminated: { label: 'Terminated', color: '#EF4444', bg: 'rgba(239,68,68,0.15)' },
-  };
-  return statusMap[status] || statusMap.draft;
+const MOCK_AGREEMENTS: Record<string, {
+  id: string; contractId: string; status: AgreementStatus;
+  contractorName: string; contractorCompany: string;
+  workerName: string; workerSkill: string;
+  jobType: string; location: string; startDate: string; duration: number; dailyRate: number;
+  description: string; scopeOfWork: string[];
+  contractorSigned: boolean; contractorSignDate: string;
+  workerSigned: boolean; workerSignDate: string;
+  createdDate: string;
+}> = {
+  agr001: {
+    id: 'agr001', contractId: 'BM-AGR-2026-001', status: 'active',
+    contractorName: 'Rajesh Sharma', contractorCompany: 'Rajesh Constructions Pvt Ltd',
+    workerName: 'Ramu Yadav', workerSkill: 'Mason',
+    jobType: 'Masonry & Plastering', location: 'Gachibowli, Hyderabad',
+    startDate: '01 May 2026', duration: 45, dailyRate: 800,
+    description: 'Complete brickwork and plastering for G+2 residential building.',
+    scopeOfWork: [
+      'Brick masonry for all external and internal walls as per drawing',
+      'Plastering — internal single coat, external double coat',
+      'Tiling for bathrooms and kitchen as per client specification',
+      'Grouting and finishing work for all tiled areas',
+      'Supervision and quality check of sub-workers',
+    ],
+    contractorSigned: true, contractorSignDate: '20 Apr 2026',
+    workerSigned: true, workerSignDate: '21 Apr 2026',
+    createdDate: '20 Apr 2026',
+  },
+  agr002: {
+    id: 'agr002', contractId: 'BM-AGR-2026-002', status: 'pending_signature',
+    contractorName: 'Anil Kumar', contractorCompany: 'BuildRight Infrastructure',
+    workerName: 'Venkat Rao', workerSkill: 'Electrician',
+    jobType: 'Electrical Installation', location: 'HITEC City, Hyderabad',
+    startDate: '10 May 2026', duration: 30, dailyRate: 1200,
+    description: 'Full electrical wiring, panel installation, and safety testing for commercial complex.',
+    scopeOfWork: [
+      'Complete concealed wiring for all floors as per load schedule',
+      'DB panel installation and cable termination',
+      'Light fixtures, fans, and plug points installation',
+      'UPS and earthing system setup',
+      'Final testing, commissioning, and safety sign-off',
+    ],
+    contractorSigned: true, contractorSignDate: '22 Apr 2026',
+    workerSigned: false, workerSignDate: '',
+    createdDate: '22 Apr 2026',
+  },
+  agr003: {
+    id: 'agr003', contractId: 'BM-AGR-2026-003', status: 'completed',
+    contractorName: 'Sunil Sharma', contractorCompany: 'Sharma Builders',
+    workerName: 'Mohammed Khader', workerSkill: 'Carpenter',
+    jobType: 'Modular Kitchen & Carpentry', location: 'Banjara Hills, Hyderabad',
+    startDate: '15 Mar 2026', duration: 20, dailyRate: 1100,
+    description: 'Custom modular kitchen, wardrobe, and false ceiling installation.',
+    scopeOfWork: [
+      'Modular kitchen cabinet fabrication and installation',
+      'Master bedroom wardrobe with sliding doors',
+      'False ceiling with gypsum boards in living area',
+      'TV unit and shoe rack in entrance lobby',
+      'Touch-up and handover inspection',
+    ],
+    contractorSigned: true, contractorSignDate: '12 Mar 2026',
+    workerSigned: true, workerSignDate: '13 Mar 2026',
+    createdDate: '10 Mar 2026',
+  },
+  agr004: {
+    id: 'agr004', contractId: 'BM-AGR-2026-004', status: 'terminated',
+    contractorName: 'Venkata Rao Reddy', contractorCompany: 'Hyderabad Infra Projects',
+    workerName: 'Srinivas Reddy', workerSkill: 'Welder',
+    jobType: 'Steel Fabrication', location: 'Uppal, Hyderabad',
+    startDate: '05 Feb 2026', duration: 15, dailyRate: 1300,
+    description: 'Structural steel work and railing fabrication for industrial warehouse.',
+    scopeOfWork: [
+      'Structural steel column and beam fabrication',
+      'Staircase railing and balustrade welding',
+      'Gate and grill fabrication for entrance',
+      'Surface preparation and primer coating',
+      'Site cleanup and material reconciliation',
+    ],
+    contractorSigned: true, contractorSignDate: '02 Feb 2026',
+    workerSigned: true, workerSignDate: '03 Feb 2026',
+    createdDate: '01 Feb 2026',
+  },
 };
+
+function DetailRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <View style={styles.detailRow}>
+      <View style={styles.detailIcon}>
+        <Ionicons name={icon as any} size={16} color={T.navy} />
+      </View>
+      <View>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={styles.detailValue}>{value}</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function AgreementDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const agreement = MOCK_AGREEMENT;
-  const statusInfo = getStatusInfo(agreement.status);
 
-  const isContractor = user?.role === 'contractor';
+  const agreement = MOCK_AGREEMENTS[id as string] || MOCK_AGREEMENTS['agr001'];
+  const cfg = STATUS_CONFIG[agreement.status];
+  const totalValue = agreement.dailyRate * agreement.duration;
+
+  const [signed, setSigned] = useState(agreement.workerSigned);
+  const [signing, setSigning] = useState(false);
+
   const isWorker = user?.role === 'worker';
-  const isPendingSignature = agreement.status === 'pending_signature';
-  const isActive = agreement.status === 'active';
+  const canSign = isWorker && agreement.status === 'pending_signature' && !signed;
 
-  const handleSign = () => {
+  function handleSign() {
     Alert.alert(
       'Sign Agreement',
-      'By signing, you agree to all terms and conditions stated in this agreement.',
+      `By tapping Confirm, you digitally sign "${agreement.contractId}" and agree to all terms.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Sign',
+          text: 'Confirm & Sign',
           onPress: () => {
-            Alert.alert('Success', 'Agreement signed successfully!');
+            setSigning(true);
+            setTimeout(() => {
+              setSigning(false);
+              setSigned(true);
+              Alert.alert('Signed!', 'Agreement signed. Work can now begin.');
+            }, 1000);
           },
         },
-      ]
+      ],
     );
-  };
+  }
 
-  const handleTerminate = () => {
-    Alert.alert(
-      'Terminate Agreement',
-      `This will terminate the agreement. A ${agreement.terminationNoticeDays}-day notice period will apply.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Terminate',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Agreement Terminated', 'Notice period has started.');
-          },
-        },
-      ]
-    );
-  };
+  function handleDownload() {
+    Alert.alert('Coming Soon', 'PDF download will be available in the next update.');
+  }
+
+  const timeline = [
+    { label: 'Agreement Created', icon: 'document-text-outline', done: true },
+    { label: 'Contractor Signed', icon: 'create-outline', done: agreement.contractorSigned },
+    { label: 'Worker Signed', icon: 'create-outline', done: signed },
+    { label: 'Work In Progress', icon: 'construct-outline', done: agreement.status === 'active' || agreement.status === 'completed' },
+    { label: 'Completed & Paid', icon: 'checkmark-done-circle-outline', done: agreement.status === 'completed' },
+  ];
 
   return (
-    <SafeAreaView style={s.safeArea}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Agreement Details</Text>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.header}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color={T.navy} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Agreement</Text>
+        <Pressable style={styles.dlBtn} onPress={handleDownload}>
+          <Ionicons name="download-outline" size={20} color={T.navy} />
+        </Pressable>
       </View>
 
-      <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Agreement Header */}
-        <View style={s.sectionPadding}>
-          <View style={s.agreementHeaderCard}>
-            <View style={s.agreementHeaderRow}>
-              <View style={s.flex1}>
-                <Text style={s.agreementTitle}>{agreement.title}</Text>
-                <Text style={s.agreementNumber}>{agreement.agreementNumber}</Text>
-              </View>
-              <View style={[s.statusBadge, { backgroundColor: statusInfo.bg }]}>
-                <Text style={[s.statusBadgeText, { color: statusInfo.color }]}>
-                  {statusInfo.label}
-                </Text>
-              </View>
-            </View>
-
-            {/* Progress for active agreements */}
-            {isActive && (
-              <View style={s.progressContainer}>
-                <View style={s.progressLabelRow}>
-                  <Text style={s.progressLabel}>Progress</Text>
-                  <Text style={s.progressValue}>
-                    ₹{agreement.paidAmount.toLocaleString()} / ₹{agreement.totalValue.toLocaleString()}
-                  </Text>
-                </View>
-                <View style={s.progressTrack}>
-                  <View
-                    style={[
-                      s.progressFill,
-                      { width: `${(agreement.paidAmount / agreement.totalValue) * 100}%` },
-                    ]}
-                  />
-                </View>
-              </View>
-            )}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        {/* Contract Title */}
+        <Animated.View entering={FadeInDown.springify()} style={styles.contractHero}>
+          <Text style={styles.contractHeading}>SERVICE AGREEMENT</Text>
+          <Text style={styles.contractId}>{agreement.contractId}</Text>
+          <Text style={styles.contractDate}>Dated: {agreement.createdDate}</Text>
+          <View style={[styles.statusPill, { backgroundColor: cfg.color + '30' }]}>
+            <Text style={[styles.statusPillText, { color: cfg.color }]}>{cfg.label}</Text>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Parties */}
-        <View style={s.sectionPaddingBottom}>
-          <Text style={s.sectionTitle}>Parties</Text>
-
-          {/* Contractor */}
-          <View style={[s.partyCard, { marginBottom: 12 }]}>
-            <View style={s.partyRow}>
-              <View style={s.contractorIconCircle}>
-                <Ionicons name="business" size={24} color="#A855F7" />
+        <Animated.View entering={FadeInLeft.delay(80).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>PARTIES</Text>
+          <View style={styles.partiesRow}>
+            <View style={[styles.partyCard, styles.partyCardA]}>
+              <View style={styles.partyIconCircle}>
+                <Ionicons name="business" size={18} color={T.navy} />
               </View>
-              <View style={s.partyInfo}>
-                <Text style={s.roleLabel}>CONTRACTOR</Text>
-                <Text style={s.partyName}>{agreement.contractor.name}</Text>
-                <Text style={s.partyPhone}>{agreement.contractor.phone}</Text>
+              <Text style={styles.partyRoleLabel}>Party A — Contractor</Text>
+              <Text style={styles.partyPersonName}>{agreement.contractorName}</Text>
+              <Text style={styles.partyCompany}>{agreement.contractorCompany}</Text>
+            </View>
+            <View style={styles.partiesVs}>
+              <Text style={styles.vsText}>↔</Text>
+            </View>
+            <View style={[styles.partyCard, styles.partyCardB]}>
+              <View style={[styles.partyIconCircle, { backgroundColor: T.amber + '20' }]}>
+                <Ionicons name="person" size={18} color={T.amber} />
               </View>
-              {agreement.contractorSignedAt && (
-                <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
-              )}
+              <Text style={[styles.partyRoleLabel, { color: T.amber }]}>Party B — Worker</Text>
+              <Text style={styles.partyPersonName}>{agreement.workerName}</Text>
+              <Text style={styles.partyCompany}>{agreement.workerSkill}</Text>
             </View>
           </View>
+        </Animated.View>
 
-          {/* Worker */}
-          <View style={s.partyCard}>
-            <View style={s.partyRow}>
-              <View style={s.workerIconCircle}>
-                <Ionicons name="person" size={24} color="#22C55E" />
-              </View>
-              <View style={s.partyInfo}>
-                <Text style={s.roleLabel}>WORKER</Text>
-                <Text style={s.partyName}>{agreement.worker.name}</Text>
-                <View style={s.skillsRow}>
-                  {agreement.worker.skills.map((skill, index) => (
-                    <View key={index} style={s.skillBadge}>
-                      <Text style={s.skillBadgeText}>{skill}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-              {agreement.workerSignedAt ? (
-                <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
-              ) : (
-                <View style={s.pendingBadge}>
-                  <Text style={s.pendingBadgeText}>Pending</Text>
-                </View>
-              )}
-            </View>
+        {/* Job Details */}
+        <Animated.View entering={FadeInLeft.delay(120).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>JOB DETAILS</Text>
+          <View style={styles.detailsList}>
+            <DetailRow icon="briefcase-outline" label="Job Type" value={agreement.jobType} />
+            <DetailRow icon="location-outline" label="Location" value={agreement.location} />
+            <DetailRow icon="calendar-outline" label="Start Date" value={agreement.startDate} />
+            <DetailRow icon="time-outline" label="Duration" value={`${agreement.duration} days`} />
           </View>
-        </View>
-
-        {/* Agreement Details */}
-        <View style={s.sectionPaddingBottom}>
-          <Text style={s.sectionTitle}>Contract Terms</Text>
-          <View style={s.card}>
-            {/* Duration */}
-            <View style={s.termRowBordered}>
-              <Ionicons name="calendar" size={20} color={T.amber} />
-              <View style={s.termContent}>
-                <Text style={s.termLabel}>DURATION</Text>
-                <Text style={s.termValue}>{agreement.startDate} → {agreement.endDate}</Text>
-              </View>
-            </View>
-
-            {/* Rate */}
-            <View style={s.termRowBordered}>
-              <Ionicons name="cash" size={20} color={T.amber} />
-              <View style={s.termContent}>
-                <Text style={s.termLabel}>RATE</Text>
-                <Text style={s.termValue}>
-                  ₹{agreement.rateAmount} / {agreement.rateType}
-                </Text>
-              </View>
-            </View>
-
-            {/* Working Hours */}
-            <View style={s.termRowBordered}>
-              <Ionicons name="time" size={20} color={T.amber} />
-              <View style={s.termContent}>
-                <Text style={s.termLabel}>WORKING HOURS</Text>
-                <Text style={s.termValue}>{agreement.workingHoursPerDay} hours/day</Text>
-              </View>
-            </View>
-
-            {/* Location */}
-            <View style={s.termRowNoBorder}>
-              <Ionicons name="location" size={20} color={T.amber} />
-              <View style={s.termContent}>
-                <Text style={s.termLabel}>WORK LOCATION</Text>
-                <Text style={s.termValue}>{agreement.workLocation}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        </Animated.View>
 
         {/* Scope of Work */}
-        <View style={s.sectionPaddingBottom}>
-          <Text style={s.sectionTitle}>Scope of Work</Text>
-          <View style={s.card}>
-            <Text style={s.bodyText}>{agreement.scopeOfWork}</Text>
-          </View>
-        </View>
-
-        {/* Terms */}
-        <View style={s.sectionPaddingBottom}>
-          <Text style={s.sectionTitle}>Terms & Conditions</Text>
-          <View style={s.card}>
-            <Text style={s.termsLabel}>Termination Notice</Text>
-            <Text style={s.termsValue}>{agreement.terminationNoticeDays} days</Text>
-
-            <Text style={s.termsLabel}>Termination Terms</Text>
-            <Text style={s.termsBodyText}>{agreement.terminationTerms}</Text>
-
-            {agreement.additionalTerms && (
-              <>
-                <Text style={s.termsLabel}>Additional Terms</Text>
-                <Text style={s.termsBodyTextLast}>{agreement.additionalTerms}</Text>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Financial Summary */}
-        <View style={s.sectionPaddingBottomLarge}>
-          <Text style={s.sectionTitle}>Financial Summary</Text>
-          <View style={s.card}>
-            <View style={s.financeRow}>
-              <Text style={s.financeLabel}>Total Contract Value</Text>
-              <Text style={s.financeTotal}>₹{agreement.totalValue.toLocaleString()}</Text>
+        <Animated.View entering={FadeInLeft.delay(160).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>SCOPE OF WORK</Text>
+          {agreement.scopeOfWork.map((item, i) => (
+            <View key={i} style={styles.scopeItem}>
+              <Text style={styles.scopeNum}>{i + 1}.</Text>
+              <Text style={styles.scopeText}>{item}</Text>
             </View>
-            <View style={s.financeRow}>
-              <Text style={s.financeLabel}>Amount Paid</Text>
-              <Text style={s.financePaid}>₹{agreement.paidAmount.toLocaleString()}</Text>
+          ))}
+        </Animated.View>
+
+        {/* Payment Terms */}
+        <Animated.View entering={FadeInLeft.delay(200).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>PAYMENT TERMS</Text>
+          <View style={styles.paymentTable}>
+            <View style={styles.payRow}>
+              <Text style={styles.payRowLabel}>Daily Rate</Text>
+              <Text style={styles.payRowVal}>₹{agreement.dailyRate.toLocaleString('en-IN')}/day</Text>
             </View>
-            <View style={s.financeRowLast}>
-              <Text style={s.financeLabel}>In Escrow</Text>
-              <Text style={s.financeEscrow}>₹{agreement.escrowBalance.toLocaleString()}</Text>
+            <View style={styles.payDivider} />
+            <View style={styles.payRow}>
+              <Text style={styles.payRowLabel}>Duration</Text>
+              <Text style={styles.payRowVal}>{agreement.duration} days</Text>
+            </View>
+            <View style={styles.payDivider} />
+            <View style={[styles.payRow, styles.payRowTotal]}>
+              <Text style={styles.payTotalLabel}>Total Contract Value</Text>
+              <Text style={styles.payTotalVal}>₹{totalValue.toLocaleString('en-IN')}</Text>
             </View>
           </View>
-        </View>
+          <View style={styles.escrowBanner}>
+            <Ionicons name="lock-closed-outline" size={16} color={T.navy} />
+            <Text style={styles.escrowBannerText}>
+              Payment held in escrow by BuildMart. Released on satisfactory work completion.
+            </Text>
+          </View>
+        </Animated.View>
+
+        {/* Dispute Resolution */}
+        <Animated.View entering={FadeInLeft.delay(240).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>DISPUTE RESOLUTION</Text>
+          <Text style={styles.clauseText}>
+            Any dispute shall first be resolved via BuildMart's Dispute Resolution system. If unresolved within 14 days, either party may escalate to arbitration. BuildMart's decision on escrow release is final and binding.
+          </Text>
+        </Animated.View>
+
+        {/* Signatures */}
+        <Animated.View entering={FadeInLeft.delay(280).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>DIGITAL SIGNATURES</Text>
+          <View style={styles.sigRow}>
+            <View style={[styles.sigCard, agreement.contractorSigned ? styles.sigCardSigned : styles.sigCardPending]}>
+              <View style={styles.sigCardHeader}>
+                <Ionicons name="business-outline" size={15} color={T.navy} />
+                <Text style={styles.sigCardRole}>Contractor</Text>
+              </View>
+              <Text style={styles.sigCardName}>{agreement.contractorName}</Text>
+              {agreement.contractorSigned ? (
+                <View style={styles.sigStatus}>
+                  <Ionicons name="checkmark-circle" size={16} color={T.success} />
+                  <Text style={styles.sigStatusSigned}>{agreement.contractorSignDate}</Text>
+                </View>
+              ) : (
+                <Text style={styles.sigStatusPending}>Awaiting...</Text>
+              )}
+            </View>
+
+            <View style={[styles.sigCard, signed ? styles.sigCardSigned : styles.sigCardPending]}>
+              <View style={styles.sigCardHeader}>
+                <Ionicons name="person-outline" size={15} color={T.amber} />
+                <Text style={[styles.sigCardRole, { color: T.amber }]}>Worker</Text>
+              </View>
+              <Text style={styles.sigCardName}>{agreement.workerName}</Text>
+              {signed ? (
+                <View style={styles.sigStatus}>
+                  <Ionicons name="checkmark-circle" size={16} color={T.success} />
+                  <Text style={styles.sigStatusSigned}>{agreement.workerSignDate || 'Signed'}</Text>
+                </View>
+              ) : (
+                <Text style={styles.sigStatusPending}>Awaiting...</Text>
+              )}
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Timeline */}
+        <Animated.View entering={FadeInLeft.delay(320).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>STATUS TIMELINE</Text>
+          {timeline.map((ev, i) => (
+            <View key={i} style={styles.tlItem}>
+              <View style={styles.tlLeft}>
+                <View style={[styles.tlDot, ev.done ? styles.tlDotDone : styles.tlDotPending]}>
+                  <Ionicons name={ev.icon as any} size={13} color={ev.done ? '#fff' : T.textMuted} />
+                </View>
+                {i < timeline.length - 1 && (
+                  <View style={[styles.tlLine, ev.done ? styles.tlLineDone : {}]} />
+                )}
+              </View>
+              <Text style={[styles.tlLabel, ev.done && styles.tlLabelDone]}>{ev.label}</Text>
+            </View>
+          ))}
+        </Animated.View>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Bottom Actions */}
-      {(isPendingSignature && isWorker) && (
-        <View style={s.bottomBar}>
-          <View style={s.bottomActionsRow}>
-            <TouchableOpacity
-              style={s.declineButton}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="close" size={20} color="#9CA3AF" />
-              <Text style={s.declineButtonText}>Decline</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={s.signButton}
-              onPress={handleSign}
-            >
-              <Ionicons name="create" size={20} color="#FFFFFF" />
-              <Text style={s.signButtonText}>Sign Agreement</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {isActive && (
-        <View style={s.bottomBar}>
-          <TouchableOpacity
-            style={s.terminateButton}
-            onPress={handleTerminate}
+      {/* Bottom bar */}
+      {canSign ? (
+        <View style={styles.bottomBar}>
+          <Pressable
+            style={({ pressed }) => [styles.signBtn, pressed && { opacity: 0.85 }]}
+            onPress={handleSign}
+            disabled={signing}
           >
-            <Ionicons name="close-circle" size={20} color="#EF4444" />
-            <Text style={s.terminateButtonText}>Terminate Agreement</Text>
-          </TouchableOpacity>
+            <Ionicons name="create-outline" size={20} color="#fff" />
+            <Text style={styles.signBtnText}>{signing ? 'Signing...' : 'Sign Agreement'}</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.bottomBar}>
+          <Pressable
+            style={({ pressed }) => [styles.dlBarBtn, pressed && { opacity: 0.8 }]}
+            onPress={handleDownload}
+          >
+            <Ionicons name="download-outline" size={20} color={T.navy} />
+            <Text style={styles.dlBarBtnText}>Download PDF</Text>
+            <View style={styles.csTag}>
+              <Text style={styles.csTagText}>Coming Soon</Text>
+            </View>
+          </Pressable>
         </View>
       )}
     </SafeAreaView>
   );
 }
 
-const s = {
-  safeArea: {
-    flex: 1,
-    backgroundColor: T.bg,
-  } as const,
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: T.bg },
+
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+    backgroundColor: T.surface, borderBottomWidth: 1, borderBottomColor: T.border,
   },
-  headerTitle: {
-    color: T.text,
-    fontSize: 20,
-    fontWeight: '700' as const,
-    marginLeft: 16,
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: T.navy },
+  dlBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+
+  scroll: { paddingBottom: 24 },
+
+  contractHero: {
+    alignItems: 'center', backgroundColor: T.navy,
+    paddingVertical: 28, paddingHorizontal: 24, marginBottom: 16,
   },
-  scrollView: {
-    flex: 1,
-  } as const,
-  sectionPadding: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+  contractHeading: { fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: 2.5, marginBottom: 8 },
+  contractId: { fontSize: 14, color: T.amber, fontWeight: '700', marginBottom: 4 },
+  contractDate: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 12 },
+  statusPill: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20 },
+  statusPillText: { fontSize: 13, fontWeight: '800' },
+
+  section: {
+    backgroundColor: T.surface, marginHorizontal: 16,
+    borderRadius: 16, padding: 18, marginBottom: 14,
+    borderWidth: 1, borderColor: T.border,
   },
-  sectionPaddingBottom: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+  sectionTitle: { fontSize: 10, fontWeight: '800', color: T.textMuted, letterSpacing: 1.5, marginBottom: 14 },
+
+  partiesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  partyCard: { flex: 1, borderRadius: 12, padding: 12, borderWidth: 1 },
+  partyCardA: { backgroundColor: T.bg, borderColor: T.border },
+  partyCardB: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
+  partyIconCircle: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center',
+    marginBottom: 8, borderWidth: 1, borderColor: T.border,
   },
-  sectionPaddingBottomLarge: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+  partiesVs: { alignItems: 'center' },
+  vsText: { fontSize: 22, color: T.textMuted },
+  partyRoleLabel: { fontSize: 10, fontWeight: '700', color: T.navy, marginBottom: 3 },
+  partyPersonName: { fontSize: 13, fontWeight: '800', color: T.navy, marginBottom: 2 },
+  partyCompany: { fontSize: 11, color: T.textSecondary },
+
+  detailsList: { gap: 10 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  detailIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: T.border,
   },
-  agreementHeaderCard: {
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: T.border,
+  detailLabel: { fontSize: 11, color: T.textMuted, marginBottom: 1 },
+  detailValue: { fontSize: 14, fontWeight: '700', color: T.navy },
+
+  scopeItem: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  scopeNum: { fontSize: 14, fontWeight: '800', color: T.amber, width: 20 },
+  scopeText: { flex: 1, fontSize: 14, color: T.textSecondary, lineHeight: 20 },
+
+  paymentTable: { borderWidth: 1, borderColor: T.border, borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
+  payRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
+  payDivider: { height: 1, backgroundColor: T.border },
+  payRowTotal: { backgroundColor: T.navy },
+  payRowLabel: { fontSize: 14, color: T.textSecondary },
+  payRowVal: { fontSize: 14, fontWeight: '700', color: T.navy },
+  payTotalLabel: { fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
+  payTotalVal: { fontSize: 22, fontWeight: '900', color: T.amber },
+
+  escrowBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: '#EFF6FF', borderRadius: 12, padding: 12,
+    borderWidth: 1, borderColor: '#BFDBFE',
   },
-  agreementHeaderRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'flex-start' as const,
-    marginBottom: 12,
-  },
-  flex1: {
-    flex: 1,
-  } as const,
-  agreementTitle: {
-    color: T.text,
-    fontSize: 20,
-    fontWeight: '700' as const,
-  },
-  agreementNumber: {
-    color: T.textMuted,
-    fontSize: 14,
-    marginTop: 4,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 9999,
-  },
-  statusBadgeText: {
-    fontWeight: '500' as const,
-  },
-  progressContainer: {
-    marginTop: 16,
-  },
-  progressLabelRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    marginBottom: 8,
-  },
-  progressLabel: {
-    color: T.textMuted,
-  },
-  progressValue: {
-    color: T.text,
-  },
-  progressTrack: {
-    height: 8,
-    backgroundColor: T.bg,
-    borderRadius: 9999,
-  },
-  progressFill: {
-    height: 8,
-    backgroundColor: T.success,
-    borderRadius: 9999,
-  },
-  sectionTitle: {
-    color: T.text,
-    fontSize: 18,
-    fontWeight: '600' as const,
-    marginBottom: 12,
-  },
-  partyCard: {
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  partyRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
-  contractorIconCircle: {
-    width: 48,
-    height: 48,
-    backgroundColor: 'rgba(168,85,247,0.15)',
-    borderRadius: 24,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  workerIconCircle: {
-    width: 48,
-    height: 48,
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    borderRadius: 24,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  partyInfo: {
-    flex: 1,
-    marginLeft: 16,
-  },
-  roleLabel: {
-    color: T.textMuted,
-    fontSize: 12,
-  },
-  partyName: {
-    color: T.text,
-    fontWeight: '500' as const,
-  },
-  partyPhone: {
-    color: T.textSecondary,
-    fontSize: 14,
-  },
-  skillsRow: {
-    flexDirection: 'row' as const,
-    marginTop: 4,
-  },
-  skillBadge: {
-    backgroundColor: T.bg,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  skillBadgeText: {
-    color: T.textSecondary,
-    fontSize: 12,
-  },
-  pendingBadge: {
-    backgroundColor: 'rgba(234,179,8,0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  pendingBadgeText: {
-    color: '#EAB308',
-    fontSize: 12,
-  },
-  card: {
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  termRowBordered: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-  },
-  termRowNoBorder: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-start' as const,
-  },
-  termContent: {
-    marginLeft: 16,
-    flex: 1,
-  },
-  termLabel: {
-    color: T.textMuted,
-    fontSize: 12,
-  },
-  termValue: {
-    color: T.text,
-  },
-  bodyText: {
-    color: T.textSecondary,
-    lineHeight: 24,
-  },
-  termsLabel: {
-    color: T.textMuted,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  termsValue: {
-    color: T.text,
-    marginBottom: 16,
-  },
-  termsBodyText: {
-    color: T.textSecondary,
-    marginBottom: 16,
-  },
-  termsBodyTextLast: {
-    color: T.textSecondary,
-  },
-  financeRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    marginBottom: 8,
-  },
-  financeRowLast: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-  },
-  financeLabel: {
-    color: T.textSecondary,
-  },
-  financeTotal: {
-    color: T.text,
-    fontWeight: '700' as const,
-  },
-  financePaid: {
-    color: T.success,
-  },
-  financeEscrow: {
-    color: T.amber,
-  },
+  escrowBannerText: { flex: 1, fontSize: 12, color: '#1E40AF', lineHeight: 18 },
+
+  clauseText: { fontSize: 13, color: T.textSecondary, lineHeight: 22 },
+
+  sigRow: { flexDirection: 'row', gap: 10 },
+  sigCard: { flex: 1, borderRadius: 14, padding: 14, borderWidth: 1.5, borderStyle: 'dashed' },
+  sigCardSigned: { borderStyle: 'solid', borderColor: T.success, backgroundColor: '#F0FDF4' },
+  sigCardPending: { borderColor: T.border },
+  sigCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  sigCardRole: { fontSize: 11, fontWeight: '700', color: T.navy },
+  sigCardName: { fontSize: 13, fontWeight: '800', color: T.navy, marginBottom: 8 },
+  sigStatus: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sigStatusSigned: { fontSize: 11, color: T.success, fontWeight: '600' },
+  sigStatusPending: { fontSize: 11, color: T.textMuted, fontStyle: 'italic' },
+
+  tlItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 0 },
+  tlLeft: { alignItems: 'center', width: 32 },
+  tlDot: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  tlDotDone: { backgroundColor: T.navy },
+  tlDotPending: { backgroundColor: T.bg, borderWidth: 1, borderColor: T.border },
+  tlLine: { width: 2, height: 28, backgroundColor: T.border, marginTop: 2 },
+  tlLineDone: { backgroundColor: T.navy },
+  tlLabel: { fontSize: 14, color: T.textMuted, paddingTop: 7, marginBottom: 20 },
+  tlLabelDone: { color: T.navy, fontWeight: '600' },
+
   bottomBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
+    paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.border,
   },
-  bottomActionsRow: {
-    flexDirection: 'row' as const,
-    gap: 12,
+  signBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: T.navy, paddingVertical: 16, borderRadius: 14, gap: 10,
   },
-  declineButton: {
-    flex: 1,
-    backgroundColor: T.bg,
-    paddingVertical: 16,
-    borderRadius: 12,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  signBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  dlBarBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: T.bg, paddingVertical: 16, borderRadius: 14, gap: 10,
+    borderWidth: 1, borderColor: T.border,
   },
-  declineButtonText: {
-    color: T.textSecondary,
-    fontWeight: '600' as const,
-    marginLeft: 8,
-  },
-  signButton: {
-    flex: 1,
-    backgroundColor: T.success,
-    paddingVertical: 16,
-    borderRadius: 12,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  signButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600' as const,
-    marginLeft: 8,
-  },
-  terminateButton: {
-    backgroundColor: 'rgba(239,68,68,0.15)',
-    paddingVertical: 16,
-    borderRadius: 12,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  terminateButtonText: {
-    color: '#EF4444',
-    fontWeight: '600' as const,
-    marginLeft: 8,
-  },
-};
+  dlBarBtnText: { fontSize: 15, fontWeight: '600', color: T.navy },
+  csTag: { backgroundColor: '#DBEAFE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  csTagText: { fontSize: 10, fontWeight: '700', color: '#3B82F6' },
+});

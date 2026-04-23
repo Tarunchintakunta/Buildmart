@@ -1,565 +1,548 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Modal,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../src/theme/colors';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LightTheme as T } from '../../src/theme/colors';
 
-const T = LightTheme;
-
-type DisputeStatus = 'Open' | 'In Progress' | 'Resolved';
+type DisputeStatus = 'Open' | 'Investigating' | 'Resolved';
 type Priority = 'High' | 'Medium' | 'Low';
-type DisputeType = 'Order' | 'Payment' | 'Agreement';
-
-const PRIORITY_COLORS: Record<Priority, string> = {
-  High: '#EF4444',
-  Medium: T.amber,
-  Low: '#3B82F6',
-};
-
-const TABS: DisputeStatus[] = ['Open', 'In Progress', 'Resolved'];
-
-const STATS = [
-  { label: 'Open', value: '5', icon: 'alert-circle' as const, color: '#EF4444' },
-  { label: 'In Progress', value: '3', icon: 'hourglass' as const, color: T.amber },
-  { label: 'Resolved', value: '42', icon: 'checkmark-circle' as const, color: '#10B981' },
-];
+type IssueType = 'Wrong items' | 'Damaged goods' | 'Late delivery' | 'Payment issue' | 'Worker dispute' | 'Fraud';
 
 type Dispute = {
   id: string;
-  disputeId: string;
-  type: DisputeType;
-  complainant: string;
-  respondent: string;
-  description: string;
-  filedDate: string;
-  priority: Priority;
+  orderId: string;
+  customer: string;
+  shop: string;
+  issueType: IssueType;
   status: DisputeStatus;
-  resolution?: string;
-  refundAmount?: string;
+  priority: Priority;
+  date: string;
+  amount: string;
+  description: string;
 };
 
-const DISPUTES: Dispute[] = [
-  {
-    id: '1',
-    disputeId: 'DSP-1024',
-    type: 'Order',
-    complainant: 'Rajesh Kumar',
-    respondent: 'Sharma Building Materials',
-    description: 'Received damaged cement bags. 5 out of 20 bags were torn and material was wasted.',
-    filedDate: '25 Feb 2026',
-    priority: 'High',
-    status: 'Open',
-  },
-  {
-    id: '2',
-    disputeId: 'DSP-1023',
-    type: 'Payment',
-    complainant: 'Sunil Krishna',
-    respondent: 'Anita Desai',
-    description: 'Payment of Rs.18,200 not received for Order #BM-2830 despite delivery confirmation.',
-    filedDate: '24 Feb 2026',
-    priority: 'High',
-    status: 'Open',
-  },
-  {
-    id: '3',
-    disputeId: 'DSP-1022',
-    type: 'Agreement',
-    complainant: 'Vikram Singh',
-    respondent: 'Patel Constructions',
-    description: 'Labour agreement terms violated. Workers were asked to work overtime without agreed compensation.',
-    filedDate: '23 Feb 2026',
-    priority: 'Medium',
-    status: 'In Progress',
-  },
-  {
-    id: '4',
-    disputeId: 'DSP-1015',
-    type: 'Order',
-    complainant: 'Priya Sharma',
-    respondent: 'Gupta Hardware & Tools',
-    description: 'Wrong items delivered. Ordered 10mm TMT bars but received 8mm instead.',
-    filedDate: '18 Feb 2026',
-    priority: 'Low',
-    status: 'Resolved',
-    resolution: 'Replacement order dispatched. Customer received correct items on 20 Feb.',
-    refundAmount: 'Rs.2,500',
-  },
+const MOCK_DISPUTES: Dispute[] = [
+  { id: 'd1', orderId: 'BM-5821', customer: 'Rajesh Kumar', shop: 'Sharma Building Materials', issueType: 'Damaged goods', status: 'Open', priority: 'High', date: '23 Apr 2026', amount: '₹18,400', description: '5 bags of cement received damaged. Material completely unusable. Requesting full replacement or refund.' },
+  { id: 'd2', orderId: 'BM-5812', customer: 'Priya Sharma', shop: 'Krishna Cement House', issueType: 'Wrong items', status: 'Open', priority: 'High', date: '22 Apr 2026', amount: '₹9,600', description: 'Ordered 10mm TMT bars, received 8mm. Cannot use for the current project foundation.' },
+  { id: 'd3', orderId: 'BM-5798', customer: 'Anil Verma', shop: 'Gupta Hardware', issueType: 'Late delivery', status: 'Open', priority: 'Medium', date: '21 Apr 2026', amount: '₹5,200', description: 'Delivery promised within 24 hours, arrived 4 days late. Labor costs incurred due to delay.' },
+  { id: 'd4', orderId: 'BM-5780', customer: 'Sunita Reddy', shop: 'Patel Steel Traders', issueType: 'Payment issue', status: 'Investigating', priority: 'High', date: '20 Apr 2026', amount: '₹32,000', description: 'Payment deducted from wallet but order shows as failed. No refund received yet.' },
+  { id: 'd5', orderId: 'BM-5765', customer: 'Mohan Das', shop: 'Singh Sand & Gravel', issueType: 'Worker dispute', status: 'Investigating', priority: 'Medium', date: '19 Apr 2026', amount: '₹12,500', description: 'Worker left the site midway through the project after receiving advance payment.' },
+  { id: 'd6', orderId: 'BM-5741', customer: 'Kavitha Nair', shop: 'Anand Hardware', issueType: 'Wrong items', status: 'Resolved', priority: 'Low', date: '17 Apr 2026', amount: '₹3,800', description: 'Wrong paint shade delivered. Issue resolved with replacement order on Apr 19.' },
+  { id: 'd7', orderId: 'BM-5730', customer: 'Ravi Shankar', shop: 'Lakshmi Traders', issueType: 'Damaged goods', status: 'Resolved', priority: 'Medium', date: '15 Apr 2026', amount: '₹7,600', description: 'Tiles cracked on delivery. Full refund processed on Apr 17.' },
 ];
+
+const STATUS_TABS: DisputeStatus[] = ['Open', 'Investigating', 'Resolved'];
+
+const PRIORITY_COLORS: Record<Priority, string> = {
+  High: '#EF4444',
+  Medium: '#F59E0B',
+  Low: '#3B82F6',
+};
+
+const STATUS_COLORS: Record<DisputeStatus, string> = {
+  Open: '#EF4444',
+  Investigating: '#F59E0B',
+  Resolved: '#10B981',
+};
+
+const ISSUE_ICONS: Record<IssueType, keyof typeof Ionicons.glyphMap> = {
+  'Wrong items': 'swap-horizontal-outline',
+  'Damaged goods': 'alert-circle-outline',
+  'Late delivery': 'time-outline',
+  'Payment issue': 'wallet-outline',
+  'Worker dispute': 'hammer-outline',
+  'Fraud': 'shield-outline',
+};
 
 export default function DisputesScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<DisputeStatus>('Open');
+  const [disputes, setDisputes] = useState<Dispute[]>(MOCK_DISPUTES);
+  const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
 
-  const filteredDisputes = DISPUTES.filter((d) => d.status === activeTab);
+  const filtered = disputes.filter((d) => d.status === activeTab);
 
-  const getTypeIcon = (type: DisputeType): keyof typeof Ionicons.glyphMap => {
-    switch (type) {
-      case 'Order':
-        return 'cube-outline';
-      case 'Payment':
-        return 'wallet-outline';
-      case 'Agreement':
-        return 'document-text-outline';
-    }
+  const resolveDispute = (id: string, action: string) => {
+    Alert.alert(
+      'Confirm Action',
+      `Confirm: "${action}" for dispute ${disputes.find((d) => d.id === id)?.orderId}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: () => {
+            setDisputes((prev) =>
+              prev.map((d) =>
+                d.id === id ? { ...d, status: 'Resolved' as DisputeStatus } : d
+              )
+            );
+            setSelectedDispute(null);
+          },
+        },
+      ]
+    );
   };
 
-  const renderDisputeCard = (dispute: Dispute) => {
+  const investigateDispute = (id: string) => {
+    setDisputes((prev) =>
+      prev.map((d) =>
+        d.id === id ? { ...d, status: 'Investigating' as DisputeStatus } : d
+      )
+    );
+    setSelectedDispute(null);
+  };
+
+  const renderCard = (dispute: Dispute, index: number) => {
     const priorityColor = PRIORITY_COLORS[dispute.priority];
+    const statusColor = STATUS_COLORS[dispute.status];
+
     return (
-      <View key={dispute.id} style={[s.disputeCard, { borderLeftWidth: 4, borderLeftColor: priorityColor }]}>
-        {/* Dispute Header */}
-        <View style={s.disputeHeader}>
-          <View style={{ flex: 1 }}>
-            <View style={s.idRow}>
-              <Text style={s.disputeIdText}>{dispute.disputeId}</Text>
-              <View style={[s.typeBadge, { backgroundColor: T.bg }]}>
-                <Ionicons name={getTypeIcon(dispute.type)} size={12} color={T.textSecondary} />
-                <Text style={s.typeText}>{dispute.type}</Text>
+      <Animated.View
+        key={dispute.id}
+        entering={FadeInDown.delay(index * 70).duration(400)}
+        style={[s.card, { borderLeftColor: priorityColor, borderLeftWidth: 3 }]}
+      >
+        {/* Header */}
+        <View style={s.cardHeader}>
+          <View style={s.headerLeft}>
+            <View style={s.orderRow}>
+              <Text style={s.orderId}>#{dispute.orderId}</Text>
+              <View style={[s.priorityBadge, { backgroundColor: priorityColor + '18' }]}>
+                <Text style={[s.priorityText, { color: priorityColor }]}>{dispute.priority}</Text>
               </View>
             </View>
-            <Text style={s.filedDate}>Filed {dispute.filedDate}</Text>
+            <Text style={s.dateText}>{dispute.date}</Text>
           </View>
-          <View style={[s.priorityBadge, { backgroundColor: priorityColor + '26' }]}>
-            <Text style={[s.priorityText, { color: priorityColor }]}>{dispute.priority}</Text>
+          <View style={[s.issueIcon, { backgroundColor: statusColor + '14' }]}>
+            <Ionicons name={ISSUE_ICONS[dispute.issueType]} size={18} color={statusColor} />
           </View>
         </View>
 
+        {/* Issue Type */}
+        <View style={s.issueRow}>
+          <Text style={s.issueType}>{dispute.issueType}</Text>
+          <Text style={s.amount}>{dispute.amount}</Text>
+        </View>
+
         {/* Parties */}
-        <View style={s.partiesSection}>
+        <View style={s.partiesBox}>
           <View style={s.partyRow}>
-            <Ionicons name="person-outline" size={14} color={T.textMuted} />
-            <Text style={s.partyLabel}>Complainant:</Text>
-            <Text style={s.partyValue}>{dispute.complainant}</Text>
+            <Ionicons name="person-outline" size={13} color={T.textMuted} />
+            <Text style={s.partyLabel}>Customer:</Text>
+            <Text style={s.partyValue}>{dispute.customer}</Text>
           </View>
           <View style={s.partyRow}>
-            <Ionicons name="business-outline" size={14} color={T.textMuted} />
-            <Text style={s.partyLabel}>Respondent:</Text>
-            <Text style={s.partyValue}>{dispute.respondent}</Text>
+            <Ionicons name="storefront-outline" size={13} color={T.textMuted} />
+            <Text style={s.partyLabel}>Shop:</Text>
+            <Text style={s.partyValue}>{dispute.shop}</Text>
           </View>
         </View>
 
         {/* Description */}
-        <View style={s.descriptionBox}>
-          <Text style={s.descriptionText}>{dispute.description}</Text>
-        </View>
+        <Text style={s.description} numberOfLines={2}>{dispute.description}</Text>
 
-        {/* Resolution (for Resolved) */}
-        {dispute.status === 'Resolved' && dispute.resolution && (
-          <View style={s.resolutionBox}>
-            <View style={s.resolutionHeader}>
-              <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-              <Text style={s.resolutionTitle}>Resolution</Text>
-            </View>
-            <Text style={s.resolutionText}>{dispute.resolution}</Text>
-            {dispute.refundAmount && (
-              <View style={s.refundRow}>
-                <Ionicons name="wallet-outline" size={14} color={T.amber} />
-                <Text style={s.refundLabel}>Refund:</Text>
-                <Text style={s.refundAmount}>{dispute.refundAmount}</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Action Buttons */}
+        {/* Actions */}
         {dispute.status !== 'Resolved' && (
-          <View style={s.actionRow}>
-            <TouchableOpacity style={s.actionBtnOutline}>
-              <Ionicons name="eye-outline" size={15} color={T.navy} />
-              <Text style={s.actionBtnOutlineText}>Details</Text>
-            </TouchableOpacity>
-            {dispute.status === 'Open' && (
-              <TouchableOpacity style={s.actionBtnFilled}>
-                <Ionicons name="hand-left-outline" size={15} color={T.white} />
-                <Text style={s.actionBtnFilledText}>Assign to Me</Text>
-              </TouchableOpacity>
-            )}
-            {dispute.status === 'In Progress' && (
-              <>
-                <TouchableOpacity style={[s.actionBtnOutline, { borderColor: '#EF4444' }]}>
-                  <Ionicons name="arrow-up-outline" size={15} color="#EF4444" />
-                  <Text style={[s.actionBtnOutlineText, { color: '#EF4444' }]}>Escalate</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={s.resolveBtn}>
-                  <Ionicons name="checkmark-circle-outline" size={15} color={T.white} />
-                  <Text style={s.resolveBtnText}>Resolve</Text>
-                </TouchableOpacity>
-              </>
-            )}
+          <View style={s.cardActions}>
+            <Pressable style={s.investigateBtn} onPress={() => setSelectedDispute(dispute)}>
+              <Ionicons name="search-outline" size={15} color={T.navy} />
+              <Text style={s.investigateBtnText}>Investigate</Text>
+            </Pressable>
           </View>
         )}
-      </View>
+
+        {dispute.status === 'Resolved' && (
+          <View style={s.resolvedBox}>
+            <Ionicons name="checkmark-circle" size={14} color={T.success} />
+            <Text style={s.resolvedText}>Dispute resolved</Text>
+          </View>
+        )}
+      </Animated.View>
     );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={s.container}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+        <Pressable style={s.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={s.headerTitle}>Disputes</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-        {/* Stats */}
-        <View style={s.statsRow}>
-          {STATS.map((stat) => (
-            <View key={stat.label} style={s.statCard}>
-              <View style={[s.statIcon, { backgroundColor: stat.color + '18' }]}>
-                <Ionicons name={stat.icon} size={18} color={stat.color} />
+      {/* Stats */}
+      <Animated.View entering={FadeInDown.delay(0).duration(400)} style={s.statsRow}>
+        {STATUS_TABS.map((status) => {
+          const count = disputes.filter((d) => d.status === status).length;
+          const color = STATUS_COLORS[status];
+          return (
+            <View key={status} style={s.statCard}>
+              <View style={[s.statIcon, { backgroundColor: color + '18' }]}>
+                <Ionicons
+                  name={status === 'Open' ? 'alert-circle' : status === 'Investigating' ? 'hourglass' : 'checkmark-circle'}
+                  size={18}
+                  color={color}
+                />
               </View>
-              <Text style={s.statValue}>{stat.value}</Text>
-              <Text style={s.statLabel}>{stat.label}</Text>
+              <Text style={[s.statValue, { color }]}>{count}</Text>
+              <Text style={s.statLabel}>{status}</Text>
             </View>
-          ))}
-        </View>
+          );
+        })}
+      </Animated.View>
 
-        {/* Tabs */}
-        <View style={s.tabRow}>
-          {TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[s.tab, activeTab === tab && s.tabActive]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {/* Tabs */}
+      <View style={s.tabRow}>
+        {STATUS_TABS.map((tab) => (
+          <Pressable
+            key={tab}
+            style={[s.tab, activeTab === tab && s.tabActive]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab}</Text>
+          </Pressable>
+        ))}
+      </View>
 
-        {/* Dispute Cards */}
-        <View style={s.disputeList}>
-          {filteredDisputes.length === 0 ? (
-            <View style={s.empty}>
-              <View style={s.emptyIcon}>
-                <Ionicons name="shield-checkmark-outline" size={48} color={T.textMuted} />
-              </View>
-              <Text style={s.emptyTitle}>No disputes</Text>
-              <Text style={s.emptyDesc}>
-                No {activeTab.toLowerCase()} disputes to show.
-              </Text>
-            </View>
-          ) : (
-            filteredDisputes.map(renderDisputeCard)
-          )}
-        </View>
+      {/* Dispute List */}
+      <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
+        {filtered.length === 0 ? (
+          <View style={s.empty}>
+            <Ionicons name="shield-checkmark-outline" size={48} color={T.textMuted} />
+            <Text style={s.emptyText}>No {activeTab.toLowerCase()} disputes</Text>
+          </View>
+        ) : (
+          filtered.map((d, i) => renderCard(d, i))
+        )}
       </ScrollView>
+
+      {/* Investigation Modal */}
+      <Modal
+        visible={!!selectedDispute}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedDispute(null)}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalSheet}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Dispute Details</Text>
+              <Pressable onPress={() => setSelectedDispute(null)}>
+                <Ionicons name="close" size={22} color={T.text} />
+              </Pressable>
+            </View>
+
+            {selectedDispute && (
+              <>
+                <View style={s.modalInfoRow}>
+                  <Text style={s.modalOrderId}>#{selectedDispute.orderId}</Text>
+                  <Text style={s.modalAmount}>{selectedDispute.amount}</Text>
+                </View>
+
+                <View style={s.modalParties}>
+                  <Text style={s.modalPartyRow}>
+                    <Text style={s.modalPartyLabel}>Customer: </Text>
+                    {selectedDispute.customer}
+                  </Text>
+                  <Text style={s.modalPartyRow}>
+                    <Text style={s.modalPartyLabel}>Shop: </Text>
+                    {selectedDispute.shop}
+                  </Text>
+                  <Text style={s.modalPartyRow}>
+                    <Text style={s.modalPartyLabel}>Issue: </Text>
+                    {selectedDispute.issueType}
+                  </Text>
+                </View>
+
+                <View style={s.modalDesc}>
+                  <Text style={s.modalDescText}>{selectedDispute.description}</Text>
+                </View>
+
+                <Text style={s.modalActionsTitle}>Resolution Options</Text>
+                <View style={s.modalActions}>
+                  <Pressable
+                    style={s.modalActionRefund}
+                    onPress={() => resolveDispute(selectedDispute.id, 'Issue full refund')}
+                  >
+                    <Ionicons name="wallet-outline" size={18} color={T.white} />
+                    <Text style={s.modalActionText}>Issue Refund</Text>
+                  </Pressable>
+                  <Pressable
+                    style={s.modalActionClose}
+                    onPress={() => resolveDispute(selectedDispute.id, 'Close dispute')}
+                  >
+                    <Ionicons name="checkmark-circle-outline" size={18} color={T.white} />
+                    <Text style={s.modalActionText}>Close Dispute</Text>
+                  </Pressable>
+                </View>
+                {selectedDispute.status === 'Open' && (
+                  <Pressable
+                    style={s.modalInvestigate}
+                    onPress={() => investigateDispute(selectedDispute.id)}
+                  >
+                    <Ionicons name="search-outline" size={18} color={T.navy} />
+                    <Text style={s.modalInvestigateText}>Move to Investigating</Text>
+                  </Pressable>
+                )}
+                <Pressable
+                  style={s.modalSuspend}
+                  onPress={() => {
+                    Alert.alert('Suspend User', 'This will temporarily suspend the shop account.', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Suspend', style: 'destructive', onPress: () => setSelectedDispute(null) },
+                    ]);
+                  }}
+                >
+                  <Ionicons name="ban-outline" size={16} color={T.error} />
+                  <Text style={s.modalSuspendText}>Suspend Shop Account</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const s = {
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: T.bg },
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    backgroundColor: T.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-
-  /* Stats */
+  headerTitle: { fontSize: 18, fontWeight: '700', color: T.text },
   statsRow: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 20,
-    marginTop: 8,
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 10,
   },
   statCard: {
     flex: 1,
     backgroundColor: T.surface,
     borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: T.border,
-    paddingVertical: 14,
-    alignItems: 'center' as const,
+    gap: 6,
   },
   statIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '800' as const,
-    color: T.text,
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-
-  /* Tabs */
+  statValue: { fontSize: 18, fontWeight: '800' },
+  statLabel: { fontSize: 11, color: T.textMuted },
   tabRow: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 20,
-    marginTop: 20,
-    gap: 10,
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
   },
   tab: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 24,
+    borderRadius: 12,
     backgroundColor: T.surface,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: T.border,
-    alignItems: 'center' as const,
   },
-  tabActive: {
-    backgroundColor: T.navy,
-    borderColor: T.navy,
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: T.textMuted,
-  },
-  tabTextActive: {
-    color: T.white,
-  },
-
-  /* Dispute List */
-  disputeList: {
-    paddingHorizontal: 20,
-    marginTop: 16,
-    gap: 14,
-  },
-
-  /* Dispute Card */
-  disputeCard: {
+  tabActive: { backgroundColor: T.navy, borderColor: T.navy },
+  tabText: { fontSize: 13, fontWeight: '600', color: T.textSecondary },
+  tabTextActive: { color: T.white },
+  list: { padding: 16, gap: 12, paddingBottom: 40 },
+  card: {
     backgroundColor: T.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
+    borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: T.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 6,
     elevation: 1,
   },
-  disputeHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'flex-start' as const,
-    marginBottom: 14,
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
-  idRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 8,
+  headerLeft: { gap: 4 },
+  orderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  orderId: { fontSize: 16, fontWeight: '700', color: T.text },
+  priorityBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  priorityText: { fontSize: 11, fontWeight: '700' },
+  dateText: { fontSize: 12, color: T.textMuted },
+  issueIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  disputeIdText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: T.text,
+  issueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
-  typeBadge: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  typeText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    color: T.textSecondary,
-  },
-  filedDate: {
-    fontSize: 12,
-    color: T.textMuted,
-    marginTop: 4,
-  },
-  priorityBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  priorityText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-  },
-
-  /* Parties */
-  partiesSection: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  partyRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 8,
-  },
-  partyLabel: {
-    fontSize: 13,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-  partyValue: {
-    fontSize: 13,
-    color: T.text,
-    fontWeight: '600' as const,
-    flex: 1,
-  },
-
-  /* Description */
-  descriptionBox: {
+  issueType: { fontSize: 14, fontWeight: '600', color: T.text },
+  amount: { fontSize: 15, fontWeight: '800', color: T.amber },
+  partiesBox: {
     backgroundColor: T.bg,
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 14,
-  },
-  descriptionText: {
-    fontSize: 13,
-    color: T.textSecondary,
-    lineHeight: 19,
-  },
-
-  /* Resolution */
-  resolutionBox: {
-    backgroundColor: '#10B98112',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#10B98130',
-  },
-  resolutionHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    padding: 10,
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  resolutionTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: '#10B981',
-  },
-  resolutionText: {
-    fontSize: 13,
-    color: T.textSecondary,
-    lineHeight: 19,
-  },
-  refundRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#10B98130',
-  },
-  refundLabel: {
-    fontSize: 13,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-  refundAmount: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: T.amber,
-  },
-
-  /* Actions */
-  actionRow: {
-    flexDirection: 'row' as const,
+  partyRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  partyLabel: { fontSize: 12, color: T.textMuted, fontWeight: '500' },
+  partyValue: { fontSize: 13, color: T.text, fontWeight: '600', flex: 1 },
+  description: { fontSize: 13, color: T.textSecondary, lineHeight: 18, marginBottom: 12 },
+  cardActions: { borderTopWidth: 1, borderTopColor: T.border, paddingTop: 12 },
+  investigateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-  },
-  actionBtnOutline: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 5,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: T.navy,
   },
-  actionBtnOutlineText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: T.navy,
-  },
-  actionBtnFilled: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 5,
-    paddingVertical: 10,
+  investigateBtnText: { fontSize: 14, fontWeight: '600', color: T.navy },
+  resolvedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#10B98110',
     borderRadius: 10,
-    backgroundColor: T.navy,
+    padding: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#10B98128',
   },
-  actionBtnFilledText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: T.white,
-  },
-  resolveBtn: {
+  resolvedText: { fontSize: 13, color: T.success, fontWeight: '600' },
+  empty: { alignItems: 'center', paddingVertical: 60, gap: 12 },
+  emptyText: { fontSize: 16, color: T.textSecondary },
+  modalOverlay: {
     flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 5,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#10B981',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-  resolveBtnText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: T.white,
+  modalSheet: {
+    backgroundColor: T.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    maxHeight: '85%',
   },
-
-  /* Empty */
-  empty: {
-    alignItems: 'center' as const,
-    paddingTop: 60,
-    gap: 10,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  modalTitle: { fontSize: 20, fontWeight: '800', color: T.text },
+  modalInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalOrderId: { fontSize: 18, fontWeight: '700', color: T.text },
+  modalAmount: { fontSize: 18, fontWeight: '800', color: T.amber },
+  modalParties: {
     backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginBottom: 8,
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+    marginBottom: 14,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: T.text,
+  modalPartyRow: { fontSize: 14, color: T.text },
+  modalPartyLabel: { fontWeight: '600', color: T.textSecondary },
+  modalDesc: {
+    backgroundColor: T.bg,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
   },
-  emptyDesc: {
-    fontSize: 14,
-    color: T.textSecondary,
-    textAlign: 'center' as const,
-    paddingHorizontal: 40,
-    lineHeight: 20,
+  modalDescText: { fontSize: 13, color: T.textSecondary, lineHeight: 19 },
+  modalActionsTitle: { fontSize: 14, fontWeight: '600', color: T.text, marginBottom: 10 },
+  modalActions: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  modalActionRefund: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#8B5CF6',
   },
-};
+  modalActionClose: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: T.success,
+  },
+  modalActionText: { fontSize: 14, fontWeight: '700', color: T.white },
+  modalInvestigate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.navy,
+    marginBottom: 10,
+  },
+  modalInvestigateText: { fontSize: 14, fontWeight: '600', color: T.navy },
+  modalSuspend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+  },
+  modalSuspendText: { fontSize: 13, fontWeight: '600', color: T.error },
+});

@@ -1,472 +1,358 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../src/theme/colors';
+import Animated, { FadeInDown, FadeInLeft } from 'react-native-reanimated';
+import { LightTheme as T } from '../../src/theme/colors';
 
-const T = LightTheme;
+type DateRange = '7D' | '30D' | '90D';
 
-type Period = 'Today' | 'This Week' | 'This Month' | 'This Year';
+const DATE_RANGES: DateRange[] = ['7D', '30D', '90D'];
 
-const PERIODS: Period[] = ['Today', 'This Week', 'This Month', 'This Year'];
+type BarData = { label: string; value: number; display: string };
 
-const KPI_DATA = [
-  { label: 'Total Revenue', value: 'Rs.12.5L', trend: '+12.5%', up: true, icon: 'wallet' as const, color: '#10B981' },
-  { label: 'Total Orders', value: '456', trend: '+8.3%', up: true, icon: 'cube' as const, color: '#3B82F6' },
-  { label: 'Active Users', value: '1,250', trend: '+15.2%', up: true, icon: 'people' as const, color: '#8B5CF6' },
-  { label: 'New Signups', value: '45', trend: '-3.1%', up: false, icon: 'person-add' as const, color: T.amber },
-];
+const BAR_DATA: Record<DateRange, BarData[]> = {
+  '7D': [
+    { label: 'Mon', value: 80000, display: '₹80K' },
+    { label: 'Tue', value: 145000, display: '₹1.45L' },
+    { label: 'Wed', value: 62000, display: '₹62K' },
+    { label: 'Thu', value: 210000, display: '₹2.1L' },
+    { label: 'Fri', value: 175000, display: '₹1.75L' },
+    { label: 'Sat', value: 385000, display: '₹3.85L' },
+    { label: 'Sun', value: 98000, display: '₹98K' },
+  ],
+  '30D': [
+    { label: 'W1', value: 620000, display: '₹6.2L' },
+    { label: 'W2', value: 840000, display: '₹8.4L' },
+    { label: 'W3', value: 1150000, display: '₹11.5L' },
+    { label: 'W4', value: 980000, display: '₹9.8L' },
+  ],
+  '90D': [
+    { label: 'Jan', value: 2800000, display: '₹28L' },
+    { label: 'Feb', value: 3500000, display: '₹35L' },
+    { label: 'Mar', value: 4200000, display: '₹42L' },
+  ],
+};
 
-const CHART_BARS = [
-  { day: 'Mon', height: 65 },
-  { day: 'Tue', height: 80 },
-  { day: 'Wed', height: 45 },
-  { day: 'Thu', height: 95 },
-  { day: 'Fri', height: 72 },
-  { day: 'Sat', height: 110 },
-  { day: 'Sun', height: 55 },
-];
+const STATS_DATA: Record<DateRange, { orders: string; users: string; revenue: string; cancelled: string }> = {
+  '7D': { orders: '342', users: '89', revenue: '₹12.5L', cancelled: '18' },
+  '30D': { orders: '1,482', users: '312', revenue: '₹46.7L', cancelled: '64' },
+  '90D': { orders: '4,290', users: '876', revenue: '₹1.24Cr', cancelled: '187' },
+};
 
-const USER_DISTRIBUTION = [
-  { role: 'Customer', percentage: 45, color: '#3B82F6' },
-  { role: 'Worker', percentage: 25, color: '#10B981' },
-  { role: 'Contractor', percentage: 15, color: '#8B5CF6' },
-  { role: 'Shopkeeper', percentage: 10, color: T.amber },
-  { role: 'Driver', percentage: 5, color: '#EF4444' },
+const TOP_PRODUCTS = [
+  { name: 'OPC 53 Grade Cement (50kg)', orders: 423, color: '#3B82F6' },
+  { name: 'Fe-500D TMT Bars 12mm', orders: 318, color: '#10B981' },
+  { name: 'AAC Blocks (600×200×150)', orders: 289, color: '#8B5CF6' },
+  { name: 'River Sand (1 Tonne)', orders: 245, color: T.amber },
+  { name: 'Red Clay Bricks (1000 pcs)', orders: 198, color: '#EF4444' },
 ];
 
 const TOP_SHOPS = [
-  { rank: 1, name: 'Sharma Building Materials', orders: 89, revenue: 'Rs.2.8L' },
-  { rank: 2, name: 'Krishna Cement House', orders: 72, revenue: 'Rs.2.1L' },
-  { rank: 3, name: 'Gupta Hardware & Tools', orders: 65, revenue: 'Rs.1.9L' },
-  { rank: 4, name: 'Patel Steel Traders', orders: 58, revenue: 'Rs.1.6L' },
-  { rank: 5, name: 'Singh Sand & Gravel', orders: 44, revenue: 'Rs.1.2L' },
+  { name: 'Sharma Building Materials', orders: 89, revenue: '₹2.8L' },
+  { name: 'Krishna Cement House', orders: 72, revenue: '₹2.1L' },
+  { name: 'Gupta Hardware & Tools', orders: 65, revenue: '₹1.9L' },
+  { name: 'Patel Steel Traders', orders: 58, revenue: '₹1.6L' },
+  { name: 'Singh Sand & Gravel', orders: 44, revenue: '₹1.2L' },
 ];
 
-const PLATFORM_HEALTH = [
-  { label: 'Uptime', value: '99.8%', icon: 'cloud-done-outline' as const, color: '#10B981' },
-  { label: 'Avg Response', value: '120ms', icon: 'speedometer-outline' as const, color: '#3B82F6' },
-  { label: 'Pending Issues', value: '7', icon: 'alert-circle-outline' as const, color: '#EF4444' },
+const ROLE_DIST = [
+  { role: 'Customers', pct: 45, color: '#3B82F6' },
+  { role: 'Workers', pct: 25, color: '#10B981' },
+  { role: 'Contractors', pct: 15, color: '#8B5CF6' },
+  { role: 'Shopkeepers', pct: 10, color: T.amber },
+  { role: 'Drivers', pct: 5, color: '#EF4444' },
 ];
 
 export default function AdminAnalyticsScreen() {
   const router = useRouter();
-  const [activePeriod, setActivePeriod] = useState<Period>('This Month');
+  const [range, setRange] = useState<DateRange>('7D');
 
-  const maxBarHeight = Math.max(...CHART_BARS.map((b) => b.height));
+  const bars = BAR_DATA[range];
+  const stats = STATS_DATA[range];
+  const maxVal = Math.max(...bars.map((b) => b.value));
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={s.container}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+        <Pressable style={s.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Platform Analytics</Text>
+        </Pressable>
+        <Text style={s.headerTitle}>Analytics</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-        {/* Period Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingVertical: 12 }}
-        >
-          {PERIODS.map((period) => (
-            <TouchableOpacity
-              key={period}
-              style={[s.periodTab, activePeriod === period && s.periodTabActive]}
-              onPress={() => setActivePeriod(period)}
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        {/* Date Range Chips */}
+        <Animated.View entering={FadeInDown.delay(0).duration(400)} style={s.rangeRow}>
+          {DATE_RANGES.map((r) => (
+            <Pressable
+              key={r}
+              style={[s.rangeChip, range === r && s.rangeChipActive]}
+              onPress={() => setRange(r)}
             >
-              <Text style={[s.periodText, activePeriod === period && s.periodTextActive]}>
-                {period}
-              </Text>
-            </TouchableOpacity>
+              <Text style={[s.rangeText, range === r && s.rangeTextActive]}>{r}</Text>
+            </Pressable>
           ))}
-        </ScrollView>
+        </Animated.View>
 
-        {/* KPI Cards (2x2) */}
-        <View style={s.kpiGrid}>
-          {KPI_DATA.map((kpi) => (
-            <View key={kpi.label} style={s.kpiCard}>
-              <View style={s.kpiHeader}>
-                <View style={[s.kpiIcon, { backgroundColor: kpi.color + '18' }]}>
-                  <Ionicons name={kpi.icon} size={18} color={kpi.color} />
+        {/* GMV Bar Chart */}
+        <Animated.View entering={FadeInDown.delay(80).duration(450)} style={s.card}>
+          <Text style={s.cardTitle}>GMV Overview</Text>
+          <Text style={s.cardSub}>Gross Merchandise Value ({range})</Text>
+          <View style={s.chart}>
+            {bars.map((bar, i) => {
+              const pct = (bar.value / maxVal) * 100;
+              return (
+                <View key={bar.label} style={s.barCol}>
+                  <Text style={s.barValueLabel}>{bar.display}</Text>
+                  <View style={s.barTrack}>
+                    <Animated.View
+                      entering={FadeInDown.delay(100 + i * 60).duration(400)}
+                      style={[s.bar, { height: `${pct}%` as any }]}
+                    />
+                  </View>
+                  <Text style={s.barLabel}>{bar.label}</Text>
                 </View>
-                <View style={[s.trendBadge, { backgroundColor: kpi.up ? '#10B98118' : '#EF444418' }]}>
-                  <Ionicons
-                    name={kpi.up ? 'arrow-up' : 'arrow-down'}
-                    size={12}
-                    color={kpi.up ? '#10B981' : '#EF4444'}
-                  />
-                  <Text style={[s.trendText, { color: kpi.up ? '#10B981' : '#EF4444' }]}>
-                    {kpi.trend}
-                  </Text>
-                </View>
+              );
+            })}
+          </View>
+        </Animated.View>
+
+        {/* Stats Grid */}
+        <Animated.View entering={FadeInDown.delay(160).duration(450)} style={s.statsGrid}>
+          {[
+            { label: 'Orders', value: stats.orders, icon: 'cube' as const, color: '#3B82F6' },
+            { label: 'Users Registered', value: stats.users, icon: 'person-add' as const, color: '#10B981' },
+            { label: 'Revenue', value: stats.revenue, icon: 'wallet' as const, color: '#8B5CF6' },
+            { label: 'Cancelled', value: stats.cancelled, icon: 'close-circle' as const, color: '#EF4444' },
+          ].map((stat, i) => (
+            <Animated.View
+              key={stat.label}
+              entering={FadeInDown.delay(180 + i * 50).duration(400)}
+              style={s.statCard}
+            >
+              <View style={[s.statIcon, { backgroundColor: stat.color + '18' }]}>
+                <Ionicons name={stat.icon} size={18} color={stat.color} />
               </View>
-              <Text style={s.kpiValue}>{kpi.value}</Text>
-              <Text style={s.kpiLabel}>{kpi.label}</Text>
-            </View>
+              <Text style={s.statValue}>{stat.value}</Text>
+              <Text style={s.statLabel}>{stat.label}</Text>
+            </Animated.View>
           ))}
-        </View>
+        </Animated.View>
 
-        {/* Revenue Chart */}
-        <View style={s.sectionCard}>
-          <Text style={s.sectionTitle}>Revenue Trend</Text>
-          <Text style={s.sectionSubtitle}>Weekly revenue overview</Text>
-          <View style={s.chartContainer}>
-            {CHART_BARS.map((bar) => (
-              <View key={bar.day} style={s.chartBarCol}>
-                <View style={s.chartBarWrapper}>
-                  <View
-                    style={[
-                      s.chartBar,
-                      {
-                        height: (bar.height / maxBarHeight) * 100,
-                        backgroundColor: T.amber,
-                      },
-                    ]}
-                  />
+        {/* Top Products */}
+        <Animated.View entering={FadeInDown.delay(280).duration(450)} style={s.card}>
+          <Text style={s.cardTitle}>Top Products</Text>
+          <Text style={s.cardSub}>By order volume</Text>
+          <View style={s.topList}>
+            {TOP_PRODUCTS.map((p, i) => (
+              <View key={p.name} style={s.topRow}>
+                <View style={[s.rankBubble, { backgroundColor: p.color + '18' }]}>
+                  <Text style={[s.rankNum, { color: p.color }]}>#{i + 1}</Text>
                 </View>
-                <Text style={s.chartLabel}>{bar.day}</Text>
+                <Text style={s.topName} numberOfLines={1}>{p.name}</Text>
+                <Text style={[s.topCount, { color: p.color }]}>{p.orders}</Text>
               </View>
             ))}
           </View>
-        </View>
-
-        {/* User Distribution */}
-        <View style={s.sectionCard}>
-          <Text style={s.sectionTitle}>User Distribution</Text>
-          <Text style={s.sectionSubtitle}>Active users by role</Text>
-          <View style={{ gap: 14, marginTop: 16 }}>
-            {USER_DISTRIBUTION.map((item) => (
-              <View key={item.role} style={s.distRow}>
-                <View style={s.distLabelRow}>
-                  <View style={[s.distDot, { backgroundColor: item.color }]} />
-                  <Text style={s.distRole}>{item.role}</Text>
-                  <Text style={s.distPct}>{item.percentage}%</Text>
-                </View>
-                <View style={s.distTrack}>
-                  <View
-                    style={[
-                      s.distFill,
-                      { width: `${item.percentage}%` as any, backgroundColor: item.color },
-                    ]}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
+        </Animated.View>
 
         {/* Top Shops */}
-        <View style={s.sectionCard}>
-          <Text style={s.sectionTitle}>Top Shops</Text>
-          <Text style={s.sectionSubtitle}>Ranked by orders this month</Text>
-          <View style={{ gap: 12, marginTop: 16 }}>
-            {TOP_SHOPS.map((shop) => (
-              <View key={shop.rank} style={s.shopRow}>
-                <View
-                  style={[
-                    s.rankBadge,
-                    shop.rank <= 3 && { backgroundColor: T.amber + '18' },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      s.rankText,
-                      shop.rank <= 3 && { color: T.amber },
-                    ]}
-                  >
-                    #{shop.rank}
-                  </Text>
+        <Animated.View entering={FadeInDown.delay(360).duration(450)} style={s.card}>
+          <Text style={s.cardTitle}>Top Shops</Text>
+          <Text style={s.cardSub}>Ranked by orders</Text>
+          <View style={s.topList}>
+            {TOP_SHOPS.map((shop, i) => (
+              <View key={shop.name} style={s.topRow}>
+                <View style={[s.rankBubble, i < 3 ? { backgroundColor: T.amber + '18' } : {}]}>
+                  <Text style={[s.rankNum, i < 3 ? { color: T.amber } : { color: T.textMuted }]}>#{i + 1}</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.shopName}>{shop.name}</Text>
-                  <Text style={s.shopMeta}>{shop.orders} orders</Text>
+                <Text style={s.topName} numberOfLines={1}>{shop.name}</Text>
+                <View style={s.shopRight}>
+                  <Text style={s.shopOrders}>{shop.orders} orders</Text>
+                  <Text style={s.shopRevenue}>{shop.revenue}</Text>
                 </View>
-                <Text style={s.shopRevenue}>{shop.revenue}</Text>
               </View>
             ))}
           </View>
-        </View>
+        </Animated.View>
 
-        {/* Platform Health */}
-        <View style={s.sectionCard}>
-          <Text style={s.sectionTitle}>Platform Health</Text>
-          <View style={s.healthRow}>
-            {PLATFORM_HEALTH.map((item) => (
-              <View key={item.label} style={s.healthItem}>
-                <View style={[s.healthIcon, { backgroundColor: item.color + '18' }]}>
-                  <Ionicons name={item.icon} size={20} color={item.color} />
-                </View>
-                <Text style={s.healthValue}>{item.value}</Text>
-                <Text style={s.healthLabel}>{item.label}</Text>
+        {/* Role Distribution */}
+        <Animated.View entering={FadeInDown.delay(440).duration(450)} style={s.card}>
+          <Text style={s.cardTitle}>User Distribution</Text>
+          <Text style={s.cardSub}>Horizontal stacked bar</Text>
+          {/* Stacked Bar */}
+          <View style={s.stackedBar}>
+            {ROLE_DIST.map((r) => (
+              <View key={r.role} style={[s.stackSegment, { flex: r.pct, backgroundColor: r.color }]} />
+            ))}
+          </View>
+          {/* Legend */}
+          <View style={s.legend}>
+            {ROLE_DIST.map((r) => (
+              <View key={r.role} style={s.legendItem}>
+                <View style={[s.legendDot, { backgroundColor: r.color }]} />
+                <Text style={s.legendText}>{r.role}</Text>
+                <Text style={s.legendPct}>{r.pct}%</Text>
               </View>
             ))}
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = {
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: T.bg },
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    backgroundColor: T.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: T.text,
+  headerTitle: { fontSize: 18, fontWeight: '700', color: T.text },
+  scroll: { padding: 16, paddingBottom: 40, gap: 16 },
+  rangeRow: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: T.border,
   },
-
-  /* Period Tabs */
-  periodTab: {
+  rangeChip: {
+    flex: 1,
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  periodTabActive: {
-    backgroundColor: T.navy,
-    borderColor: T.navy,
-  },
-  periodText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: T.textMuted,
-  },
-  periodTextActive: {
-    color: T.white,
-  },
-
-  /* KPI Grid */
-  kpiGrid: {
-    flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  kpiCard: {
-    width: '47%' as any,
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  kpiHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    marginBottom: 12,
-  },
-  kpiIcon: {
-    width: 36,
-    height: 36,
     borderRadius: 10,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    alignItems: 'center',
   },
-  trendBadge: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 2,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  trendText: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-  },
-  kpiValue: {
-    fontSize: 22,
-    fontWeight: '800' as const,
-    color: T.text,
-    marginBottom: 2,
-  },
-  kpiLabel: {
-    fontSize: 12,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-
-  /* Section Card */
-  sectionCard: {
+  rangeChipActive: { backgroundColor: T.navy },
+  rangeText: { fontSize: 14, fontWeight: '600', color: T.textSecondary },
+  rangeTextActive: { color: T.white },
+  card: {
     backgroundColor: T.surface,
-    borderRadius: 14,
+    borderRadius: 16,
+    padding: 18,
     borderWidth: 1,
     borderColor: T.border,
-    padding: 20,
-    marginHorizontal: 20,
-    marginTop: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 6,
     elevation: 1,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  sectionSubtitle: {
-    fontSize: 12,
-    color: T.textMuted,
-    marginTop: 2,
-  },
-
-  /* Chart */
-  chartContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-end' as const,
-    justifyContent: 'space-between' as const,
-    marginTop: 20,
-    height: 120,
+  cardTitle: { fontSize: 16, fontWeight: '700', color: T.text },
+  cardSub: { fontSize: 12, color: T.textMuted, marginTop: 2, marginBottom: 16 },
+  chart: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 140,
     gap: 8,
   },
-  chartBarCol: {
+  barCol: {
     flex: 1,
-    alignItems: 'center' as const,
+    alignItems: 'center',
+    height: '100%',
   },
-  chartBarWrapper: {
+  barValueLabel: {
+    fontSize: 9,
+    color: T.textMuted,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  barTrack: {
     flex: 1,
-    justifyContent: 'flex-end' as const,
-    width: '100%' as any,
+    width: '100%',
+    justifyContent: 'flex-end',
   },
-  chartBar: {
-    width: '100%' as any,
+  bar: {
+    width: '100%',
+    backgroundColor: T.amber,
     borderRadius: 6,
-    minHeight: 8,
+    minHeight: 6,
   },
-  chartLabel: {
+  barLabel: {
     fontSize: 11,
     color: T.textMuted,
-    fontWeight: '500' as const,
-    marginTop: 8,
+    marginTop: 6,
+    fontWeight: '600',
   },
-
-  /* Distribution */
-  distRow: {
-    gap: 6,
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  distLabelRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+  statCard: {
+    width: '47%',
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: T.border,
     gap: 8,
   },
-  distDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  statIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  distRole: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: T.text,
+  statValue: { fontSize: 22, fontWeight: '800', color: T.text },
+  statLabel: { fontSize: 12, color: T.textMuted, fontWeight: '500' },
+  topList: { gap: 10 },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  distPct: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  distTrack: {
-    height: 8,
-    backgroundColor: T.bg,
-    borderRadius: 4,
-    overflow: 'hidden' as const,
-  },
-  distFill: {
-    height: 8,
-    borderRadius: 4,
-  },
-
-  /* Top Shops */
-  shopRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 12,
-  },
-  rankBadge: {
-    width: 36,
-    height: 36,
+  rankBubble: {
+    width: 32,
+    height: 32,
     borderRadius: 10,
     backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  rankText: {
-    fontSize: 13,
-    fontWeight: '800' as const,
-    color: T.textMuted,
+  rankNum: { fontSize: 12, fontWeight: '800', color: T.textMuted },
+  topName: { flex: 1, fontSize: 13, fontWeight: '600', color: T.text },
+  topCount: { fontSize: 14, fontWeight: '700' },
+  shopRight: { alignItems: 'flex-end' },
+  shopOrders: { fontSize: 11, color: T.textMuted },
+  shopRevenue: { fontSize: 14, fontWeight: '700', color: T.amber },
+  stackedBar: {
+    flexDirection: 'row',
+    height: 20,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 16,
   },
-  shopName: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: T.text,
+  stackSegment: { height: '100%' },
+  legend: { gap: 8 },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  shopMeta: {
-    fontSize: 12,
-    color: T.textMuted,
-    marginTop: 2,
-  },
-  shopRevenue: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: T.amber,
-  },
-
-  /* Platform Health */
-  healthRow: {
-    flexDirection: 'row' as const,
-    marginTop: 16,
-    gap: 12,
-  },
-  healthItem: {
-    flex: 1,
-    alignItems: 'center' as const,
-    gap: 6,
-  },
-  healthIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  healthValue: {
-    fontSize: 16,
-    fontWeight: '800' as const,
-    color: T.text,
-  },
-  healthLabel: {
-    fontSize: 11,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-};
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendText: { flex: 1, fontSize: 13, fontWeight: '600', color: T.text },
+  legendPct: { fontSize: 13, fontWeight: '700', color: T.text },
+});

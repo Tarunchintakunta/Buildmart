@@ -3,336 +3,333 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   FlatList,
+  StyleSheet,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { LightTheme } from '../../../src/theme/colors';
 
 const T = LightTheme;
 
-const SKILLS = [
-  { id: 'all', name: 'All', icon: 'people' },
-  { id: 'coolie', name: 'Coolie', icon: 'fitness' },
-  { id: 'mason', name: 'Mason', icon: 'construct' },
-  { id: 'electrician', name: 'Electrician', icon: 'flash' },
-  { id: 'plumber', name: 'Plumber', icon: 'water' },
-  { id: 'carpenter', name: 'Carpenter', icon: 'hammer' },
-  { id: 'painter', name: 'Painter', icon: 'color-palette' },
-  { id: 'welder', name: 'Welder', icon: 'flame' },
+const FILTER_CHIPS = [
+  { id: 'all', label: 'All', color: T.navy },
+  { id: 'mason', label: 'Mason', color: '#8B5CF6' },
+  { id: 'electrician', label: 'Electrician', color: '#F59E0B' },
+  { id: 'plumber', label: 'Plumber', color: '#3B82F6' },
+  { id: 'carpenter', label: 'Carpenter', color: '#10B981' },
+  { id: 'painter', label: 'Painter', color: '#EC4899' },
+  { id: 'welder', label: 'Welder', color: '#EF4444' },
 ];
+
+const ROLE_COLORS: Record<string, string> = {
+  Mason: '#8B5CF6',
+  Electrician: '#F59E0B',
+  Plumber: '#3B82F6',
+  Carpenter: '#10B981',
+  Painter: '#EC4899',
+  Welder: '#EF4444',
+  Helper: '#6B7280',
+};
 
 const WORKERS = [
   {
     id: 'w1',
     name: 'Ramu Yadav',
-    skills: ['Coolie', 'Helper'],
-    dailyRate: 600,
-    hourlyRate: 100,
-    rating: 4.5,
-    totalJobs: 120,
-    status: 'waiting',
+    primaryRole: 'Mason',
+    skills: ['Mason', 'Plastering', 'Tiling'],
+    dailyRate: 800,
+    rating: 4.8,
+    totalJobs: 142,
+    experience: 7,
+    status: 'available' as const,
     isVerified: true,
-    experience: 5,
-    distance: '2.3 km',
+    location: 'Kukatpally, Hyderabad',
   },
   {
     id: 'w2',
-    name: 'Suresh Kumar',
-    skills: ['Mason', 'Painter'],
-    dailyRate: 800,
-    hourlyRate: 120,
-    rating: 4.8,
-    totalJobs: 200,
-    status: 'working',
+    name: 'Venkat Rao',
+    primaryRole: 'Electrician',
+    skills: ['Electrician', 'Wiring', 'Panel Work'],
+    dailyRate: 1200,
+    rating: 4.9,
+    totalJobs: 218,
+    experience: 10,
+    status: 'working' as const,
     isVerified: true,
-    experience: 8,
-    distance: '3.1 km',
+    location: 'Ameerpet, Hyderabad',
   },
   {
     id: 'w3',
-    name: 'Mohammed Ali',
-    skills: ['Electrician'],
+    name: 'Suresh Kumar',
+    primaryRole: 'Plumber',
+    skills: ['Plumber', 'Pipe Fitting', 'Waterproofing'],
     dailyRate: 900,
-    hourlyRate: 150,
     rating: 4.6,
-    totalJobs: 150,
-    status: 'waiting',
+    totalJobs: 95,
+    experience: 5,
+    status: 'available' as const,
     isVerified: true,
-    experience: 6,
-    distance: '1.8 km',
+    location: 'Secunderabad, Hyderabad',
   },
   {
     id: 'w4',
-    name: 'Ganesh Babu',
-    skills: ['Plumber', 'Welder'],
-    dailyRate: 850,
-    hourlyRate: 130,
+    name: 'Mohammed Khader',
+    primaryRole: 'Carpenter',
+    skills: ['Carpenter', 'Furniture', 'Woodwork'],
+    dailyRate: 1100,
     rating: 4.7,
-    totalJobs: 180,
-    status: 'waiting',
-    isVerified: false,
-    experience: 10,
-    distance: '4.2 km',
+    totalJobs: 176,
+    experience: 9,
+    status: 'available' as const,
+    isVerified: true,
+    location: 'Tolichowki, Hyderabad',
   },
   {
     id: 'w5',
-    name: 'Venkat Rao',
-    skills: ['Carpenter'],
-    dailyRate: 1000,
-    hourlyRate: 160,
+    name: 'Balaiah Naidu',
+    primaryRole: 'Painter',
+    skills: ['Painter', 'Texture Work', 'Waterproofing'],
+    dailyRate: 750,
+    rating: 4.4,
+    totalJobs: 63,
+    experience: 4,
+    status: 'working' as const,
+    isVerified: false,
+    location: 'LB Nagar, Hyderabad',
+  },
+  {
+    id: 'w6',
+    name: 'Srinivas Reddy',
+    primaryRole: 'Welder',
+    skills: ['Welder', 'Fabrication', 'Steel Work'],
+    dailyRate: 1300,
     rating: 4.9,
-    totalJobs: 250,
-    status: 'working',
-    isVerified: true,
+    totalJobs: 201,
     experience: 12,
-    distance: '2.8 km',
+    status: 'available' as const,
+    isVerified: true,
+    location: 'Uppal, Hyderabad',
+  },
+  {
+    id: 'w7',
+    name: 'Ganesh Babu',
+    primaryRole: 'Mason',
+    skills: ['Mason', 'RCC Work', 'Brickwork'],
+    dailyRate: 850,
+    rating: 4.5,
+    totalJobs: 88,
+    experience: 6,
+    status: 'available' as const,
+    isVerified: true,
+    location: 'Dilsukhnagar, Hyderabad',
+  },
+  {
+    id: 'w8',
+    name: 'Ramesh Goud',
+    primaryRole: 'Plumber',
+    skills: ['Plumber', 'Sanitary', 'Drainage'],
+    dailyRate: 950,
+    rating: 4.2,
+    totalJobs: 54,
+    experience: 3,
+    status: 'available' as const,
+    isVerified: false,
+    location: 'Miyapur, Hyderabad',
   },
 ];
+
+type Worker = typeof WORKERS[0];
+
+function getInitials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function StarRow({ rating }: { rating: number }) {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return (
+    <View style={styles.starRow}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <Ionicons
+          key={i}
+          name={i <= full ? 'star' : half && i === full + 1 ? 'star-half' : 'star-outline'}
+          size={12}
+          color="#F59E0B"
+        />
+      ))}
+      <Text style={styles.ratingNum}>{rating.toFixed(1)}</Text>
+    </View>
+  );
+}
+
+function WorkerCard({ worker, index }: { worker: Worker; index: number }) {
+  const router = useRouter();
+  const roleColor = ROLE_COLORS[worker.primaryRole] || T.navy;
+  const isAvailable = worker.status === 'available';
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 80).springify()}>
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        onPress={() => router.push(`/(app)/worker/${worker.id}`)}
+      >
+        {/* Top row: avatar + info */}
+        <View style={styles.cardTop}>
+          {/* Avatar */}
+          <View style={[styles.avatar, { backgroundColor: roleColor + '20' }]}>
+            <Text style={[styles.avatarText, { color: roleColor }]}>{getInitials(worker.name)}</Text>
+            {worker.isVerified && (
+              <View style={styles.verifiedDot}>
+                <Ionicons name="checkmark" size={10} color="#fff" />
+              </View>
+            )}
+          </View>
+
+          {/* Info */}
+          <View style={styles.cardInfo}>
+            <View style={styles.nameRow}>
+              <Text style={styles.workerName} numberOfLines={1}>{worker.name}</Text>
+              <View style={[styles.statusBadge, isAvailable ? styles.statusGreen : styles.statusAmber]}>
+                <View style={[styles.statusDot, { backgroundColor: isAvailable ? T.success : T.warning }]} />
+                <Text style={[styles.statusText, { color: isAvailable ? T.success : T.warning }]}>
+                  {isAvailable ? 'Available' : 'Working'}
+                </Text>
+              </View>
+            </View>
+
+            <StarRow rating={worker.rating} />
+
+            <View style={styles.metaRow}>
+              <Ionicons name="briefcase-outline" size={12} color={T.textMuted} />
+              <Text style={styles.metaText}>{worker.totalJobs} jobs</Text>
+              <Text style={styles.dot}>·</Text>
+              <Ionicons name="time-outline" size={12} color={T.textMuted} />
+              <Text style={styles.metaText}>{worker.experience}y exp</Text>
+            </View>
+
+            {/* Skills chips */}
+            <View style={styles.skillsRow}>
+              {worker.skills.slice(0, 3).map(skill => (
+                <View key={skill} style={[styles.skillChip, { backgroundColor: (ROLE_COLORS[skill] || T.navy) + '15' }]}>
+                  <Text style={[styles.skillText, { color: ROLE_COLORS[skill] || T.navy }]}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        {/* Bottom row: rate + hire */}
+        <View style={styles.cardBottom}>
+          <View>
+            <Text style={styles.rateLabel}>Daily Rate</Text>
+            <Text style={styles.rateValue}>₹{worker.dailyRate}<Text style={styles.rateUnit}>/day</Text></Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.hireBtn,
+              !isAvailable && styles.hireBtnDisabled,
+              pressed && isAvailable && styles.hireBtnPressed,
+            ]}
+            onPress={() => isAvailable && router.push(`/(app)/hire?workerId=${worker.id}`)}
+            disabled={!isAvailable}
+          >
+            <Ionicons name={isAvailable ? 'person-add' : 'time'} size={16} color={isAvailable ? '#fff' : T.textMuted} />
+            <Text style={[styles.hireBtnText, !isAvailable && styles.hireBtnTextDisabled]}>
+              {isAvailable ? 'Hire' : 'Busy'}
+            </Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function WorkersScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSkill, setSelectedSkill] = useState('all');
-  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+  const [search, setSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
 
-  const isContractor = user?.role === 'contractor';
-
-  const filteredWorkers = WORKERS.filter((worker) => {
-    const matchesSearch = worker.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesSkill =
-      selectedSkill === 'all' ||
-      worker.skills.some((s) => s.toLowerCase() === selectedSkill);
-    const matchesAvailability = !showAvailableOnly || worker.status === 'waiting';
-    return matchesSearch && matchesSkill && matchesAvailability;
+  const filtered = WORKERS.filter(w => {
+    const matchesSearch = w.name.toLowerCase().includes(search.toLowerCase()) ||
+      w.skills.some(s => s.toLowerCase().includes(search.toLowerCase()));
+    const matchesFilter = activeFilter === 'all' ||
+      w.primaryRole.toLowerCase() === activeFilter;
+    return matchesSearch && matchesFilter;
   });
 
-  const renderWorker = ({ item: worker }: { item: typeof WORKERS[0] }) => (
-    <TouchableOpacity
-      style={s.card}
-      onPress={() => router.push(`/(app)/worker/${worker.id}`)}
-    >
-      <View style={s.cardRow}>
-        {/* Avatar */}
-        <View style={s.avatar}>
-          <Ionicons name="person" size={32} color={T.textMuted} />
-          {worker.isVerified && (
-            <View style={s.verifiedBadge}>
-              <Ionicons name="checkmark" size={12} color={T.white} />
-            </View>
-          )}
-        </View>
-
-        {/* Info */}
-        <View style={s.cardInfo}>
-          <View style={s.nameRow}>
-            <Text style={s.workerName}>{worker.name}</Text>
-            <View
-              style={[
-                s.statusBadge,
-                worker.status === 'waiting'
-                  ? s.statusAvailable
-                  : s.statusWorking,
-              ]}
-            >
-              <Text
-                style={
-                  worker.status === 'waiting'
-                    ? s.statusAvailableText
-                    : s.statusWorkingText
-                }
-              >
-                {worker.status === 'waiting' ? 'Available' : 'Working'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Skills */}
-          <View style={s.skillsRow}>
-            {worker.skills.map((skill, index) => (
-              <View key={index} style={s.skillChip}>
-                <Text style={s.skillChipText}>{skill}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Stats */}
-          <View style={s.statsRow}>
-            <Ionicons name="star" size={14} color={T.amber} />
-            <Text style={s.ratingText}>{worker.rating}</Text>
-            <Text style={s.statDot}>•</Text>
-            <Text style={s.statText}>{worker.totalJobs} jobs</Text>
-            <Text style={s.statDot}>•</Text>
-            <Text style={s.statText}>{worker.experience}y exp</Text>
-          </View>
-
-          {/* Rate & Distance */}
-          <View style={s.rateDistanceRow}>
-            <View>
-              <Text style={s.dailyRate}>₹{worker.dailyRate}/day</Text>
-              <Text style={s.hourlyRate}>₹{worker.hourlyRate}/hr</Text>
-            </View>
-            <View style={s.distanceRow}>
-              <Ionicons name="location" size={14} color={T.textMuted} />
-              <Text style={s.distanceText}>{worker.distance}</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Action Buttons */}
-      <View style={s.actionRow}>
-        <TouchableOpacity
-          style={s.viewProfileBtn}
-          onPress={() => router.push(`/(app)/worker/${worker.id}`)}
-        >
-          <Ionicons name="person" size={18} color={T.textSecondary} />
-          <Text style={s.viewProfileText}>View Profile</Text>
-        </TouchableOpacity>
-
-        {worker.status === 'waiting' && worker.isVerified && (
-          <>
-            <TouchableOpacity
-              style={s.hireBtn}
-              onPress={() => router.push(`/(app)/hire?workerId=${worker.id}`)}
-            >
-              <Ionicons name="calendar" size={18} color={T.white} />
-              <Text style={s.hireBtnText}>
-                {isContractor ? 'Hire Long-term' : 'Book Now'}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {!worker.isVerified && (
-          <View style={s.notVerifiedBadge}>
-            <Ionicons name="warning" size={18} color="#EAB308" />
-            <Text style={s.notVerifiedText}>Not Verified</Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
-    <SafeAreaView style={s.safeArea}>
+    <SafeAreaView style={styles.safe}>
       {/* Header */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>
-          {isContractor ? 'Hire Workers' : 'Find Workers'}
-        </Text>
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Text style={styles.headerTitle}>Find Workers</Text>
+          <Pressable style={styles.filterIconBtn}>
+            <Ionicons name="options-outline" size={22} color={T.navy} />
+          </Pressable>
+        </View>
 
-        {/* Search Bar */}
-        <View style={s.searchBar}>
-          <Ionicons name="search" size={22} color={T.textMuted} />
+        {/* Search */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search-outline" size={20} color={T.textMuted} />
           <TextInput
-            style={s.searchInput}
-            placeholder="Search workers..."
+            style={styles.searchInput}
+            placeholder="Search by name or skill..."
             placeholderTextColor={T.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+            value={search}
+            onChangeText={setSearch}
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ marginLeft: 8 }}>
-              <Ionicons name="close-circle" size={22} color={T.textMuted} />
-            </TouchableOpacity>
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={20} color={T.textMuted} />
+            </Pressable>
           )}
         </View>
       </View>
 
-      {/* Skills Filter */}
-      <View style={s.skillsFilterContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-        >
-          {SKILLS.map((skill) => {
-            const isActive = selectedSkill === skill.id;
+      {/* Filter chips */}
+      <View style={styles.filterBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+          {FILTER_CHIPS.map(chip => {
+            const active = activeFilter === chip.id;
             return (
-              <TouchableOpacity
-                key={skill.id}
-                style={[
-                  s.filterPill,
-                  isActive ? s.filterPillActive : s.filterPillInactive,
-                ]}
-                onPress={() => setSelectedSkill(skill.id)}
+              <Pressable
+                key={chip.id}
+                style={[styles.chip, active ? { backgroundColor: chip.color } : styles.chipInactive]}
+                onPress={() => setActiveFilter(chip.id)}
               >
-                <Ionicons
-                  name={skill.icon as any}
-                  size={18}
-                  color={isActive ? T.white : T.textSecondary}
-                />
-                <Text
-                  style={[
-                    s.filterPillText,
-                    isActive ? s.filterPillTextActive : s.filterPillTextInactive,
-                  ]}
-                >
-                  {skill.name}
+                <Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
+                  {chip.label}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>
       </View>
 
-      {/* Available Filter */}
-      <View style={s.availableFilterRow}>
-        <Text style={s.workerCountText}>{filteredWorkers.length} workers found</Text>
-        <TouchableOpacity
-          style={s.checkboxRow}
-          onPress={() => setShowAvailableOnly(!showAvailableOnly)}
-        >
-          <View
-            style={[
-              s.checkbox,
-              showAvailableOnly ? s.checkboxActive : s.checkboxInactive,
-            ]}
-          >
-            {showAvailableOnly && (
-              <Ionicons name="checkmark" size={14} color={T.white} />
-            )}
-          </View>
-          <Text style={s.checkboxLabel}>Available only</Text>
-        </TouchableOpacity>
+      {/* Count */}
+      <View style={styles.countRow}>
+        <Text style={styles.countText}>{filtered.length} workers found</Text>
       </View>
 
-      {/* Contractor Banner */}
-      {isContractor && (
-        <TouchableOpacity
-          style={s.contractorBanner}
-          onPress={() => router.push('/(app)/agreement/create')}
-        >
-          <Ionicons name="document-text" size={24} color={T.amber} />
-          <View style={s.contractorBannerContent}>
-            <Text style={s.contractorBannerTitle}>Create Long-term Agreement</Text>
-            <Text style={s.contractorBannerSubtitle}>
-              Hire workers for weeks or months with digital contracts
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={T.amber} />
-        </TouchableOpacity>
-      )}
-
-      {/* Workers List */}
+      {/* List */}
       <FlatList
-        data={filteredWorkers}
-        renderItem={renderWorker}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        data={filtered}
+        keyExtractor={item => item.id}
+        renderItem={({ item, index }) => <WorkerCard worker={item} index={index} />}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={s.emptyContainer}>
-            <Ionicons name="people" size={48} color={T.textMuted} />
-            <Text style={s.emptyText}>No workers found</Text>
+          <View style={styles.empty}>
+            <Ionicons name="people-outline" size={56} color={T.textMuted} />
+            <Text style={styles.emptyTitle}>No workers found</Text>
+            <Text style={styles.emptySubtitle}>Try a different search or filter</Text>
           </View>
         }
       />
@@ -340,344 +337,160 @@ export default function WorkersScreen() {
   );
 }
 
-const s = {
-  safeArea: {
-    flex: 1,
-    backgroundColor: T.bg,
-  } as const,
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: T.bg },
 
-  /* ---- Header ---- */
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     backgroundColor: T.surface,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
-  } as const,
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: T.text,
-    marginBottom: 16,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  headerTitle: { fontSize: 26, fontWeight: '700', color: T.navy },
+  filterIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: T.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: T.border,
   },
 
-  /* ---- Search ---- */
   searchBar: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    backgroundColor: T.surface,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  searchInput: {
-    flex: 1,
-    color: T.text,
-    paddingVertical: 14,
-    marginLeft: 12,
-    fontSize: 16,
-  },
-
-  /* ---- Skills Filter ---- */
-  skillsFilterContainer: {
-    paddingVertical: 14,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-  } as const,
-  filterPill: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 50,
-    marginRight: 10,
-  },
-  filterPillActive: {
-    backgroundColor: T.navy,
-  },
-  filterPillInactive: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: T.bg,
-  },
-  filterPillText: {
-    marginLeft: 8,
-    fontWeight: '600' as const,
-    fontSize: 14,
-  },
-  filterPillTextActive: {
-    color: T.white,
-  },
-  filterPillTextInactive: {
-    color: T.textSecondary,
-  },
-
-  /* ---- Available Filter Row ---- */
-  availableFilterRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-  },
-  workerCountText: {
-    color: T.textSecondary,
-    fontSize: 14,
-  },
-  checkboxRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    marginRight: 8,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  checkboxActive: {
-    backgroundColor: T.amber,
-    borderColor: T.amber,
-  },
-  checkboxInactive: {
-    borderColor: T.border,
-    backgroundColor: 'transparent',
-  },
-  checkboxLabel: {
-    color: T.textSecondary,
-    fontSize: 14,
-  },
-
-  /* ---- Contractor Banner ---- */
-  contractorBanner: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: 'rgba(242, 150, 13, 0.1)',
     borderRadius: 14,
-    padding: 16,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 150, 13, 0.3)',
-  },
-  contractorBannerContent: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  contractorBannerTitle: {
-    color: T.amber,
-    fontWeight: '600' as const,
-    fontSize: 15,
-  },
-  contractorBannerSubtitle: {
-    color: T.textSecondary,
-    fontSize: 13,
-    marginTop: 2,
-  },
-
-  /* ---- Worker Card ---- */
-  card: {
-    backgroundColor: T.surface,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: T.border,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardRow: {
-    flexDirection: 'row' as const,
-  },
-
-  /* Avatar */
-  avatar: {
-    width: 64,
-    height: 64,
-    backgroundColor: T.bg,
-    borderRadius: 32,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  verifiedBadge: {
-    position: 'absolute' as const,
-    bottom: -2,
-    right: -2,
-    backgroundColor: '#10B981',
-    borderRadius: 10,
-    padding: 3,
-  },
-
-  /* Card Info */
-  cardInfo: {
-    flex: 1,
-    marginLeft: 16,
-  },
-  nameRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-  },
-  workerName: {
-    color: T.text,
-    fontWeight: '600' as const,
-    fontSize: 17,
-  },
-
-  /* Status Badge */
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusAvailable: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-  },
-  statusWorking: {
-    backgroundColor: 'rgba(249, 115, 22, 0.15)',
-  },
-  statusAvailableText: {
-    color: '#10B981',
-    fontSize: 13,
-    fontWeight: '500' as const,
-  },
-  statusWorkingText: {
-    color: '#F97316',
-    fontSize: 13,
-    fontWeight: '500' as const,
-  },
-
-  /* Skills Chips */
-  skillsRow: {
-    flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
-    marginTop: 8,
-  },
-  skillChip: {
-    backgroundColor: T.bg,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  skillChipText: {
-    color: T.textSecondary,
-    fontSize: 12,
-  },
-
-  /* Stats */
-  statsRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginTop: 8,
-  },
-  ratingText: {
-    color: T.text,
-    marginLeft: 4,
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  statDot: {
-    color: T.textMuted,
-    marginHorizontal: 8,
-  },
-  statText: {
-    color: T.textSecondary,
-    fontSize: 14,
-  },
-
-  /* Rate & Distance */
-  rateDistanceRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    marginTop: 12,
-  },
-  dailyRate: {
-    color: T.amber,
-    fontWeight: '700' as const,
-    fontSize: 15,
-  },
-  hourlyRate: {
-    color: T.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  distanceRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
-  distanceText: {
-    color: T.textSecondary,
-    marginLeft: 4,
-    fontSize: 14,
-  },
-
-  /* Action Buttons */
-  actionRow: {
-    flexDirection: 'row' as const,
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
     gap: 10,
   },
-  viewProfileBtn: {
-    flex: 1,
-    backgroundColor: T.bg,
-    paddingVertical: 12,
-    borderRadius: 10,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  searchInput: { flex: 1, fontSize: 15, color: T.navy, paddingVertical: 0 },
+
+  filterBar: {
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+    paddingVertical: 10,
   },
-  viewProfileText: {
-    color: T.textSecondary,
-    fontWeight: '500' as const,
-    marginLeft: 8,
-    fontSize: 14,
+  filterScroll: { paddingHorizontal: 16, gap: 8 },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
   },
-  hireBtn: {
-    flex: 1,
-    backgroundColor: '#10B981',
-    paddingVertical: 12,
-    borderRadius: 10,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  chipInactive: { backgroundColor: T.bg, borderWidth: 1, borderColor: T.border },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  chipTextActive: { color: '#fff' },
+  chipTextInactive: { color: T.textSecondary },
+
+  countRow: { paddingHorizontal: 20, paddingVertical: 10 },
+  countText: { fontSize: 13, color: T.textSecondary },
+
+  listContent: { paddingHorizontal: 16, paddingBottom: 24 },
+
+  card: {
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 16,
+    marginBottom: 12,
   },
-  hireBtnText: {
-    color: T.white,
-    fontWeight: '500' as const,
-    marginLeft: 8,
-    fontSize: 14,
+  cardPressed: { opacity: 0.93 },
+
+  cardTop: { flexDirection: 'row', marginBottom: 14 },
+
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  notVerifiedBadge: {
-    flex: 1,
-    backgroundColor: 'rgba(234, 179, 8, 0.15)',
-    paddingVertical: 12,
-    borderRadius: 10,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  notVerifiedText: {
-    color: '#EAB308',
-    fontWeight: '500' as const,
-    marginLeft: 8,
-    fontSize: 14,
+  avatarText: { fontSize: 20, fontWeight: '700' },
+  verifiedDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: T.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: T.surface,
   },
 
-  /* Empty State */
-  emptyContainer: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    paddingVertical: 48,
+  cardInfo: { flex: 1, marginLeft: 14 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  workerName: { fontSize: 16, fontWeight: '700', color: T.navy, flex: 1 },
+
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    gap: 4,
+    marginLeft: 8,
   },
-  emptyText: {
-    color: T.textSecondary,
-    marginTop: 16,
-    fontSize: 16,
+  statusGreen: { backgroundColor: '#ECFDF5' },
+  statusAmber: { backgroundColor: '#FFFBEB' },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 11, fontWeight: '600' },
+
+  starRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 5 },
+  ratingNum: { fontSize: 12, color: T.textSecondary, marginLeft: 4, fontWeight: '600' },
+
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
+  metaText: { fontSize: 12, color: T.textMuted },
+  dot: { color: T.textMuted, fontSize: 12 },
+
+  skillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  skillChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  skillText: { fontSize: 11, fontWeight: '600' },
+
+  cardBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
   },
-};
+  rateLabel: { fontSize: 11, color: T.textMuted, marginBottom: 2 },
+  rateValue: { fontSize: 20, fontWeight: '800', color: T.amber },
+  rateUnit: { fontSize: 13, fontWeight: '500', color: T.textSecondary },
+
+  hireBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: T.navy,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+  },
+  hireBtnDisabled: { backgroundColor: T.bg, borderWidth: 1, borderColor: T.border },
+  hireBtnPressed: { opacity: 0.8 },
+  hireBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  hireBtnTextDisabled: { color: T.textMuted },
+
+  empty: { alignItems: 'center', paddingVertical: 60 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: T.navy, marginTop: 16 },
+  emptySubtitle: { fontSize: 14, color: T.textSecondary, marginTop: 6 },
+});

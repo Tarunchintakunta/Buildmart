@@ -1,569 +1,401 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { LightTheme } from '../../../src/theme/colors';
 
 const T = LightTheme;
 
-const AGREEMENT_TABS = ['All', 'Active', 'Pending', 'Completed'];
+const STATUS_TABS = ['All', 'Active', 'Pending', 'Completed', 'Terminated'] as const;
+type StatusTab = typeof STATUS_TABS[number];
+
+type AgreementStatus = 'draft' | 'pending_signature' | 'active' | 'completed' | 'terminated';
+
+const STATUS_CONFIG: Record<AgreementStatus, { label: string; bg: string; color: string; icon: string }> = {
+  draft:             { label: 'Draft',          bg: '#F9FAFB', color: '#6B7280', icon: 'document-outline' },
+  pending_signature: { label: 'Awaiting Sign',  bg: '#FFFBEB', color: '#F59E0B', icon: 'time-outline' },
+  active:            { label: 'Active',          bg: '#ECFDF5', color: '#10B981', icon: 'checkmark-circle' },
+  completed:         { label: 'Completed',       bg: '#EFF6FF', color: '#3B82F6', icon: 'trophy-outline' },
+  terminated:        { label: 'Terminated',      bg: '#FEF2F2', color: '#EF4444', icon: 'close-circle' },
+};
 
 const MOCK_AGREEMENTS = [
   {
-    id: 'a1',
-    agreementNumber: 'AGR-2024-001',
-    title: 'Site Labor for Brigade Project',
-    contractor: 'Rajesh Constructions',
+    id: 'agr001',
+    contractId: 'BM-AGR-2026-001',
+    contractor: 'Rajesh Constructions Pvt Ltd',
+    contractorName: 'Rajesh Sharma',
     worker: 'Ramu Yadav',
-    startDate: '2024-01-15',
-    endDate: '2024-03-15',
-    rateType: 'daily',
-    rateAmount: 600,
+    workerSkill: 'Mason',
+    jobType: 'Masonry & Plastering',
+    description: 'Complete brickwork and plastering for G+2 residential building at Gachibowli.',
+    location: 'Gachibowli, Hyderabad',
+    startDate: '01 May 2026',
+    duration: 45,
+    dailyRate: 800,
     totalValue: 36000,
-    status: 'active',
-    workLocation: 'Brigade Road Construction Site',
+    status: 'active' as AgreementStatus,
+    contractorSigned: true,
+    workerSigned: true,
+    createdDate: '20 Apr 2026',
   },
   {
-    id: 'a2',
-    agreementNumber: 'AGR-2024-002',
-    title: 'Mason Work - Electronic City Villa',
-    contractor: 'BuildRight Pvt Ltd',
-    worker: 'Suresh Kumar',
-    startDate: '2024-02-01',
-    endDate: '2024-04-30',
-    rateType: 'weekly',
-    rateAmount: 5600,
-    totalValue: 67200,
-    status: 'active',
-    workLocation: 'Electronic City Villa Project',
-  },
-  {
-    id: 'a3',
-    agreementNumber: 'AGR-2024-003',
-    title: 'Electrical Installation',
-    contractor: 'Sharma Builders',
-    worker: 'Mohammed Ali',
-    startDate: '2024-01-20',
-    endDate: '2024-02-28',
-    rateType: 'daily',
-    rateAmount: 900,
-    totalValue: 36000,
-    status: 'active',
-    workLocation: 'Marathahalli Office Complex',
-  },
-  {
-    id: 'a4',
-    agreementNumber: 'AGR-2024-004',
-    title: 'Carpentry - Modular Kitchen',
-    contractor: 'Prime Infrastructure',
+    id: 'agr002',
+    contractId: 'BM-AGR-2026-002',
+    contractor: 'BuildRight Infrastructure',
+    contractorName: 'Anil Kumar',
     worker: 'Venkat Rao',
-    startDate: '2024-02-10',
-    endDate: '2024-05-10',
-    rateType: 'monthly',
-    rateAmount: 30000,
-    totalValue: 90000,
-    status: 'active',
-    workLocation: 'Hebbal Apartment Complex',
+    workerSkill: 'Electrician',
+    jobType: 'Electrical Installation',
+    description: 'Full electrical wiring, panel installation, and safety testing for commercial complex.',
+    location: 'HITEC City, Hyderabad',
+    startDate: '10 May 2026',
+    duration: 30,
+    dailyRate: 1200,
+    totalValue: 36000,
+    status: 'pending_signature' as AgreementStatus,
+    contractorSigned: true,
+    workerSigned: false,
+    createdDate: '22 Apr 2026',
   },
   {
-    id: 'a5',
-    agreementNumber: 'AGR-2024-005',
-    title: 'Plumbing - Housing Society',
-    contractor: 'Metro Constructions',
-    worker: 'Ganesh Babu',
-    startDate: '2024-03-01',
-    endDate: '2024-06-30',
-    rateType: 'weekly',
-    rateAmount: 5950,
-    totalValue: 102200,
-    status: 'pending_signature',
-    workLocation: 'JP Nagar Housing Society',
+    id: 'agr003',
+    contractId: 'BM-AGR-2026-003',
+    contractor: 'Sharma Builders',
+    contractorName: 'Sunil Sharma',
+    worker: 'Mohammed Khader',
+    workerSkill: 'Carpenter',
+    jobType: 'Modular Kitchen & Carpentry',
+    description: 'Custom modular kitchen, wardrobe, and false ceiling installation for 3BHK apartment.',
+    location: 'Banjara Hills, Hyderabad',
+    startDate: '15 Mar 2026',
+    duration: 20,
+    dailyRate: 1100,
+    totalValue: 22000,
+    status: 'completed' as AgreementStatus,
+    contractorSigned: true,
+    workerSigned: true,
+    createdDate: '10 Mar 2026',
+  },
+  {
+    id: 'agr004',
+    contractId: 'BM-AGR-2026-004',
+    contractor: 'Hyderabad Infra Projects',
+    contractorName: 'Venkata Rao Reddy',
+    worker: 'Srinivas Reddy',
+    workerSkill: 'Welder',
+    jobType: 'Steel Fabrication',
+    description: 'Structural steel work and railing fabrication for industrial warehouse.',
+    location: 'Uppal, Hyderabad',
+    startDate: '05 Feb 2026',
+    duration: 15,
+    dailyRate: 1300,
+    totalValue: 19500,
+    status: 'terminated' as AgreementStatus,
+    contractorSigned: true,
+    workerSigned: true,
+    createdDate: '01 Feb 2026',
   },
 ];
 
-const getStatusStyle = (status: string) => {
-  switch (status) {
-    case 'active':
-      return { bg: 'rgba(16,185,129,0.15)', color: T.success, label: 'Active' };
-    case 'pending_signature':
-      return { bg: 'rgba(242,150,13,0.15)', color: T.amber, label: 'Pending Signature' };
-    case 'completed':
-      return { bg: 'rgba(59,130,246,0.15)', color: T.info, label: 'Completed' };
-    case 'terminated':
-      return { bg: 'rgba(239,68,68,0.15)', color: '#EF4444', label: 'Terminated' };
-    case 'draft':
-      return { bg: 'rgba(107,114,128,0.15)', color: T.textSecondary, label: 'Draft' };
-    default:
-      return { bg: 'rgba(107,114,128,0.15)', color: T.textSecondary, label: status };
-  }
-};
+type Agreement = typeof MOCK_AGREEMENTS[0];
 
-const getRateLabel = (type: string, amount: number) => {
-  switch (type) {
-    case 'daily':
-      return `₹${amount}/day`;
-    case 'weekly':
-      return `₹${amount}/week`;
-    case 'monthly':
-      return `₹${amount}/month`;
-    default:
-      return `₹${amount}`;
-  }
-};
-
-export default function AgreementsScreen() {
+function AgreementCard({ agreement, index, isContractor }: { agreement: Agreement; index: number; isContractor: boolean }) {
   const router = useRouter();
-  const { user } = useAuth();
-  const [selectedTab, setSelectedTab] = useState('All');
+  const cfg = STATUS_CONFIG[agreement.status];
 
-  const isContractor = user?.role === 'contractor';
-  const isWorker = user?.role === 'worker';
+  const canSign = agreement.status === 'pending_signature' && !agreement.workerSigned;
 
-  const filteredAgreements = MOCK_AGREEMENTS.filter((agreement) => {
-    if (selectedTab === 'All') return true;
-    if (selectedTab === 'Active') return agreement.status === 'active';
-    if (selectedTab === 'Pending') return agreement.status === 'pending_signature';
-    if (selectedTab === 'Completed') return ['completed', 'terminated'].includes(agreement.status);
-    return true;
-  });
-
-  const renderAgreement = ({ item: agreement }: { item: typeof MOCK_AGREEMENTS[0] }) => {
-    const statusStyle = getStatusStyle(agreement.status);
-    const isPending = agreement.status === 'pending_signature';
-
-    return (
-      <TouchableOpacity
-        style={[
-          s.card,
-          isPending && { borderLeftWidth: 4, borderLeftColor: T.amber },
-        ]}
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 70).springify()}>
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
         onPress={() => router.push(`/(app)/agreement/${agreement.id}`)}
-        activeOpacity={0.7}
       >
-        {/* Title Row */}
-        <View style={s.cardHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.cardTitle}>{agreement.title}</Text>
-            <Text style={s.cardSubtitle}>{agreement.agreementNumber}</Text>
+        {/* Contract ID + Status */}
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={styles.contractId}>{agreement.contractId}</Text>
+            <Text style={styles.createdDate}>Created {agreement.createdDate}</Text>
           </View>
-          <View style={[s.statusBadge, { backgroundColor: statusStyle.bg }]}>
-            <Text style={[s.statusText, { color: statusStyle.color }]}>
-              {statusStyle.label}
-            </Text>
+          <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
+            <Ionicons name={cfg.icon as any} size={13} color={cfg.color} />
+            <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
           </View>
         </View>
 
         {/* Parties */}
-        <View style={s.infoRow}>
-          <Ionicons name="business" size={16} color={T.textMuted} />
-          <Text style={s.infoText}>
-            {isWorker ? agreement.contractor : agreement.worker}
-          </Text>
+        <View style={styles.partiesRow}>
+          <View style={styles.partyBox}>
+            <Ionicons name="business-outline" size={14} color={T.navy} />
+            <View style={styles.partyInfo}>
+              <Text style={styles.partyLabel}>Contractor</Text>
+              <Text style={styles.partyName} numberOfLines={1}>{agreement.contractorName}</Text>
+            </View>
+          </View>
+          <View style={styles.partiesArrow}>
+            <Ionicons name="swap-horizontal" size={18} color={T.textMuted} />
+          </View>
+          <View style={styles.partyBox}>
+            <Ionicons name="person-outline" size={14} color={T.amber} />
+            <View style={styles.partyInfo}>
+              <Text style={styles.partyLabel}>Worker</Text>
+              <Text style={styles.partyName} numberOfLines={1}>{agreement.worker}</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Location */}
-        <View style={[s.infoRow, { marginBottom: 14 }]}>
-          <Ionicons name="location" size={16} color={T.textMuted} />
-          <Text style={s.infoTextMuted} numberOfLines={1}>
-            {agreement.workLocation}
-          </Text>
+        {/* Job info */}
+        <View style={styles.jobRow}>
+          <Ionicons name="briefcase-outline" size={13} color={T.textMuted} />
+          <Text style={styles.jobType}>{agreement.jobType}</Text>
+          <Text style={styles.jobDot}>·</Text>
+          <Text style={styles.jobDuration}>{agreement.duration} days</Text>
         </View>
+        <Text style={styles.jobDescription} numberOfLines={2}>{agreement.description}</Text>
 
-        {/* Duration & Rate */}
-        <View style={s.dividerRow}>
+        {/* Value + signatures */}
+        <View style={styles.cardFooter}>
           <View>
-            <Text style={s.labelSmall}>Duration</Text>
-            <Text style={s.valueText}>
-              {agreement.startDate} - {agreement.endDate}
-            </Text>
+            <Text style={styles.valueLabel}>Contract Value</Text>
+            <Text style={styles.valueAmount}>₹{agreement.totalValue.toLocaleString('en-IN')}</Text>
           </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={s.labelSmall}>Rate</Text>
-            <Text style={s.rateText}>
-              {getRateLabel(agreement.rateType, agreement.rateAmount)}
-            </Text>
+          <View style={styles.signaturesRow}>
+            <View style={[styles.sigDot, { backgroundColor: agreement.contractorSigned ? T.success : T.border }]} />
+            <View style={[styles.sigDot, { backgroundColor: agreement.workerSigned ? T.success : T.border }]} />
+            {canSign && (
+              <Pressable
+                style={styles.signBtn}
+                onPress={() => router.push(`/(app)/agreement/${agreement.id}`)}
+              >
+                <Text style={styles.signBtnText}>Sign Now</Text>
+              </Pressable>
+            )}
           </View>
         </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
-        {/* Total Value */}
-        <View style={s.totalRow}>
-          <Text style={s.totalLabel}>Total Contract Value</Text>
-          <Text style={s.totalValue}>
-            ₹{agreement.totalValue.toLocaleString()}
-          </Text>
-        </View>
+export default function AgreementsScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<StatusTab>('All');
 
-        {/* Actions for pending agreements */}
-        {isPending && isWorker && (
-          <View style={s.actionsRow}>
-            <TouchableOpacity style={s.signButton} activeOpacity={0.7}>
-              <Ionicons name="checkmark-circle" size={18} color={T.white} />
-              <Text style={s.signButtonText}>Sign Agreement</Text>
-            </TouchableOpacity>
-            <View style={{ width: 12 }} />
-            <TouchableOpacity style={s.declineButton} activeOpacity={0.7}>
-              <Ionicons name="close-circle" size={18} color={T.textMuted} />
-              <Text style={s.declineButtonText}>Decline</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
+  const isContractor = user?.role === 'contractor';
+
+  const filtered = MOCK_AGREEMENTS.filter(agr => {
+    if (activeTab === 'All') return true;
+    if (activeTab === 'Active') return agr.status === 'active';
+    if (activeTab === 'Pending') return agr.status === 'pending_signature' || agr.status === 'draft';
+    if (activeTab === 'Completed') return agr.status === 'completed';
+    if (activeTab === 'Terminated') return agr.status === 'terminated';
+    return true;
+  });
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={styles.safe}>
       {/* Header */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>
-          {isContractor ? 'My Contracts' : 'Agreements'}
-        </Text>
-        {isContractor && (
-          <TouchableOpacity
-            style={s.newButton}
-            onPress={() => router.push('/(app)/agreement/create')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add" size={18} color={T.white} />
-            <Text style={s.newButtonText}>New</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Tabs */}
-      <View style={s.tabBar}>
-        {AGREEMENT_TABS.map((tab) => {
-          const isActive = selectedTab === tab;
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                s.tab,
-                isActive ? s.tabActive : s.tabInactive,
-              ]}
-              onPress={() => setSelectedTab(tab)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  s.tabText,
-                  isActive ? s.tabTextActive : s.tabTextInactive,
-                ]}
-              >
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Pending Notification for Workers */}
-      {isWorker && selectedTab === 'All' && MOCK_AGREEMENTS.some(a => a.status === 'pending_signature') && (
-        <View style={s.alertBanner}>
-          <Ionicons name="alert-circle" size={24} color={T.amber} />
-          <View style={{ marginLeft: 12, flex: 1 }}>
-            <Text style={s.alertTitle}>Action Required</Text>
-            <Text style={s.alertSubtitle}>
-              You have pending agreements to sign
-            </Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Contracts</Text>
+        <View style={styles.headerStats}>
+          <View style={styles.headerStat}>
+            <Text style={styles.headerStatValue}>{MOCK_AGREEMENTS.filter(a => a.status === 'active').length}</Text>
+            <Text style={styles.headerStatLabel}>Active</Text>
+          </View>
+          <View style={styles.headerStatDivider} />
+          <View style={styles.headerStat}>
+            <Text style={styles.headerStatValue}>{MOCK_AGREEMENTS.length}</Text>
+            <Text style={styles.headerStatLabel}>Total</Text>
           </View>
         </View>
-      )}
+      </View>
 
-      {/* Agreements List */}
+      {/* Status Tabs */}
+      <View style={styles.tabScroll}>
+        <FlatList
+          data={STATUS_TABS as unknown as StatusTab[]}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={item => item}
+          contentContainerStyle={styles.tabList}
+          renderItem={({ item: tab }) => (
+            <Pressable
+              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+            </Pressable>
+          )}
+        />
+      </View>
+
+      {/* Agreements list */}
       <FlatList
-        data={filteredAgreements}
-        renderItem={renderAgreement}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        data={filtered}
+        keyExtractor={item => item.id}
+        renderItem={({ item, index }) => (
+          <AgreementCard agreement={item} index={index} isContractor={isContractor} />
+        )}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={s.emptyContainer}>
-            <Ionicons name="document-text" size={48} color={T.textSecondary} />
-            <Text style={s.emptyText}>No agreements found</Text>
-            {isContractor && (
-              <TouchableOpacity
-                style={s.emptyButton}
-                onPress={() => router.push('/(app)/agreement/create')}
-                activeOpacity={0.7}
-              >
-                <Text style={s.emptyButtonText}>Create Agreement</Text>
-              </TouchableOpacity>
-            )}
+          <View style={styles.empty}>
+            <Ionicons name="document-text-outline" size={56} color={T.textMuted} />
+            <Text style={styles.emptyTitle}>No contracts found</Text>
+            <Text style={styles.emptySubtitle}>
+              {isContractor ? 'Create an agreement to get started' : 'Your contracts will appear here'}
+            </Text>
           </View>
         }
       />
+
+      {/* FAB for contractors */}
+      {isContractor && (
+        <Pressable
+          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+          onPress={() => router.push('/(app)/agreement/create')}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 }
 
-const s = {
-  container: {
-    flex: 1,
-    backgroundColor: T.bg,
-  } as const,
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: T.bg },
 
-  // Header
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     paddingVertical: 14,
     backgroundColor: T.surface,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800' as const,
-    color: T.text,
-  },
-  newButton: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    backgroundColor: T.amber,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 9999,
-  },
-  newButtonText: {
-    color: T.white,
-    fontWeight: '600' as const,
-    fontSize: 14,
-    marginLeft: 4,
-  },
+  headerTitle: { fontSize: 26, fontWeight: '700', color: T.navy },
+  headerStats: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerStat: { alignItems: 'center' },
+  headerStatValue: { fontSize: 18, fontWeight: '800', color: T.navy },
+  headerStatLabel: { fontSize: 11, color: T.textMuted },
+  headerStatDivider: { width: 1, height: 24, backgroundColor: T.border },
 
-  // Tabs
-  tabBar: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  tabScroll: {
     backgroundColor: T.surface,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
-    gap: 8,
   },
+  tabList: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   tab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 9999,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  tabActive: {
-    backgroundColor: T.navy,
-  },
-  tabInactive: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
     backgroundColor: T.bg,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  tabTextActive: {
-    color: T.white,
-  },
-  tabTextInactive: {
-    color: T.textSecondary,
-  },
-
-  // Alert Banner
-  alertBanner: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    backgroundColor: 'rgba(242,150,13,0.1)',
-    borderRadius: 14,
-    padding: 16,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
     borderWidth: 1,
-    borderColor: 'rgba(242,150,13,0.3)',
+    borderColor: T.border,
   },
-  alertTitle: {
-    color: T.amber,
-    fontWeight: '700' as const,
-    fontSize: 15,
-  },
-  alertSubtitle: {
-    color: T.textSecondary,
-    fontSize: 13,
-    marginTop: 2,
-  },
+  tabActive: { backgroundColor: T.navy, borderColor: T.navy },
+  tabText: { fontSize: 13, fontWeight: '600', color: T.textSecondary },
+  tabTextActive: { color: '#fff' },
 
-  // Card
+  listContent: { padding: 16, paddingBottom: 80 },
+
   card: {
     backgroundColor: T.surface,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: T.border,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
+  cardPressed: { opacity: 0.93 },
+
   cardHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'flex-start' as const,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    color: T.textMuted,
-    marginTop: 2,
-  },
-
-  // Status Badge
+  contractId: { fontSize: 14, fontWeight: '800', color: T.navy },
+  createdDate: { fontSize: 12, color: T.textMuted, marginTop: 2 },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 9999,
-    marginLeft: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 5,
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
+  statusText: { fontSize: 12, fontWeight: '700' },
 
-  // Info Rows
-  infoRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginBottom: 6,
+  partiesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: T.bg,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    gap: 8,
   },
-  infoText: {
-    color: T.textSecondary,
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  infoTextMuted: {
-    color: T.textMuted,
-    fontSize: 14,
-    marginLeft: 8,
-    flex: 1,
-  },
+  partyBox: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  partiesArrow: { paddingHorizontal: 4 },
+  partyInfo: { flex: 1 },
+  partyLabel: { fontSize: 10, color: T.textMuted, marginBottom: 1 },
+  partyName: { fontSize: 13, fontWeight: '700', color: T.navy },
 
-  // Duration & Rate
-  dividerRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-  labelSmall: {
-    fontSize: 11,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-  },
-  valueText: {
-    fontSize: 14,
-    color: T.text,
-    fontWeight: '500' as const,
-    marginTop: 2,
-  },
-  rateText: {
-    fontSize: 15,
-    color: T.amber,
-    fontWeight: '700' as const,
-    marginTop: 2,
-  },
+  jobRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  jobType: { fontSize: 13, fontWeight: '600', color: T.textSecondary },
+  jobDot: { color: T.textMuted },
+  jobDuration: { fontSize: 13, color: T.textMuted },
+  jobDescription: { fontSize: 13, color: T.textMuted, lineHeight: 18, marginBottom: 12 },
 
-  // Total Row
-  totalRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: T.border,
   },
-  totalLabel: {
-    fontSize: 14,
-    color: T.textSecondary,
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '800' as const,
-    color: T.text,
-  },
-
-  // Actions
-  actionsRow: {
-    flexDirection: 'row' as const,
-    marginTop: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-  signButton: {
-    flex: 1,
-    backgroundColor: T.success,
-    paddingVertical: 12,
-    borderRadius: 10,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  signButtonText: {
-    color: T.white,
-    fontWeight: '700' as const,
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  declineButton: {
-    flex: 1,
-    backgroundColor: T.bg,
-    paddingVertical: 12,
-    borderRadius: 10,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  declineButtonText: {
-    color: T.textSecondary,
-    fontWeight: '700' as const,
-    fontSize: 14,
-    marginLeft: 8,
-  },
-
-  // Empty State
-  emptyContainer: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    paddingVertical: 48,
-  },
-  emptyText: {
-    color: T.textSecondary,
-    fontSize: 15,
-    marginTop: 16,
-  },
-  emptyButton: {
+  valueLabel: { fontSize: 11, color: T.textMuted, marginBottom: 2 },
+  valueAmount: { fontSize: 20, fontWeight: '800', color: T.navy },
+  signaturesRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sigDot: { width: 10, height: 10, borderRadius: 5 },
+  signBtn: {
     backgroundColor: T.amber,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 9999,
-    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    marginLeft: 6,
   },
-  emptyButtonText: {
-    color: T.white,
-    fontWeight: '700' as const,
-    fontSize: 15,
+  signBtnText: { fontSize: 12, fontWeight: '800', color: '#fff' },
+
+  empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: T.navy, marginTop: 16 },
+  emptySubtitle: { fontSize: 14, color: T.textSecondary, marginTop: 8, textAlign: 'center', lineHeight: 20 },
+
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: T.amber,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: T.amber,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
-};
+  fabPressed: { opacity: 0.85 },
+});

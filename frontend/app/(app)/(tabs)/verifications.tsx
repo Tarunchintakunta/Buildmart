@@ -1,269 +1,187 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Alert, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  FlatList,
+  Modal,
+  TextInput,
+  Platform,
+  ToastAndroid,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../../src/theme/colors';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LightTheme as T } from '../../../src/theme/colors';
 
-const T = LightTheme;
+type VerifStatus = 'Pending' | 'Approved' | 'Rejected';
+type DocRole = 'Shopkeeper' | 'Worker' | 'Driver';
 
-const VERIFICATION_TABS = ['Pending', 'Approved', 'Rejected'];
+type Verification = {
+  id: string;
+  name: string;
+  phone: string;
+  role: DocRole;
+  initials: string;
+  aadhaar: boolean;
+  pan: boolean;
+  businessLicense: boolean;
+  submittedAt: string;
+  status: VerifStatus;
+  rejectedReason?: string;
+};
 
-const MOCK_VERIFICATIONS = [
-  {
-    id: 'v1',
-    workerId: 'w4',
-    workerName: 'Ganesh Babu',
-    phone: '9876543304',
-    email: 'ganesh@email.com',
-    idType: 'Aadhar Card',
-    idNumber: 'XXXX-XXXX-3456',
-    idFrontUrl: 'https://placeholder.com/id_front.jpg',
-    idBackUrl: 'https://placeholder.com/id_back.jpg',
-    selfieUrl: 'https://placeholder.com/selfie.jpg',
-    skills: ['Plumber', 'Welder'],
-    experience: 10,
-    dailyRate: 850,
-    status: 'pending',
-    submittedAt: '2024-02-15 10:30 AM',
-  },
-  {
-    id: 'v2',
-    workerId: 'w6',
-    workerName: 'Srinivas K',
-    phone: '9876543306',
-    email: 'srinivas@email.com',
-    idType: 'Driving License',
-    idNumber: 'DL-KA-2015-123456',
-    idFrontUrl: 'https://placeholder.com/id_front2.jpg',
-    idBackUrl: null,
-    selfieUrl: 'https://placeholder.com/selfie2.jpg',
-    skills: ['Mason'],
-    experience: 5,
-    dailyRate: 700,
-    status: 'pending',
-    submittedAt: '2024-02-15 08:15 AM',
-  },
-  {
-    id: 'v3',
-    workerId: 'w7',
-    workerName: 'Rajan M',
-    phone: '9876543307',
-    email: 'rajan@email.com',
-    idType: 'Voter ID',
-    idNumber: 'VOTER987654',
-    idFrontUrl: 'https://placeholder.com/id_front3.jpg',
-    idBackUrl: null,
-    selfieUrl: null,
-    skills: ['Electrician', 'Helper'],
-    experience: 3,
-    dailyRate: 600,
-    status: 'pending',
-    submittedAt: '2024-02-14 04:45 PM',
-  },
-  {
-    id: 'v4',
-    workerId: 'w1',
-    workerName: 'Ramu Yadav',
-    phone: '9876543301',
-    email: 'ramu@email.com',
-    idType: 'Aadhar Card',
-    idNumber: 'XXXX-XXXX-1234',
-    idFrontUrl: 'https://placeholder.com/id1_front.jpg',
-    idBackUrl: 'https://placeholder.com/id1_back.jpg',
-    selfieUrl: 'https://placeholder.com/selfie1.jpg',
-    skills: ['Coolie', 'Helper'],
-    experience: 5,
-    dailyRate: 600,
-    status: 'approved',
-    submittedAt: '2024-02-10 09:00 AM',
-    reviewedAt: '2024-02-10 11:30 AM',
-    reviewedBy: 'Admin One',
-  },
-  {
-    id: 'v5',
-    workerId: 'w8',
-    workerName: 'Kumar S',
-    phone: '9876543308',
-    email: 'kumar@email.com',
-    idType: 'PAN Card',
-    idNumber: 'ABCDE1234F',
-    idFrontUrl: 'https://placeholder.com/id5_front.jpg',
-    idBackUrl: null,
-    selfieUrl: null,
-    skills: ['Painter'],
-    experience: 2,
-    dailyRate: 550,
-    status: 'rejected',
-    submittedAt: '2024-02-12 02:00 PM',
-    reviewedAt: '2024-02-12 05:00 PM',
-    reviewedBy: 'Admin Two',
-    rejectionReason: 'ID document is blurry and unreadable',
-  },
+const ROLE_COLORS: Record<DocRole, string> = {
+  Shopkeeper: '#10B981',
+  Worker: '#F59E0B',
+  Driver: '#3B82F6',
+};
+
+const INITIAL_DATA: Verification[] = [
+  { id: 'v1', name: 'Ganesh Reddy', phone: '9876543301', role: 'Worker', initials: 'GR', aadhaar: true, pan: true, businessLicense: false, submittedAt: '23 Apr 2026', status: 'Pending' },
+  { id: 'v2', name: 'Srinivas Rao', phone: '9876543302', role: 'Driver', initials: 'SR', aadhaar: true, pan: false, businessLicense: false, submittedAt: '22 Apr 2026', status: 'Pending' },
+  { id: 'v3', name: 'Rajan Murthy', phone: '9876543303', role: 'Shopkeeper', initials: 'RM', aadhaar: true, pan: true, businessLicense: true, submittedAt: '22 Apr 2026', status: 'Pending' },
+  { id: 'v4', name: 'Pradeep Kumar', phone: '9876543304', role: 'Worker', initials: 'PK', aadhaar: true, pan: true, businessLicense: false, submittedAt: '21 Apr 2026', status: 'Pending' },
+  { id: 'v5', name: 'Venkat Naidu', phone: '9876543305', role: 'Driver', initials: 'VN', aadhaar: true, pan: true, businessLicense: false, submittedAt: '21 Apr 2026', status: 'Pending' },
+  { id: 'v6', name: 'Lakshmi Traders', phone: '9876543306', role: 'Shopkeeper', initials: 'LT', aadhaar: true, pan: true, businessLicense: true, submittedAt: '20 Apr 2026', status: 'Pending' },
+  { id: 'v7', name: 'Arun Chandra', phone: '9876543307', role: 'Worker', initials: 'AC', aadhaar: true, pan: false, businessLicense: false, submittedAt: '20 Apr 2026', status: 'Pending' },
+  { id: 'v8', name: 'Mohan Das', phone: '9876543308', role: 'Shopkeeper', initials: 'MD', aadhaar: true, pan: true, businessLicense: true, submittedAt: '19 Apr 2026', status: 'Pending' },
+  { id: 'v9', name: 'Suresh Pillai', phone: '9876543309', role: 'Worker', initials: 'SP', aadhaar: true, pan: true, businessLicense: false, submittedAt: '18 Apr 2026', status: 'Approved' },
+  { id: 'v10', name: 'Ravi Shankar', phone: '9876543310', role: 'Driver', initials: 'RS', aadhaar: true, pan: true, businessLicense: false, submittedAt: '17 Apr 2026', status: 'Approved' },
+  { id: 'v11', name: 'Kumar Electricals', phone: '9876543311', role: 'Shopkeeper', initials: 'KE', aadhaar: true, pan: true, businessLicense: false, submittedAt: '15 Apr 2026', status: 'Rejected', rejectedReason: 'Blurry documents submitted' },
 ];
 
+function showToast(msg: string) {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(msg, ToastAndroid.SHORT);
+  } else {
+    Alert.alert('', msg);
+  }
+}
+
+const TABS: VerifStatus[] = ['Pending', 'Approved', 'Rejected'];
+
 export default function VerificationsScreen() {
-  const [selectedTab, setSelectedTab] = useState('Pending');
-  const [selectedVerification, setSelectedVerification] = useState<typeof MOCK_VERIFICATIONS[0] | null>(null);
+  const [activeTab, setActiveTab] = useState<VerifStatus>('Pending');
+  const [data, setData] = useState<Verification[]>(INITIAL_DATA);
+  const [rejectModal, setRejectModal] = useState<Verification | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
-  const filteredVerifications = MOCK_VERIFICATIONS.filter((v) => {
-    return v.status === selectedTab.toLowerCase();
-  });
+  const filtered = data.filter((v) => v.status === activeTab);
+  const pendingCount = data.filter((v) => v.status === 'Pending').length;
 
-  const pendingCount = MOCK_VERIFICATIONS.filter((v) => v.status === 'pending').length;
-
-  const handleApprove = (verification: typeof MOCK_VERIFICATIONS[0]) => {
+  const approveItem = (item: Verification) => {
     Alert.alert(
       'Approve Verification',
-      `Are you sure you want to approve ${verification.workerName}'s verification?`,
+      `Approve KYC for ${item.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Approve',
-          style: 'default',
           onPress: () => {
-            Alert.alert('Success', 'Worker has been verified successfully');
+            setData((prev) => prev.map((v) => v.id === item.id ? { ...v, status: 'Approved' } : v));
+            showToast(`${item.name} approved!`);
           },
         },
       ]
     );
   };
 
-  const handleReject = (verification: typeof MOCK_VERIFICATIONS[0]) => {
-    Alert.alert(
-      'Reject Verification',
-      `Are you sure you want to reject ${verification.workerName}'s verification?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Rejected', 'Verification has been rejected');
-          },
-        },
-      ]
-    );
+  const openReject = (item: Verification) => {
+    setRejectReason('');
+    setRejectModal(item);
   };
 
-  const renderVerification = ({ item: verification }: { item: typeof MOCK_VERIFICATIONS[0] }) => {
-    const isPending = verification.status === 'pending';
-    const isRejected = verification.status === 'rejected';
+  const confirmReject = () => {
+    if (!rejectModal) return;
+    if (!rejectReason.trim()) {
+      Alert.alert('Required', 'Please enter a reason for rejection.');
+      return;
+    }
+    setData((prev) =>
+      prev.map((v) =>
+        v.id === rejectModal.id ? { ...v, status: 'Rejected', rejectedReason: rejectReason.trim() } : v
+      )
+    );
+    showToast(`${rejectModal.name} rejected.`);
+    setRejectModal(null);
+  };
 
+  const renderDoc = (label: string, present: boolean) => (
+    <View style={s.docRow} key={label}>
+      <Ionicons
+        name={present ? 'checkmark-circle' : 'close-circle-outline'}
+        size={15}
+        color={present ? T.success : T.textMuted}
+      />
+      <Text style={[s.docLabel, !present && s.docLabelMissing]}>{label}</Text>
+    </View>
+  );
+
+  const renderCard = ({ item, index }: { item: Verification; index: number }) => {
+    const roleColor = ROLE_COLORS[item.role];
     return (
-      <View
-        style={[
-          s.card,
-          isPending && { borderLeftWidth: 4, borderLeftColor: T.amber },
-        ]}
-      >
-        {/* Header */}
+      <Animated.View entering={FadeInDown.delay(index * 60).duration(400)} style={s.card}>
+        {/* Card Header */}
         <View style={s.cardHeader}>
-          <View style={s.avatar}>
-            <Ionicons name="person" size={36} color={T.textMuted} />
+          <View style={[s.avatar, { backgroundColor: roleColor + '22' }]}>
+            <Text style={[s.avatarText, { color: roleColor }]}>{item.initials}</Text>
           </View>
-          <View style={s.cardHeaderInfo}>
-            <Text style={s.workerName}>{verification.workerName}</Text>
-            <Text style={s.workerPhone}>{verification.phone}</Text>
-            <View style={s.skillsRow}>
-              {verification.skills.map((skill, index) => (
-                <View key={index} style={s.skillBadge}>
-                  <Text style={s.skillText}>{skill}</Text>
-                </View>
-              ))}
+          <View style={s.cardInfo}>
+            <Text style={s.name}>{item.name}</Text>
+            <Text style={s.phone}>{item.phone}</Text>
+            <View style={[s.roleBadge, { backgroundColor: roleColor + '18' }]}>
+              <Text style={[s.roleText, { color: roleColor }]}>{item.role}</Text>
             </View>
           </View>
-          <View style={s.cardHeaderRight}>
-            <Text style={s.experienceLabel}>Experience</Text>
-            <Text style={s.experienceValue}>{verification.experience} years</Text>
-            <Text style={s.rateValue}>₹{verification.dailyRate}/day</Text>
+          <View style={s.dateCol}>
+            <Text style={s.dateLabel}>Submitted</Text>
+            <Text style={s.dateValue}>{item.submittedAt}</Text>
           </View>
         </View>
 
-        {/* ID Document Info */}
-        <View style={s.idSection}>
-          <View style={s.idHeader}>
-            <Ionicons name="card" size={18} color={T.amber} />
-            <Text style={s.idType}>{verification.idType}</Text>
-          </View>
-          <Text style={s.idNumber}>ID Number: {verification.idNumber}</Text>
-          <Text style={s.submittedAt}>Submitted: {verification.submittedAt}</Text>
-        </View>
-
-        {/* Document Previews */}
-        <View style={s.documentsSection}>
-          <Text style={s.documentsLabel}>Documents</Text>
-          <View style={s.documentsRow}>
-            <TouchableOpacity style={s.documentBox}>
-              <Ionicons name="image" size={24} color={T.textMuted} />
-              <Text style={s.documentBoxLabel}>ID Front</Text>
-            </TouchableOpacity>
-            {verification.idBackUrl && (
-              <TouchableOpacity style={s.documentBox}>
-                <Ionicons name="image" size={24} color={T.textMuted} />
-                <Text style={s.documentBoxLabel}>ID Back</Text>
-              </TouchableOpacity>
-            )}
-            {verification.selfieUrl && (
-              <TouchableOpacity style={s.documentBox}>
-                <Ionicons name="person-circle" size={24} color={T.textMuted} />
-                <Text style={s.documentBoxLabel}>Selfie</Text>
-              </TouchableOpacity>
-            )}
+        {/* Documents */}
+        <View style={s.docsSection}>
+          <Text style={s.docsTitle}>Documents</Text>
+          <View style={s.docsGrid}>
+            {renderDoc('Aadhaar Card', item.aadhaar)}
+            {renderDoc('PAN Card', item.pan)}
+            {renderDoc('Business License', item.businessLicense)}
           </View>
         </View>
 
-        {/* Rejection Reason */}
-        {isRejected && (verification as any).rejectionReason && (
+        {/* Rejection reason */}
+        {item.status === 'Rejected' && item.rejectedReason && (
           <View style={s.rejectionBox}>
-            <View style={s.rejectionHeader}>
-              <Ionicons name="close-circle" size={16} color="#EF4444" />
-              <Text style={s.rejectionTitle}>Rejection Reason</Text>
-            </View>
-            <Text style={s.rejectionText}>{(verification as any).rejectionReason}</Text>
+            <Ionicons name="close-circle" size={14} color={T.error} />
+            <Text style={s.rejectionText}>{item.rejectedReason}</Text>
           </View>
         )}
 
-        {/* Review Info */}
-        {!isPending && (
-          <View style={s.reviewInfo}>
-            <Ionicons
-              name={verification.status === 'approved' ? 'checkmark-circle' : 'close-circle'}
-              size={16}
-              color={verification.status === 'approved' ? T.success : '#EF4444'}
-            />
-            <Text style={s.reviewText}>
-              {verification.status === 'approved' ? 'Approved' : 'Rejected'} by {(verification as any).reviewedBy} on {(verification as any).reviewedAt}
-            </Text>
+        {/* Approved badge */}
+        {item.status === 'Approved' && (
+          <View style={s.approvedBox}>
+            <Ionicons name="checkmark-circle" size={14} color={T.success} />
+            <Text style={s.approvedText}>Verified & Approved</Text>
           </View>
         )}
 
-        {/* Actions for Pending */}
-        {isPending && (
-          <View style={s.actionsRow}>
-            <TouchableOpacity
-              style={s.viewDetailsBtn}
-              onPress={() => setSelectedVerification(verification)}
-            >
-              <Ionicons name="eye" size={20} color={T.textSecondary} />
-              <Text style={s.viewDetailsBtnText}>View Details</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={s.approveBtn}
-              onPress={() => handleApprove(verification)}
-            >
-              <Ionicons name="checkmark" size={20} color={T.white} />
-              <Text style={s.actionBtnTextWhite}>Approve</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={s.rejectBtn}
-              onPress={() => handleReject(verification)}
-            >
-              <Ionicons name="close" size={20} color={T.white} />
-              <Text style={s.actionBtnTextWhite}>Reject</Text>
-            </TouchableOpacity>
+        {/* Actions */}
+        {item.status === 'Pending' && (
+          <View style={s.actions}>
+            <Pressable style={s.approveBtn} onPress={() => approveItem(item)}>
+              <Ionicons name="checkmark" size={16} color={T.white} />
+              <Text style={s.actionBtnText}>Approve</Text>
+            </Pressable>
+            <Pressable style={s.rejectBtn} onPress={() => openReject(item)}>
+              <Ionicons name="close" size={16} color={T.white} />
+              <Text style={s.actionBtnText}>Reject</Text>
+            </Pressable>
           </View>
         )}
-      </View>
+      </Animated.View>
     );
   };
 
@@ -271,104 +189,112 @@ export default function VerificationsScreen() {
     <SafeAreaView style={s.container}>
       {/* Header */}
       <View style={s.header}>
-        <View style={s.headerRow}>
-          <Text style={s.headerTitle}>Verifications</Text>
-          {pendingCount > 0 && (
-            <View style={s.pendingBadge}>
-              <Text style={s.pendingBadgeText}>{pendingCount} Pending</Text>
-            </View>
-          )}
-        </View>
+        <Text style={s.headerTitle}>Pending Verifications</Text>
+        {pendingCount > 0 && (
+          <View style={s.countBadge}>
+            <Text style={s.countBadgeText}>{pendingCount}</Text>
+          </View>
+        )}
       </View>
 
       {/* Tabs */}
       <View style={s.tabBar}>
-        {VERIFICATION_TABS.map((tab) => (
-          <TouchableOpacity
+        {TABS.map((tab) => (
+          <Pressable
             key={tab}
-            style={[
-              s.tab,
-              selectedTab === tab ? s.tabActive : s.tabInactive,
-            ]}
-            onPress={() => setSelectedTab(tab)}
+            style={[s.tab, activeTab === tab && s.tabActive]}
+            onPress={() => setActiveTab(tab)}
           >
-            <Text
-              style={[
-                s.tabText,
-                selectedTab === tab ? s.tabTextActive : s.tabTextInactive,
-              ]}
-            >
-              {tab}
+            <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
+              {tab} ({data.filter((v) => v.status === tab).length})
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
 
-      {/* Verification List */}
+      {/* List */}
       <FlatList
-        data={filteredVerifications}
-        renderItem={renderVerification}
+        data={filtered}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        renderItem={renderCard}
+        contentContainerStyle={s.list}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={s.emptyContainer}>
-            <Ionicons name="shield-checkmark" size={48} color={T.textMuted} />
-            <Text style={s.emptyText}>
-              {selectedTab === 'Pending'
-                ? 'No pending verifications'
-                : selectedTab === 'Approved'
-                ? 'No approved verifications'
-                : 'No rejected verifications'}
-            </Text>
+          <View style={s.empty}>
+            <Ionicons name="shield-checkmark-outline" size={48} color={T.textMuted} />
+            <Text style={s.emptyText}>No {activeTab.toLowerCase()} verifications</Text>
           </View>
         }
       />
+
+      {/* Reject Modal */}
+      <Modal
+        visible={!!rejectModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setRejectModal(null)}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalSheet}>
+            <Text style={s.modalTitle}>Reject Verification</Text>
+            {rejectModal && (
+              <Text style={s.modalSub}>
+                Rejecting KYC for <Text style={{ fontWeight: '700' }}>{rejectModal.name}</Text>
+              </Text>
+            )}
+            <Text style={s.modalLabel}>Reason for rejection *</Text>
+            <TextInput
+              style={s.modalInput}
+              placeholder="e.g. Documents are blurry or invalid..."
+              placeholderTextColor={T.textMuted}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              value={rejectReason}
+              onChangeText={setRejectReason}
+            />
+            <View style={s.modalActions}>
+              <Pressable style={s.modalCancel} onPress={() => setRejectModal(null)}>
+                <Text style={s.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={s.modalConfirm} onPress={confirmReject}>
+                <Text style={s.modalConfirmText}>Confirm Reject</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const s = {
-  container: {
-    flex: 1,
-    backgroundColor: T.bg,
-  } as const,
-
-  // Header
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: T.bg },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: T.surface,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
-  } as const,
-  headerRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
   },
-  headerTitle: {
-    color: T.text,
-    fontSize: 30,
-    fontWeight: '700' as const,
-  },
-  pendingBadge: {
+  headerTitle: { fontSize: 22, fontWeight: '800', color: T.text },
+  countBadge: {
     backgroundColor: T.amber,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
     borderRadius: 14,
+    minWidth: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
-  pendingBadgeText: {
-    color: '#1A1D2E',
-    fontWeight: '700' as const,
-    fontSize: 14,
-  },
-
-  // Tabs
+  countBadgeText: { fontSize: 13, fontWeight: '800', color: T.white },
   tabBar: {
-    flexDirection: 'row' as const,
+    flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: T.surface,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
@@ -376,265 +302,151 @@ const s = {
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 14,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  tabActive: {
-    backgroundColor: T.navy,
-  },
-  tabInactive: {
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
     backgroundColor: T.bg,
   },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    textAlign: 'center' as const,
-  },
-  tabTextActive: {
-    color: T.white,
-  },
-  tabTextInactive: {
-    color: T.textSecondary,
-  },
-
-  // Card
+  tabActive: { backgroundColor: T.navy },
+  tabText: { fontSize: 13, fontWeight: '600', color: T.textSecondary },
+  tabTextActive: { color: T.white },
+  list: { padding: 16, gap: 12, paddingBottom: 40 },
   card: {
     backgroundColor: T.surface,
-    borderRadius: 14,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: T.border,
-    padding: 20,
-    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 3,
-  } as const,
-
-  // Card Header
-  cardHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-start' as const,
-    marginBottom: 16,
+    elevation: 2,
   },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
   avatar: {
-    width: 64,
-    height: 64,
+    width: 52,
+    height: 52,
     borderRadius: 14,
-    backgroundColor: T.bg,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cardHeaderInfo: {
-    flex: 1,
-    marginLeft: 16,
+  avatarText: { fontSize: 18, fontWeight: '800' },
+  cardInfo: { flex: 1, marginLeft: 12, gap: 3 },
+  name: { fontSize: 16, fontWeight: '700', color: T.text },
+  phone: { fontSize: 13, color: T.textSecondary },
+  roleBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginTop: 2,
   },
-  workerName: {
-    color: T.text,
-    fontWeight: '700' as const,
-    fontSize: 18,
-    marginBottom: 4,
-  },
-  workerPhone: {
-    color: T.textSecondary,
-    fontWeight: '500' as const,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  skillsRow: {
-    flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
-  },
-  skillBadge: {
-    backgroundColor: T.bg,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 14,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  skillText: {
-    color: T.textSecondary,
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  cardHeaderRight: {
-    alignItems: 'flex-end' as const,
-  },
-  experienceLabel: {
-    color: T.textMuted,
-    fontSize: 12,
-    fontWeight: '500' as const,
-    marginBottom: 4,
-  },
-  experienceValue: {
-    color: T.text,
-    fontWeight: '700' as const,
-    fontSize: 14,
-  },
-  rateValue: {
-    color: T.amber,
-    fontWeight: '700' as const,
-    fontSize: 16,
-    marginTop: 4,
-  },
-
-  // ID Section
-  idSection: {
+  roleText: { fontSize: 11, fontWeight: '700' },
+  dateCol: { alignItems: 'flex-end' },
+  dateLabel: { fontSize: 11, color: T.textMuted },
+  dateValue: { fontSize: 12, fontWeight: '600', color: T.textSecondary },
+  docsSection: {
     backgroundColor: T.bg,
     borderRadius: 12,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  idHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginBottom: 8,
-  },
-  idType: {
-    color: T.text,
-    fontWeight: '500' as const,
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  idNumber: {
-    color: T.textSecondary,
-    fontSize: 14,
-  },
-  submittedAt: {
-    color: T.textMuted,
-    fontSize: 12,
-    marginTop: 4,
-  },
-
-  // Documents Section
-  documentsSection: {
-    marginBottom: 16,
-  },
-  documentsLabel: {
-    color: T.textSecondary,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  documentsRow: {
-    flexDirection: 'row' as const,
-    gap: 12,
-  },
-  documentBox: {
-    flex: 1,
-    height: 96,
-    backgroundColor: T.bg,
-    borderRadius: 10,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  documentBoxLabel: {
-    color: T.textSecondary,
-    fontSize: 12,
-    marginTop: 4,
-  },
-
-  // Rejection
+  docsTitle: { fontSize: 12, fontWeight: '600', color: T.textMuted, marginBottom: 8 },
+  docsGrid: { gap: 6 },
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  docLabel: { fontSize: 13, color: T.text, fontWeight: '500' },
+  docLabelMissing: { color: T.textMuted },
   rejectionBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EF444410',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.25)',
+    borderColor: '#EF444428',
   },
-  rejectionHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginBottom: 4,
-  },
-  rejectionTitle: {
-    color: '#EF4444',
-    fontWeight: '500' as const,
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  rejectionText: {
-    color: T.textSecondary,
-    fontSize: 14,
-  },
-
-  // Review Info
-  reviewInfo: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-  reviewText: {
-    color: T.textSecondary,
-    marginLeft: 8,
-    fontSize: 14,
-  },
-
-  // Action Buttons
-  actionsRow: {
-    flexDirection: 'row' as const,
-    gap: 12,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-  viewDetailsBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 14,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: T.bg,
+  rejectionText: { fontSize: 13, color: T.error, flex: 1 },
+  approvedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#10B98110',
+    borderRadius: 10,
+    padding: 10,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: '#10B98128',
   },
-  viewDetailsBtnText: {
-    color: T.textSecondary,
-    fontWeight: '700' as const,
-    fontSize: 14,
-    marginLeft: 8,
-  },
+  approvedText: { fontSize: 13, color: T.success, fontWeight: '600' },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: T.border },
   approveBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 14,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: T.success,
+    borderRadius: 12,
+    paddingVertical: 12,
   },
   rejectBtn: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: T.error,
+    borderRadius: 12,
     paddingVertical: 12,
-    borderRadius: 14,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: '#EF4444',
   },
-  actionBtnTextWhite: {
-    color: T.white,
-    fontWeight: '700' as const,
-    fontSize: 14,
-    marginLeft: 8,
+  actionBtnText: { fontSize: 14, fontWeight: '700', color: T.white },
+  empty: { alignItems: 'center', paddingVertical: 60, gap: 12 },
+  emptyText: { fontSize: 16, color: T.textSecondary },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-
-  // Empty State
-  emptyContainer: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    paddingVertical: 48,
+  modalSheet: {
+    backgroundColor: T.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
   },
-  emptyText: {
-    color: T.textSecondary,
-    fontSize: 16,
-    marginTop: 16,
+  modalTitle: { fontSize: 20, fontWeight: '800', color: T.text, marginBottom: 6 },
+  modalSub: { fontSize: 14, color: T.textSecondary, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '600', color: T.text, marginBottom: 8 },
+  modalInput: {
+    backgroundColor: T.bg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 14,
+    fontSize: 15,
+    color: T.text,
+    minHeight: 90,
+    marginBottom: 20,
   },
-};
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalCancel: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: T.bg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  modalCancelText: { fontSize: 15, fontWeight: '600', color: T.textSecondary },
+  modalConfirm: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: T.error,
+    alignItems: 'center',
+  },
+  modalConfirmText: { fontSize: 15, fontWeight: '700', color: T.white },
+});

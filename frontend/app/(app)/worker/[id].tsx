@@ -1,489 +1,417 @@
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown, FadeInLeft, FadeInRight } from 'react-native-reanimated';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { LightTheme } from '../../../src/theme/colors';
 
 const T = LightTheme;
 
-// Mock worker data
-const MOCK_WORKER = {
-  id: 'w1',
-  name: 'Ramu Yadav',
-  phone: '9876543301',
-  email: 'ramu@email.com',
-  skills: ['Coolie', 'Helper'],
-  experience: 5,
-  dailyRate: 600,
-  hourlyRate: 100,
-  rating: 4.5,
-  totalJobs: 120,
-  totalEarnings: 72000,
-  status: 'waiting',
-  isVerified: true,
-  bio: 'Experienced in loading and unloading heavy materials. Reliable and punctual worker with 5 years of experience in construction sites.',
-  address: 'Madiwala Village, Bangalore',
-  joinedAt: 'January 2024',
-  completedAgreements: 8,
-  reviews: [
-    { customer: 'Rajesh Constructions', rating: 5, comment: 'Excellent work, very reliable', date: '2024-02-10' },
-    { customer: 'Priya Patel', rating: 4, comment: 'Good helper, on time', date: '2024-02-05' },
-    { customer: 'BuildRight Pvt Ltd', rating: 5, comment: 'Hardworking and professional', date: '2024-01-28' },
-  ],
+const ROLE_COLORS: Record<string, string> = {
+  Mason: '#8B5CF6',
+  Electrician: '#F59E0B',
+  Plumber: '#3B82F6',
+  Carpenter: '#10B981',
+  Painter: '#EC4899',
+  Welder: '#EF4444',
+  Helper: '#6B7280',
 };
+
+const MOCK_WORKERS: Record<string, {
+  id: string; name: string; primaryRole: string; skills: string[];
+  dailyRate: number; rating: number; totalJobs: number; experience: number;
+  status: 'available' | 'working'; isVerified: boolean; location: string;
+  bio: string; phone: string; completedProjects: number;
+}> = {
+  w1: {
+    id: 'w1', name: 'Ramu Yadav', primaryRole: 'Mason',
+    skills: ['Mason', 'Plastering', 'Tiling', 'Brickwork', 'Flooring'],
+    dailyRate: 800, rating: 4.8, totalJobs: 142, experience: 7,
+    status: 'available', isVerified: true,
+    location: 'Kukatpally, Hyderabad',
+    bio: 'Experienced mason with 7 years in residential and commercial projects. Specializes in RCC work, brick masonry, and finishing. Worked with top contractors across Hyderabad. Punctual, professional, and detail-oriented.',
+    phone: '+91 98765 43210', completedProjects: 12,
+  },
+  w2: {
+    id: 'w2', name: 'Venkat Rao', primaryRole: 'Electrician',
+    skills: ['Electrician', 'Wiring', 'Panel Work', 'AC Installation', 'CCTV'],
+    dailyRate: 1200, rating: 4.9, totalJobs: 218, experience: 10,
+    status: 'working', isVerified: true,
+    location: 'Ameerpet, Hyderabad',
+    bio: 'Licensed electrician with a decade of experience. Expert in commercial electrical installations, panel wiring, and smart home systems. Compliant with all safety standards. 200+ satisfied clients.',
+    phone: '+91 98765 43211', completedProjects: 28,
+  },
+  w3: {
+    id: 'w3', name: 'Suresh Kumar', primaryRole: 'Plumber',
+    skills: ['Plumber', 'Pipe Fitting', 'Waterproofing', 'Sanitation', 'Drainage'],
+    dailyRate: 900, rating: 4.6, totalJobs: 95, experience: 5,
+    status: 'available', isVerified: true,
+    location: 'Secunderabad, Hyderabad',
+    bio: 'Skilled plumber specializing in residential and commercial plumbing. Expert in waterproofing basements and terraces, pipe fitting, and drainage systems. Known for clean, long-lasting work.',
+    phone: '+91 98765 43212', completedProjects: 8,
+  },
+  w4: {
+    id: 'w4', name: 'Mohammed Khader', primaryRole: 'Carpenter',
+    skills: ['Carpenter', 'Furniture', 'Woodwork', 'Modular Kitchens', 'False Ceiling'],
+    dailyRate: 1100, rating: 4.7, totalJobs: 176, experience: 9,
+    status: 'available', isVerified: true,
+    location: 'Tolichowki, Hyderabad',
+    bio: 'Master carpenter with expertise in custom furniture, modular kitchens, and false ceilings. Works with all types of wood and laminates. Meticulous attention to detail and measurements.',
+    phone: '+91 98765 43213', completedProjects: 19,
+  },
+  w5: {
+    id: 'w5', name: 'Balaiah Naidu', primaryRole: 'Painter',
+    skills: ['Painter', 'Texture Work', 'Waterproofing', 'Polish', 'Wall Putty'],
+    dailyRate: 750, rating: 4.4, totalJobs: 63, experience: 4,
+    status: 'working', isVerified: false,
+    location: 'LB Nagar, Hyderabad',
+    bio: 'Painter with experience in interior and exterior painting. Specializes in texture finishes, weather-resistant coatings, and wall putty application. Brings creativity to every project.',
+    phone: '+91 98765 43214', completedProjects: 5,
+  },
+  w6: {
+    id: 'w6', name: 'Srinivas Reddy', primaryRole: 'Welder',
+    skills: ['Welder', 'Fabrication', 'Steel Work', 'Gate Fabrication', 'Railing'],
+    dailyRate: 1300, rating: 4.9, totalJobs: 201, experience: 12,
+    status: 'available', isVerified: true,
+    location: 'Uppal, Hyderabad',
+    bio: 'Expert welder and fabricator with 12 years of experience. Proficient in MIG, TIG, and arc welding. Specializes in structural steel, gate fabrication, and decorative railings for premium projects.',
+    phone: '+91 98765 43215', completedProjects: 24,
+  },
+  w7: {
+    id: 'w7', name: 'Ganesh Babu', primaryRole: 'Mason',
+    skills: ['Mason', 'RCC Work', 'Brickwork', 'Block Work', 'Grouting'],
+    dailyRate: 850, rating: 4.5, totalJobs: 88, experience: 6,
+    status: 'available', isVerified: true,
+    location: 'Dilsukhnagar, Hyderabad',
+    bio: 'Dependable mason with 6 years specializing in structural masonry and RCC work. Has worked on multiple housing projects in Hyderabad. Known for quality output and adherence to deadlines.',
+    phone: '+91 98765 43216', completedProjects: 10,
+  },
+  w8: {
+    id: 'w8', name: 'Ramesh Goud', primaryRole: 'Plumber',
+    skills: ['Plumber', 'Sanitary', 'Drainage', 'Boring', 'Tank Fitting'],
+    dailyRate: 950, rating: 4.2, totalJobs: 54, experience: 3,
+    status: 'available', isVerified: false,
+    location: 'Miyapur, Hyderabad',
+    bio: 'Up-and-coming plumber with 3 years of hands-on experience. Handles all types of sanitation and drainage work. Eager, hardworking, and always on time.',
+    phone: '+91 98765 43217', completedProjects: 4,
+  },
+};
+
+function getInitials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function StarRow({ rating }: { rating: number }) {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return (
+    <View style={styles.starRow}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <Ionicons
+          key={i}
+          name={i <= full ? 'star' : half && i === full + 1 ? 'star-half' : 'star-outline'}
+          size={16}
+          color="#F59E0B"
+        />
+      ))}
+      <Text style={styles.ratingLabel}>{rating.toFixed(1)}</Text>
+    </View>
+  );
+}
 
 export default function WorkerDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const worker = MOCK_WORKER;
 
-  const isContractor = user?.role === 'contractor';
-  const isCustomer = user?.role === 'customer';
-  const canHire = (isContractor || isCustomer) && worker.status === 'waiting' && worker.isVerified;
+  const worker = MOCK_WORKERS[id as string] || MOCK_WORKERS['w1'];
+  const roleColor = ROLE_COLORS[worker.primaryRole] || T.navy;
+  const isAvailable = worker.status === 'available';
+  const canHire = (user?.role === 'contractor' || user?.role === 'customer');
 
   return (
-    <SafeAreaView style={s.safeArea}>
+    <SafeAreaView style={styles.safe}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Worker Profile</Text>
+      <View style={styles.header}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color={T.navy} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Worker Profile</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Profile Header */}
-        <View style={s.profileSection}>
-          <View style={s.avatarWrapper}>
-            <Ionicons name="person" size={48} color={T.textMuted} />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Profile Hero */}
+        <Animated.View entering={FadeInDown.springify()} style={styles.hero}>
+          <View style={[styles.bigAvatar, { backgroundColor: roleColor + '20' }]}>
+            <Text style={[styles.bigAvatarText, { color: roleColor }]}>{getInitials(worker.name)}</Text>
             {worker.isVerified && (
-              <View style={s.verifiedBadge}>
-                <Ionicons name="checkmark" size={16} color="white" />
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark" size={12} color="#fff" />
               </View>
             )}
           </View>
-          <Text style={s.workerName}>{worker.name}</Text>
-          <View
-            style={[
-              s.statusBadge,
-              {
-                backgroundColor:
-                  worker.status === 'waiting'
-                    ? 'rgba(16,185,129,0.15)'
-                    : 'rgba(242,150,13,0.15)',
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: worker.status === 'waiting' ? '#10B981' : T.amber,
-                fontSize: 14,
-                fontWeight: '500',
-              }}
-            >
-              {worker.status === 'waiting' ? 'Available for Work' : 'Currently Working'}
+          <Text style={styles.workerName}>{worker.name}</Text>
+          {worker.isVerified ? (
+            <View style={styles.verifiedRow}>
+              <Ionicons name="shield-checkmark" size={14} color={T.success} />
+              <Text style={styles.verifiedText}>Verified Worker</Text>
+            </View>
+          ) : (
+            <View style={styles.unverifiedRow}>
+              <Ionicons name="warning-outline" size={14} color={T.warning} />
+              <Text style={styles.unverifiedText}>Not Yet Verified</Text>
+            </View>
+          )}
+
+          {/* Status pill */}
+          <View style={[styles.statusPill, isAvailable ? styles.pillGreen : styles.pillAmber]}>
+            <View style={[styles.statusDot, { backgroundColor: isAvailable ? T.success : T.warning }]} />
+            <Text style={[styles.statusPillText, { color: isAvailable ? T.success : T.warning }]}>
+              {isAvailable ? 'Available for Work' : 'Currently Working'}
             </Text>
           </View>
-        </View>
+        </Animated.View>
+
+        {/* Stats row */}
+        <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.statsGrid}>
+          <View style={styles.statCell}>
+            <StarRow rating={worker.rating} />
+            <Text style={styles.statCellLabel}>Rating</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statCell}>
+            <Text style={styles.statCellValue}>{worker.totalJobs}</Text>
+            <Text style={styles.statCellLabel}>Total Jobs</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statCell}>
+            <Text style={styles.statCellValue}>{worker.experience}y</Text>
+            <Text style={styles.statCellLabel}>Experience</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statCell}>
+            <Text style={styles.statCellValue}>{worker.completedProjects}</Text>
+            <Text style={styles.statCellLabel}>Projects</Text>
+          </View>
+        </Animated.View>
+
+        {/* Daily Rate Box */}
+        <Animated.View entering={FadeInDown.delay(120).springify()} style={styles.rateBox}>
+          <View>
+            <Text style={styles.rateBoxLabel}>Daily Rate</Text>
+            <Text style={styles.rateBoxValue}>₹{worker.dailyRate}<Text style={styles.rateBoxUnit}>/day</Text></Text>
+          </View>
+          <View style={styles.rateBoxRight}>
+            <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.7)" />
+            <Text style={styles.rateLocation}>{worker.location}</Text>
+          </View>
+        </Animated.View>
 
         {/* Skills */}
-        <View style={s.skillsSection}>
-          <View style={s.skillsRow}>
-            {worker.skills.map((skill, index) => (
-              <View key={index} style={s.skillBadge}>
-                <Text style={s.skillText}>{skill}</Text>
+        <Animated.View entering={FadeInLeft.delay(160).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>Skills & Expertise</Text>
+          <View style={styles.skillsGrid}>
+            {worker.skills.map(skill => (
+              <View key={skill} style={[styles.skillBadge, { backgroundColor: (ROLE_COLORS[skill] || T.navy) + '15' }]}>
+                <Text style={[styles.skillBadgeText, { color: ROLE_COLORS[skill] || T.navy }]}>{skill}</Text>
               </View>
             ))}
           </View>
-        </View>
+        </Animated.View>
 
-        {/* Stats */}
-        <View style={s.statsRow}>
-          <View style={[s.statCard, { marginRight: 8 }]}>
-            <View style={s.ratingRow}>
-              <Ionicons name="star" size={20} color="#F59E0B" />
-              <Text style={[s.statValue, { marginLeft: 4 }]}>{worker.rating}</Text>
-            </View>
-            <Text style={s.statLabel}>Rating</Text>
+        {/* About */}
+        <Animated.View entering={FadeInLeft.delay(200).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <View style={styles.card}>
+            <Text style={styles.bioText}>{worker.bio}</Text>
           </View>
-          <View style={[s.statCard, { marginHorizontal: 4 }]}>
-            <Text style={s.statValue}>{worker.totalJobs}</Text>
-            <Text style={s.statLabel}>Jobs Done</Text>
-          </View>
-          <View style={[s.statCard, { marginLeft: 8 }]}>
-            <Text style={s.statValue}>{worker.experience}y</Text>
-            <Text style={s.statLabel}>Experience</Text>
-          </View>
-        </View>
+        </Animated.View>
 
-        {/* Rates */}
-        <View style={s.sectionPadding}>
-          <View style={s.ratesCard}>
-            <View style={s.ratesRow}>
-              <View style={s.rateItem}>
-                <Text style={s.rateLabel}>Hourly Rate</Text>
-                <Text style={s.rateValue}>₹{worker.hourlyRate}</Text>
+        {/* Previous Work Photos */}
+        <Animated.View entering={FadeInRight.delay(240).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>Previous Work</Text>
+          <View style={styles.photosRow}>
+            {[0, 1, 2].map(i => (
+              <View key={i} style={styles.photoPlaceholder}>
+                <Ionicons name="image-outline" size={28} color={T.textMuted} />
+                <Text style={styles.photoText}>Photo {i + 1}</Text>
               </View>
-              <View style={s.rateDivider} />
-              <View style={s.rateItem}>
-                <Text style={s.rateLabel}>Daily Rate</Text>
-                <Text style={s.rateValue}>₹{worker.dailyRate}</Text>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Contact */}
+        <Animated.View entering={FadeInLeft.delay(280).springify()} style={styles.section}>
+          <Text style={styles.sectionTitle}>Contact</Text>
+          <View style={styles.card}>
+            <View style={styles.contactRow}>
+              <View style={styles.contactIcon}>
+                <Ionicons name="call-outline" size={18} color={T.navy} />
               </View>
+              <Text style={styles.contactText}>{worker.phone}</Text>
             </View>
-          </View>
-        </View>
-
-        {/* Bio */}
-        <View style={s.sectionPadding}>
-          <Text style={s.sectionTitle}>About</Text>
-          <View style={s.infoCard}>
-            <Text style={s.bioText}>{worker.bio}</Text>
-          </View>
-        </View>
-
-        {/* Contact Info */}
-        <View style={s.sectionPadding}>
-          <Text style={s.sectionTitle}>Contact</Text>
-          <View style={s.infoCard}>
-            <View style={[s.contactRow, { marginBottom: 12 }]}>
-              <Ionicons name="call" size={18} color={T.textMuted} />
-              <Text style={s.contactText}>{worker.phone}</Text>
-            </View>
-            <View style={[s.contactRow, { marginBottom: 12 }]}>
-              <Ionicons name="mail" size={18} color={T.textMuted} />
-              <Text style={s.contactText}>{worker.email}</Text>
-            </View>
-            <View style={s.contactRow}>
-              <Ionicons name="location" size={18} color={T.textMuted} />
-              <Text style={s.contactText}>{worker.address}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Reviews */}
-        <View style={s.reviewsSection}>
-          <Text style={s.sectionTitle}>Reviews</Text>
-          {worker.reviews.map((review, index) => (
-            <View key={index} style={s.reviewCard}>
-              <View style={s.reviewHeader}>
-                <Text style={s.reviewCustomer}>{review.customer}</Text>
-                <View style={s.starsRow}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Ionicons
-                      key={star}
-                      name={star <= review.rating ? 'star' : 'star-outline'}
-                      size={14}
-                      color="#F59E0B"
-                    />
-                  ))}
-                </View>
+            <View style={[styles.contactRow, { marginTop: 12 }]}>
+              <View style={styles.contactIcon}>
+                <Ionicons name="location-outline" size={18} color={T.navy} />
               </View>
-              <Text style={s.reviewComment}>{review.comment}</Text>
-              <Text style={s.reviewDate}>{review.date}</Text>
+              <Text style={styles.contactText}>{worker.location}</Text>
             </View>
-          ))}
-        </View>
+          </View>
+        </Animated.View>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Bottom Actions */}
+      {/* Sticky bottom */}
       {canHire && (
-        <View style={s.bottomBar}>
-          <View style={s.bottomRow}>
-            <TouchableOpacity
-              style={s.callBtn}
-              onPress={() => {/* Call worker */}}
-            >
-              <Ionicons name="call" size={20} color="white" />
-              <Text style={s.btnText}>Call</Text>
-            </TouchableOpacity>
-            <View style={{ width: 12 }} />
-            <TouchableOpacity
-              style={s.bookBtn}
+        <View style={styles.bottomBar}>
+          {isAvailable ? (
+            <Pressable
+              style={({ pressed }) => [styles.hireBtn, pressed && styles.hireBtnPressed]}
               onPress={() => router.push(`/(app)/hire?workerId=${worker.id}`)}
             >
-              <Ionicons name="calendar" size={20} color="white" />
-              <Text style={s.btnText}>
-                {isContractor ? 'Create Agreement' : 'Book Now'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+              <Ionicons name="person-add-outline" size={20} color="#fff" />
+              <Text style={styles.hireBtnText}>Hire This Worker</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.busyBtn}>
+              <Ionicons name="time-outline" size={20} color={T.textMuted} />
+              <Text style={styles.busyBtnText}>Currently Working — Unavailable</Text>
+            </View>
+          )}
         </View>
       )}
     </SafeAreaView>
   );
 }
 
-const s = {
-  safeArea: {
-    flex: 1,
-    backgroundColor: T.bg,
-  } as const,
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: T.bg },
 
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: T.surface,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
   },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: T.navy },
 
-  headerTitle: {
-    color: T.text,
-    fontSize: 20,
-    fontWeight: '700' as const,
-    marginLeft: 16,
-  },
+  scrollContent: { paddingBottom: 24 },
 
-  scrollView: {
-    flex: 1,
-  } as const,
-
-  profileSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    alignItems: 'center' as const,
-  },
-
-  avatarWrapper: {
-    width: 96,
-    height: 96,
-    backgroundColor: T.bg,
-    borderRadius: 48,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-
-  verifiedBadge: {
-    position: 'absolute' as const,
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#10B981',
-    borderRadius: 999,
-    padding: 8,
-  },
-
-  workerName: {
-    color: T.text,
-    fontSize: 24,
-    fontWeight: '700' as const,
-    marginTop: 16,
-  },
-
-  statusBadge: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-
-  skillsSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-
-  skillsRow: {
-    flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
-    justifyContent: 'center' as const,
-  },
-
-  skillBadge: {
-    backgroundColor: T.amberBg,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    margin: 4,
-  },
-
-  skillText: {
-    color: T.amber,
-    fontWeight: '500' as const,
-    fontSize: 14,
-  },
-
-  statsRow: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-
-  statCard: {
-    flex: 1,
-    backgroundColor: T.surface,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center' as const,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-
-  ratingRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
-
-  statValue: {
-    color: T.text,
-    fontSize: 24,
-    fontWeight: '700' as const,
-  },
-
-  statLabel: {
-    color: T.textMuted,
-    fontSize: 13,
-    marginTop: 4,
-  },
-
-  sectionPadding: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-
-  ratesCard: {
-    backgroundColor: T.navy,
-    borderRadius: 16,
-    padding: 16,
-  },
-
-  ratesRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-around' as const,
-  },
-
-  rateItem: {
-    alignItems: 'center' as const,
-  },
-
-  rateLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-  },
-
-  rateValue: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '700' as const,
-  },
-
-  rateDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-
-  sectionTitle: {
-    color: T.text,
-    fontSize: 18,
-    fontWeight: '600' as const,
-    marginBottom: 8,
-  },
-
-  infoCard: {
-    backgroundColor: T.surface,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-
-  bioText: {
-    color: T.textSecondary,
-    lineHeight: 24,
-    fontSize: 15,
-  },
-
-  contactRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
-
-  contactText: {
-    color: T.textSecondary,
-    marginLeft: 12,
-    fontSize: 15,
-  },
-
-  reviewsSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-  },
-
-  reviewCard: {
-    backgroundColor: T.surface,
-    borderRadius: 16,
-    padding: 16,
+  hero: { alignItems: 'center', paddingVertical: 28, backgroundColor: T.surface, marginBottom: 16 },
+  bigAvatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
+  },
+  bigAvatarText: { fontSize: 30, fontWeight: '800' },
+  verifiedBadge: {
+    position: 'absolute', bottom: 2, right: 2,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: T.success,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2.5, borderColor: T.surface,
+  },
+  workerName: { fontSize: 24, fontWeight: '800', color: T.navy, marginBottom: 6 },
+  verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 },
+  verifiedText: { fontSize: 13, color: T.success, fontWeight: '600' },
+  unverifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 },
+  unverifiedText: { fontSize: 13, color: T.warning, fontWeight: '600' },
+  statusPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
+  },
+  pillGreen: { backgroundColor: '#ECFDF5' },
+  pillAmber: { backgroundColor: '#FFFBEB' },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+  statusPillText: { fontSize: 13, fontWeight: '700' },
+
+  statsGrid: {
+    flexDirection: 'row',
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingVertical: 16,
     borderWidth: 1,
     borderColor: T.border,
   },
+  statCell: { flex: 1, alignItems: 'center' },
+  statDivider: { width: 1, backgroundColor: T.border },
+  statCellValue: { fontSize: 22, fontWeight: '800', color: T.navy },
+  statCellLabel: { fontSize: 11, color: T.textMuted, marginTop: 4 },
+  starRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  ratingLabel: { fontSize: 13, color: T.textSecondary, marginLeft: 4, fontWeight: '700' },
 
-  reviewHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'flex-start' as const,
-    marginBottom: 8,
+  rateBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: T.navy,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
   },
+  rateBoxLabel: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 4 },
+  rateBoxValue: { fontSize: 32, fontWeight: '900', color: T.amber },
+  rateBoxUnit: { fontSize: 16, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
+  rateBoxRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  rateLocation: { fontSize: 13, color: 'rgba(255,255,255,0.7)', maxWidth: 120 },
 
-  reviewCustomer: {
-    color: T.text,
-    fontWeight: '500' as const,
-    fontSize: 15,
-  },
+  section: { paddingHorizontal: 16, marginBottom: 20 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: T.navy, marginBottom: 12 },
 
-  starsRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
+  skillsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  skillBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  skillBadgeText: { fontSize: 13, fontWeight: '600' },
 
-  reviewComment: {
-    color: T.textSecondary,
-    fontSize: 14,
+  card: {
+    backgroundColor: T.surface, borderRadius: 14,
+    padding: 16, borderWidth: 1, borderColor: T.border,
   },
+  bioText: { fontSize: 14, lineHeight: 22, color: T.textSecondary },
 
-  reviewDate: {
-    color: T.textMuted,
-    fontSize: 13,
-    marginTop: 8,
+  photosRow: { flexDirection: 'row', gap: 10 },
+  photoPlaceholder: {
+    flex: 1, height: 90, backgroundColor: T.surface,
+    borderRadius: 12, borderWidth: 1, borderColor: T.border,
+    alignItems: 'center', justifyContent: 'center', gap: 6,
   },
+  photoText: { fontSize: 11, color: T.textMuted },
+
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  contactIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: T.border,
+  },
+  contactText: { fontSize: 14, color: T.textSecondary },
 
   bottomBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
+    paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.border,
   },
-
-  bottomRow: {
-    flexDirection: 'row' as const,
+  hireBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: T.navy, paddingVertical: 16, borderRadius: 14, gap: 10,
   },
-
-  callBtn: {
-    flex: 1,
-    backgroundColor: T.bg,
-    paddingVertical: 16,
-    borderRadius: 16,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  hireBtnPressed: { opacity: 0.85 },
+  hireBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  busyBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: T.bg, paddingVertical: 16, borderRadius: 14, gap: 10,
+    borderWidth: 1, borderColor: T.border,
   },
-
-  bookBtn: {
-    flex: 1,
-    backgroundColor: T.amber,
-    paddingVertical: 16,
-    borderRadius: 16,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-
-  btnText: {
-    color: '#FFFFFF',
-    fontWeight: '600' as const,
-    fontSize: 15,
-    marginLeft: 8,
-  },
-};
+  busyBtnText: { fontSize: 15, fontWeight: '600', color: T.textMuted },
+});

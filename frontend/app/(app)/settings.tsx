@@ -1,216 +1,270 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Switch,
+  Modal,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '../../src/hooks/useAuth';
-import { LightTheme } from '../../src/theme/colors';
+import { useAppStore } from '../../src/store/app.store';
+import { LightTheme as T } from '../../src/theme/colors';
 
-const T = LightTheme;
+type Lang = 'en' | 'hi' | 'te';
 
-type SettingRow = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  color: string;
-  type: 'nav' | 'switch' | 'value' | 'danger';
-  value?: string;
-  key?: string;
-};
-
-type Section = {
-  title: string;
-  rows: SettingRow[];
-};
-
-const SECTIONS: Section[] = [
-  {
-    title: 'Account',
-    rows: [
-      { icon: 'person-outline', label: 'Edit Profile', color: '#3B82F6', type: 'nav' },
-      { icon: 'call-outline', label: 'Phone Number', color: '#10B981', type: 'nav' },
-      { icon: 'location-outline', label: 'Addresses', color: '#F59E0B', type: 'nav' },
-      { icon: 'card-outline', label: 'Payment Methods', color: '#8B5CF6', type: 'nav' },
-    ],
-  },
-  {
-    title: 'Notifications',
-    rows: [
-      { icon: 'notifications-outline', label: 'Push Notifications', color: '#3B82F6', type: 'switch', key: 'pushNotifications' },
-      { icon: 'cube-outline', label: 'Order Updates', color: '#10B981', type: 'switch', key: 'orderUpdates' },
-      { icon: 'megaphone-outline', label: 'Promotions', color: '#F59E0B', type: 'switch', key: 'promotions' },
-    ],
-  },
-  {
-    title: 'Preferences',
-    rows: [
-      { icon: 'language-outline', label: 'Language', color: '#3B82F6', type: 'value', value: 'English' },
-      { icon: 'cash-outline', label: 'Currency', color: '#10B981', type: 'value', value: 'INR (\u20B9)' },
-    ],
-  },
-  {
-    title: 'Privacy & Security',
-    rows: [
-      { icon: 'key-outline', label: 'Change PIN', color: '#8B5CF6', type: 'nav' },
-      { icon: 'finger-print-outline', label: 'Biometric Login', color: '#3B82F6', type: 'switch', key: 'biometric' },
-      { icon: 'shield-checkmark-outline', label: 'Two-Factor Auth', color: '#10B981', type: 'nav' },
-    ],
-  },
-  {
-    title: 'Support',
-    rows: [
-      { icon: 'help-circle-outline', label: 'Help Center', color: '#3B82F6', type: 'nav' },
-      { icon: 'bug-outline', label: 'Report a Problem', color: '#F59E0B', type: 'nav' },
-      { icon: 'document-text-outline', label: 'Terms of Service', color: '#6B7280', type: 'nav' },
-      { icon: 'lock-closed-outline', label: 'Privacy Policy', color: '#6B7280', type: 'nav' },
-    ],
-  },
-  {
-    title: 'About',
-    rows: [
-      { icon: 'information-circle-outline', label: 'App Version', color: '#3B82F6', type: 'value', value: '1.0.0' },
-      { icon: 'star-outline', label: 'Rate Us', color: '#F59E0B', type: 'nav' },
-      { icon: 'share-social-outline', label: 'Share App', color: '#10B981', type: 'nav' },
-    ],
-  },
-  {
-    title: 'Danger Zone',
-    rows: [
-      { icon: 'trash-outline', label: 'Delete Account', color: '#EF4444', type: 'danger' },
-      { icon: 'log-out-outline', label: 'Logout', color: '#EF4444', type: 'danger' },
-    ],
-  },
+const LANGUAGES: { code: Lang; flag: string; label: string; native: string }[] = [
+  { code: 'en', flag: '🇬🇧', label: 'English', native: 'EN' },
+  { code: 'hi', flag: '🇮🇳', label: 'हिंदी', native: 'HI' },
+  { code: 'te', flag: '🇮🇳', label: 'తెలుగు', native: 'TE' },
 ];
+
+const LANG_LABEL: Record<Lang, string> = {
+  en: 'English',
+  hi: 'हिंदी',
+  te: 'తెలుగు',
+};
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { logout } = useAuth();
+  const { language, setLanguage } = useAppStore();
 
-  const [switches, setSwitches] = useState<Record<string, boolean>>({
-    pushNotifications: true,
-    orderUpdates: true,
-    promotions: false,
-    biometric: false,
-  });
+  const [notifications, setNotifications] = useState(true);
+  const [location, setLocation] = useState(true);
+  const [langModal, setLangModal] = useState(false);
+  const [toast, setToast] = useState('');
 
-  const toggleSwitch = (key: string) => {
-    setSwitches((prev) => ({ ...prev, [key]: !prev[key] }));
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2500);
   };
 
-  const handleDangerPress = (label: string) => {
-    if (label === 'Logout') {
-      Alert.alert('Logout', 'Are you sure you want to logout?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(auth)');
-          },
+  const handleLanguageSelect = async (lang: Lang) => {
+    await setLanguage(lang);
+    setLangModal(false);
+    showToast('Language changed!');
+  };
+
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)' as any);
         },
-      ]);
-    } else if (label === 'Delete Account') {
-      Alert.alert(
-        'Delete Account',
-        'This action is permanent and cannot be undone. All your data will be lost.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: () => {
-              // Handle account deletion
-            },
-          },
-        ]
-      );
-    }
-  };
-
-  const renderRow = (row: SettingRow, isLast: boolean) => {
-    const iconBg = row.color + '26'; // 15% opacity hex
-
-    return (
-      <TouchableOpacity
-        key={row.label}
-        style={[s.row, !isLast && s.rowBorder]}
-        activeOpacity={row.type === 'switch' ? 1 : 0.6}
-        onPress={() => {
-          if (row.type === 'danger') handleDangerPress(row.label);
-        }}
-      >
-        <View style={[s.iconCircle, { backgroundColor: iconBg }]}>
-          <Ionicons name={row.icon} size={18} color={row.color} />
-        </View>
-        <Text
-          style={[
-            s.rowLabel,
-            row.type === 'danger' && { color: '#EF4444' },
-          ]}
-        >
-          {row.label}
-        </Text>
-        <View style={s.rowRight}>
-          {row.type === 'switch' && row.key && (
-            <Switch
-              value={switches[row.key]}
-              onValueChange={() => toggleSwitch(row.key!)}
-              trackColor={{ false: T.border, true: T.success }}
-              thumbColor={T.white}
-            />
-          )}
-          {row.type === 'value' && (
-            <Text style={s.rowValue}>{row.value}</Text>
-          )}
-          {(row.type === 'nav' || row.type === 'value') && (
-            <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
-          )}
-          {row.type === 'danger' && (
-            <Ionicons name="chevron-forward" size={18} color="#EF4444" />
-          )}
-        </View>
-      </TouchableOpacity>
-    );
+      },
+    ]);
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={s.container}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+        <Pressable style={s.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={s.headerTitle}>Settings</Text>
-        <View style={{ width: 42 }} />
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      >
-        {SECTIONS.map((section, sectionIndex) => (
-          <View
-            key={section.title}
-            style={sectionIndex > 0 ? { marginTop: 24 } : undefined}
-          >
-            <Text style={s.sectionTitle}>{section.title}</Text>
-            <View style={s.card}>
-              {section.rows.map((row, rowIndex) =>
-                renderRow(row, rowIndex === section.rows.length - 1)
-              )}
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* Account Section */}
+        <Animated.View entering={FadeInDown.delay(0).duration(400)}>
+          <Text style={s.sectionLabel}>ACCOUNT</Text>
+          <View style={s.sectionCard}>
+            {[
+              { icon: 'person-outline' as const, label: 'Edit Profile', color: '#3B82F6', onPress: () => router.push('/(app)/edit-profile' as any) },
+              { icon: 'location-outline' as const, label: 'Addresses', color: '#F59E0B', onPress: () => router.push('/(app)/addresses' as any) },
+              { icon: 'card-outline' as const, label: 'Payment Methods', color: '#8B5CF6', onPress: () => router.push('/(app)/payment-methods' as any) },
+            ].map((item, i, arr) => (
+              <Pressable
+                key={item.label}
+                style={[s.row, i < arr.length - 1 && s.rowBorder]}
+                onPress={item.onPress}
+              >
+                <View style={[s.rowIcon, { backgroundColor: item.color + '18' }]}>
+                  <Ionicons name={item.icon} size={18} color={item.color} />
+                </View>
+                <Text style={s.rowLabel}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Preferences Section */}
+        <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+          <Text style={s.sectionLabel}>PREFERENCES</Text>
+          <View style={s.sectionCard}>
+            {/* Language */}
+            <Pressable style={[s.row, s.rowBorder]} onPress={() => setLangModal(true)}>
+              <View style={[s.rowIcon, { backgroundColor: '#3B82F618' }]}>
+                <Ionicons name="language-outline" size={18} color="#3B82F6" />
+              </View>
+              <Text style={s.rowLabel}>Language</Text>
+              <Text style={s.rowValue}>{LANG_LABEL[language]}</Text>
+              <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
+            </Pressable>
+
+            {/* Theme (locked) */}
+            <Pressable style={[s.row, s.rowBorder]}>
+              <View style={[s.rowIcon, { backgroundColor: '#6B728018' }]}>
+                <Ionicons name="sunny-outline" size={18} color="#6B7280" />
+              </View>
+              <Text style={s.rowLabel}>Theme</Text>
+              <Text style={s.rowValue}>Light</Text>
+              <View style={s.lockBadge}>
+                <Ionicons name="lock-closed" size={11} color={T.textMuted} />
+              </View>
+            </Pressable>
+
+            {/* Notifications toggle */}
+            <View style={[s.row, s.rowBorder]}>
+              <View style={[s.rowIcon, { backgroundColor: '#10B98118' }]}>
+                <Ionicons name="notifications-outline" size={18} color="#10B981" />
+              </View>
+              <Text style={s.rowLabel}>Notifications</Text>
+              <Switch
+                value={notifications}
+                onValueChange={setNotifications}
+                trackColor={{ false: T.border, true: T.success }}
+                thumbColor={T.white}
+              />
+            </View>
+
+            {/* Location toggle */}
+            <View style={s.row}>
+              <View style={[s.rowIcon, { backgroundColor: '#F59E0B18' }]}>
+                <Ionicons name="location-outline" size={18} color="#F59E0B" />
+              </View>
+              <Text style={s.rowLabel}>Location</Text>
+              <Switch
+                value={location}
+                onValueChange={setLocation}
+                trackColor={{ false: T.border, true: T.success }}
+                thumbColor={T.white}
+              />
             </View>
           </View>
-        ))}
+        </Animated.View>
+
+        {/* Support Section */}
+        <Animated.View entering={FadeInDown.delay(160).duration(400)}>
+          <Text style={s.sectionLabel}>SUPPORT</Text>
+          <View style={s.sectionCard}>
+            {[
+              { icon: 'help-circle-outline' as const, label: 'Help & Support', color: '#3B82F6', onPress: () => router.push('/(app)/help-support' as any) },
+              { icon: 'star-outline' as const, label: 'Rate the App', color: '#F59E0B', onPress: () => {} },
+              { icon: 'information-circle-outline' as const, label: 'About BuildMart', color: '#6366F1', onPress: () => {} },
+              { icon: 'document-text-outline' as const, label: 'Terms & Privacy', color: '#6B7280', onPress: () => {} },
+            ].map((item, i, arr) => (
+              <Pressable
+                key={item.label}
+                style={[s.row, i < arr.length - 1 && s.rowBorder]}
+                onPress={item.onPress}
+              >
+                <View style={[s.rowIcon, { backgroundColor: item.color + '18' }]}>
+                  <Ionicons name={item.icon} size={18} color={item.color} />
+                </View>
+                <Text style={s.rowLabel}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Danger Zone */}
+        <Animated.View entering={FadeInDown.delay(240).duration(400)}>
+          <Text style={s.sectionLabel}>ACCOUNT</Text>
+          <View style={s.sectionCard}>
+            <Pressable style={[s.row, s.rowBorder]} onPress={handleLogout}>
+              <View style={[s.rowIcon, { backgroundColor: '#EF444418' }]}>
+                <Ionicons name="log-out-outline" size={18} color={T.error} />
+              </View>
+              <Text style={[s.rowLabel, s.dangerText]}>Logout</Text>
+              <Ionicons name="chevron-forward" size={18} color={T.error} />
+            </Pressable>
+            <Pressable style={s.row}>
+              <View style={[s.rowIcon, { backgroundColor: '#EF444418' }]}>
+                <Ionicons name="trash-outline" size={18} color={T.error} />
+              </View>
+              <Text style={[s.rowLabel, s.dangerText]}>Delete Account</Text>
+              <Ionicons name="chevron-forward" size={18} color={T.error} />
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        {/* Version */}
+        <Text style={s.version}>BuildMart v1.0.0 · Hyderabad</Text>
       </ScrollView>
+
+      {/* Language Picker Modal */}
+      <Modal
+        visible={langModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLangModal(false)}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalSheet}>
+            <View style={s.modalHandle} />
+            <Text style={s.modalTitle}>Select Language</Text>
+            <Text style={s.modalSub}>Choose your preferred language</Text>
+
+            {LANGUAGES.map((lang) => (
+              <Pressable
+                key={lang.code}
+                style={[s.langOption, language === lang.code && s.langOptionActive]}
+                onPress={() => handleLanguageSelect(lang.code)}
+              >
+                <Text style={s.langFlag}>{lang.flag}</Text>
+                <View style={s.langInfo}>
+                  <Text style={[s.langLabel, language === lang.code && s.langLabelActive]}>
+                    {lang.label}
+                  </Text>
+                  <Text style={s.langNative}>{lang.native}</Text>
+                </View>
+                {language === lang.code && (
+                  <Ionicons name="checkmark-circle" size={22} color={T.success} />
+                )}
+              </Pressable>
+            ))}
+
+            <Pressable style={s.modalCancel} onPress={() => setLangModal(false)}>
+              <Text style={s.modalCancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Toast */}
+      {!!toast && (
+        <View style={s.toast}>
+          <Ionicons name="checkmark-circle" size={18} color={T.white} />
+          <Text style={s.toastText}>{toast}</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
-const s = {
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: T.bg },
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: T.surface,
@@ -218,65 +272,141 @@ const s = {
     borderBottomColor: T.border,
   },
   backBtn: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
+  headerTitle: { fontSize: 18, fontWeight: '700', color: T.text },
+  scroll: { padding: 16, paddingBottom: 60, gap: 4 },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
     color: T.textMuted,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-    marginBottom: 10,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    marginTop: 16,
     marginLeft: 4,
   },
-  card: {
+  sectionCard: {
     backgroundColor: T.surface,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: T.border,
-    overflow: 'hidden' as const,
+    overflow: 'hidden',
   },
   row: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
+    gap: 12,
   },
   rowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: T.border,
   },
-  iconCircle: {
+  rowIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginRight: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowLabel: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600' as const,
+    fontWeight: '600',
     color: T.text,
-  },
-  rowRight: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 8,
   },
   rowValue: {
     fontSize: 14,
-    fontWeight: '500' as const,
     color: T.textSecondary,
+    marginRight: 4,
   },
-};
+  lockBadge: {
+    backgroundColor: T.bg,
+    borderRadius: 6,
+    padding: 4,
+  },
+  dangerText: { color: T.error },
+  version: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: T.textMuted,
+    marginTop: 24,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: T.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 44,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: T.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: T.text, marginBottom: 4 },
+  modalSub: { fontSize: 14, color: T.textSecondary, marginBottom: 20 },
+  langOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    marginBottom: 8,
+    backgroundColor: T.bg,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  langOptionActive: {
+    borderColor: T.success,
+    backgroundColor: '#10B98108',
+  },
+  langFlag: { fontSize: 26 },
+  langInfo: { flex: 1 },
+  langLabel: { fontSize: 16, fontWeight: '700', color: T.text },
+  langLabelActive: { color: T.success },
+  langNative: { fontSize: 12, color: T.textMuted, marginTop: 2 },
+  modalCancel: {
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: T.bg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  modalCancelText: { fontSize: 15, fontWeight: '600', color: T.textSecondary },
+  toast: {
+    position: 'absolute',
+    bottom: 40,
+    left: 32,
+    right: 32,
+    backgroundColor: T.navy,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  toastText: { fontSize: 14, fontWeight: '700', color: T.white, flex: 1 },
+});
