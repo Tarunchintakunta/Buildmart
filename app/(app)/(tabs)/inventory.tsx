@@ -1,622 +1,672 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, TextInput, Alert } from 'react-native';
+import { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  Alert,
+  FlatList,
+  RefreshControl,
+  Switch,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../../src/theme/designSystem';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+} from 'react-native-reanimated';
+import Colors from '../../../src/theme/colors';
 
-const T = LightTheme;
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const INVENTORY_TABS = ['All', 'Low Stock', 'Out of Stock'];
+interface InventoryItem {
+  id: string;
+  product: string;
+  category: string;
+  price: number;
+  stock: number;
+  minStock: number;
+  unit: string;
+  isAvailable: boolean;
+  iconName: keyof typeof Ionicons.glyphMap;
+  iconBg: string;
+  iconColor: string;
+}
 
-const MOCK_INVENTORY = [
-  {
-    id: 'i1',
-    product: 'UltraTech Cement 50kg',
-    category: 'Cement',
-    price: 380,
-    stock: 100,
-    minStock: 20,
-    unit: 'bag',
-    isAvailable: true,
-  },
-  {
-    id: 'i2',
-    product: 'ACC Cement 50kg',
-    category: 'Cement',
-    price: 370,
-    stock: 5,
-    minStock: 20,
-    unit: 'bag',
-    isAvailable: true,
-  },
-  {
-    id: 'i3',
-    product: 'Wooden Door - Teak',
-    category: 'Doors',
-    price: 15000,
-    stock: 10,
-    minStock: 5,
-    unit: 'piece',
-    isAvailable: true,
-  },
-  {
-    id: 'i4',
-    product: 'PVC Pipe 4 inch',
-    category: 'Pipes',
-    price: 250,
-    stock: 0,
-    minStock: 30,
-    unit: '10ft',
-    isAvailable: false,
-  },
-  {
-    id: 'i5',
-    product: 'Cement Nails 3 inch',
-    category: 'Hardware',
-    price: 120,
-    stock: 500,
-    minStock: 100,
-    unit: 'kg',
-    isAvailable: true,
-  },
-  {
-    id: 'i6',
-    product: 'TMT Bar 12mm',
-    category: 'Steel',
-    price: 650,
-    stock: 8,
-    minStock: 25,
-    unit: 'piece',
-    isAvailable: true,
-  },
-  {
-    id: 'i7',
-    product: 'Copper Wire 2.5mm',
-    category: 'Electrical',
-    price: 4500,
-    stock: 50,
-    minStock: 15,
-    unit: 'coil',
-    isAvailable: true,
-  },
-  {
-    id: 'i8',
-    product: 'Asian Paints Primer',
-    category: 'Paint',
-    price: 2200,
-    stock: 0,
-    minStock: 10,
-    unit: '20L',
-    isAvailable: false,
-  },
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const INITIAL_INVENTORY: InventoryItem[] = [
+  { id: 'i1', product: 'UltraTech PPC Cement', category: 'Cement', price: 385, stock: 120, minStock: 20, unit: 'bag', isAvailable: true, iconName: 'layers-outline', iconBg: '#EFF6FF', iconColor: '#3B82F6' },
+  { id: 'i2', product: 'ACC Gold Cement', category: 'Cement', price: 390, stock: 7, minStock: 20, unit: 'bag', isAvailable: true, iconName: 'layers-outline', iconBg: '#F0FDF4', iconColor: Colors.success },
+  { id: 'i3', product: 'SAIL TMT Bars Fe500D', category: 'Steel', price: 72, stock: 500, minStock: 50, unit: 'kg', isAvailable: true, iconName: 'barbell-outline', iconBg: '#F5F3FF', iconColor: '#8B5CF6' },
+  { id: 'i4', product: 'CPVC Pipes 1 inch', category: 'Pipes', price: 285, stock: 0, minStock: 30, unit: 'pipe', isAvailable: false, iconName: 'git-branch-outline', iconBg: '#FFF7ED', iconColor: '#F97316' },
+  { id: 'i5', product: 'Havells FR Wire 2.5mm', category: 'Electric', price: 2200, stock: 25, minStock: 10, unit: 'coil', isAvailable: true, iconName: 'flash-outline', iconBg: '#FFFBEB', iconColor: Colors.accent },
+  { id: 'i6', product: 'Asian Paints Apex Ultima', category: 'Paint', price: 3400, stock: 8, minStock: 10, unit: 'bucket', isAvailable: true, iconName: 'color-palette-outline', iconBg: '#FFF0F3', iconColor: '#EC4899' },
+  { id: 'i7', product: 'River Sand Grade 1', category: 'Sand', price: 1800, stock: 50, minStock: 10, unit: 'ton', isAvailable: true, iconName: 'hourglass-outline', iconBg: '#FFF7ED', iconColor: '#F97316' },
+  { id: 'i8', product: '20mm Blue Metal Aggregate', category: 'Hardware', price: 1500, stock: 0, minStock: 5, unit: 'ton', isAvailable: false, iconName: 'diamond-outline', iconBg: '#EFF6FF', iconColor: '#3B82F6' },
+  { id: 'i9', product: 'Sintex Water Tank 1000L', category: 'Hardware', price: 8200, stock: 4, minStock: 3, unit: 'tank', isAvailable: true, iconName: 'water-outline', iconBg: '#EFF6FF', iconColor: '#3B82F6' },
+  { id: 'i10', product: 'Red Clay Bricks', category: 'Bricks', price: 7, stock: 5000, minStock: 500, unit: 'brick', isAvailable: true, iconName: 'apps-outline', iconBg: '#FFF7ED', iconColor: '#F97316' },
 ];
 
-const getStockStatus = (stock: number, minStock: number) => {
-  if (stock === 0) return { label: 'Out of Stock', color: 'text-red-500', bg: 'bg-red-500/20' };
-  if (stock <= minStock) return { label: 'Low Stock', color: 'text-yellow-500', bg: 'bg-yellow-500/20' };
-  return { label: 'In Stock', color: 'text-green-500', bg: 'bg-green-500/20' };
-};
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getStockStatus(stock: number, minStock: number): {
+  label: string;
+  color: string;
+  bg: string;
+} {
+  if (stock === 0) return { label: 'Out of Stock', color: Colors.error, bg: '#FEF2F2' };
+  if (stock < minStock) return { label: 'Low Stock', color: Colors.accent, bg: Colors.amberBg };
+  return { label: 'In Stock', color: Colors.success, bg: '#F0FDF4' };
+}
+
+const TABS = ['All', 'Low Stock', 'Out of Stock'];
+
+// ─── Inventory Card ───────────────────────────────────────────────────────────
+
+function InventoryCard({
+  item,
+  index,
+  onEdit,
+  onDelete,
+  onToggle,
+  onUpdateStock,
+}: {
+  item: InventoryItem;
+  index: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggle: (val: boolean) => void;
+  onUpdateStock: () => void;
+}) {
+  const stockStatus = getStockStatus(item.stock, item.minStock);
+  const isLow = item.stock > 0 && item.stock < item.minStock;
+  const isOut = item.stock === 0;
+  const progressPct = Math.min((item.stock / (item.minStock * 2)) * 100, 100);
+
+  return (
+    <Animated.View
+      style={[styles.card, (isLow || isOut) && styles.cardWarning]}
+      entering={FadeInDown.delay(index * 60).springify().damping(18).stiffness(200)}
+    >
+      {/* Card Header */}
+      <View style={styles.cardHeader}>
+        <View style={[styles.cardIcon, { backgroundColor: item.iconBg }]}>
+          <Ionicons name={item.iconName} size={22} color={item.iconColor} />
+        </View>
+        <View style={styles.cardHeaderText}>
+          <Text style={styles.cardProductName} numberOfLines={1}>{item.product}</Text>
+          <View style={styles.cardMeta}>
+            <View style={styles.categoryPill}>
+              <Text style={styles.categoryPillText}>{item.category}</Text>
+            </View>
+            <Text style={styles.cardPrice}>₹{item.price.toLocaleString('en-IN')}/{item.unit}</Text>
+          </View>
+        </View>
+        <View style={[styles.stockBadge, { backgroundColor: stockStatus.bg }]}>
+          <Text style={[styles.stockBadgeText, { color: stockStatus.color }]}>
+            {stockStatus.label}
+          </Text>
+        </View>
+      </View>
+
+      {/* Stock Info Row */}
+      <View style={styles.stockInfoRow}>
+        <View style={styles.stockInfoItem}>
+          <Text style={styles.stockInfoLabel}>Current Stock</Text>
+          <Text style={[styles.stockInfoValue, { color: stockStatus.color }]}>
+            {item.stock.toLocaleString('en-IN')} {item.unit}{item.stock !== 1 ? 's' : ''}
+          </Text>
+        </View>
+        <View style={styles.stockInfoItem}>
+          <Text style={styles.stockInfoLabel}>Min Threshold</Text>
+          <Text style={styles.stockInfoMinValue}>
+            {item.minStock} {item.unit}{item.minStock !== 1 ? 's' : ''}
+          </Text>
+        </View>
+        <View style={styles.stockInfoItem}>
+          <Text style={styles.stockInfoLabel}>Available</Text>
+          <Switch
+            value={item.isAvailable}
+            onValueChange={onToggle}
+            trackColor={{ false: Colors.border, true: Colors.primary + '60' }}
+            thumbColor={item.isAvailable ? Colors.primary : Colors.textMuted}
+            style={styles.stockSwitch}
+          />
+        </View>
+      </View>
+
+      {/* Progress Bar */}
+      <View style={styles.progressTrack}>
+        <View style={[
+          styles.progressFill,
+          { width: `${progressPct}%`, backgroundColor: stockStatus.color },
+        ]} />
+      </View>
+
+      {/* Actions */}
+      <View style={styles.cardActions}>
+        <Pressable style={styles.actionBtn} onPress={onUpdateStock}>
+          <Ionicons name="create-outline" size={16} color={Colors.primary} />
+          <Text style={styles.actionBtnText}>Update Stock</Text>
+        </Pressable>
+        <Pressable style={styles.actionBtnSecondary} onPress={onEdit}>
+          <Ionicons name="pencil-outline" size={16} color={Colors.textSecondary} />
+        </Pressable>
+        <Pressable style={styles.actionBtnDanger} onPress={onDelete}>
+          <Ionicons name="trash-outline" size={16} color={Colors.error} />
+        </Pressable>
+      </View>
+
+      {/* Low/Out Stock CTA */}
+      {(isLow || isOut) && (
+        <Pressable style={styles.restockBtn} onPress={onUpdateStock}>
+          <Ionicons name="refresh-outline" size={15} color={Colors.white} />
+          <Text style={styles.restockBtnText}>
+            {isOut ? 'Restock Now' : 'Quick Restock — Running Low'}
+          </Text>
+        </Pressable>
+      )}
+    </Animated.View>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function InventoryScreen() {
-  const [selectedTab, setSelectedTab] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [editingItem, setEditingItem] = useState<string | null>(null);
+  const router = useRouter();
+  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('All');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredInventory = MOCK_INVENTORY.filter((item) => {
-    const matchesSearch = item.product.toLowerCase().includes(searchQuery.toLowerCase());
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
+
+  const filtered = inventory.filter((item) => {
+    const matchesSearch = item.product.toLowerCase().includes(search.toLowerCase()) ||
+      item.category.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
-
-    if (selectedTab === 'Low Stock') return item.stock > 0 && item.stock <= item.minStock;
-    if (selectedTab === 'Out of Stock') return item.stock === 0;
+    if (activeTab === 'Low Stock') return item.stock > 0 && item.stock < item.minStock;
+    if (activeTab === 'Out of Stock') return item.stock === 0;
     return true;
   });
 
-  const lowStockCount = MOCK_INVENTORY.filter((i) => i.stock > 0 && i.stock <= i.minStock).length;
-  const outOfStockCount = MOCK_INVENTORY.filter((i) => i.stock === 0).length;
+  const totalProducts = inventory.length;
+  const lowCount = inventory.filter((i) => i.stock > 0 && i.stock < i.minStock).length;
+  const outCount = inventory.filter((i) => i.stock === 0).length;
 
-  const handleUpdateStock = (itemId: string, newStock: number) => {
-    Alert.alert('Stock Updated', `Stock updated to ${newStock} units`);
-    setEditingItem(null);
+  const handleToggle = (id: string, val: boolean) => {
+    setInventory((prev) => prev.map((i) => i.id === id ? { ...i, isAvailable: val } : i));
   };
 
-  const handleToggleAvailability = (itemId: string, currentStatus: boolean) => {
+  const handleDelete = (id: string, name: string) => {
     Alert.alert(
-      currentStatus ? 'Mark as Unavailable?' : 'Mark as Available?',
-      currentStatus
-        ? 'This product will be hidden from customers'
-        : 'This product will be visible to customers',
+      'Delete Product',
+      `Remove "${name}" from your inventory?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Confirm',
-          onPress: () => {
-            // Update logic here
-          },
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => setInventory((prev) => prev.filter((i) => i.id !== id)),
         },
       ]
     );
   };
 
-  const getStockStatusValue = (stock: number, minStock: number) => {
-    if (stock === 0) return { label: 'Out of Stock', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.2)' };
-    if (stock <= minStock) return { label: 'Low Stock', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.2)' };
-    return { label: 'In Stock', color: '#10B981', bg: 'rgba(16, 185, 129, 0.2)' };
-  };
-
-  const renderInventoryItem = ({ item }: { item: typeof MOCK_INVENTORY[0] }) => {
-    const stockStatus = getStockStatusValue(item.stock, item.minStock);
-    const isLowOrOut = item.stock <= item.minStock;
-
-    return (
-      <View
-        style={[
-          s.card,
-          isLowOrOut && { borderLeftWidth: 4, borderLeftColor: T.amber },
-        ]}
-      >
-        <View style={s.cardHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.productName}>{item.product}</Text>
-            <View style={s.categoryRow}>
-              <View style={s.categoryBadge}>
-                <Text style={s.categoryText}>{item.category}</Text>
-              </View>
-              <Text style={{ color: T.textMuted, marginHorizontal: 8 }}>•</Text>
-              <Text style={s.priceText}>₹{item.price}/{item.unit}</Text>
-            </View>
-          </View>
-          <View style={[s.statusBadge, { backgroundColor: stockStatus.bg }]}>
-            <Text style={{ color: stockStatus.color, fontSize: 12, fontWeight: '700' }}>
-              {stockStatus.label}
-            </Text>
-          </View>
-        </View>
-
-        {/* Stock Info */}
-        <View style={s.stockInfoRow}>
-          <View>
-            <Text style={s.stockLabel}>Current Stock</Text>
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: '700',
-                color: item.stock === 0 ? '#EF4444' : item.stock <= item.minStock ? '#F59E0B' : T.text,
-              }}
-            >
-              {item.stock} {item.unit}s
-            </Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={s.stockLabel}>Minimum Stock</Text>
-            <Text style={s.minStockValue}>{item.minStock} {item.unit}s</Text>
-          </View>
-        </View>
-
-        {/* Stock Progress Bar */}
-        <View style={s.progressTrack}>
-          <View
-            style={{
-              height: '100%',
-              borderRadius: 9999,
-              width: `${Math.min((item.stock / (item.minStock * 2)) * 100, 100)}%`,
-              backgroundColor: item.stock === 0 ? '#EF4444' : item.stock <= item.minStock ? '#F59E0B' : '#10B981',
-            }}
-          />
-        </View>
-
-        {/* Actions */}
-        <View style={s.actionsRow}>
-          <TouchableOpacity
-            style={s.updateStockBtn}
-            onPress={() => setEditingItem(item.id)}
-          >
-            <Ionicons name="create" size={20} color={T.amber} />
-            <Text style={s.updateStockText}>Update Stock</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              s.toggleBtn,
-              {
-                backgroundColor: item.isAvailable ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-              },
-            ]}
-            onPress={() => handleToggleAvailability(item.id, item.isAvailable)}
-          >
-            <Ionicons
-              name={item.isAvailable ? 'eye-off' : 'eye'}
-              size={20}
-              color={item.isAvailable ? '#EF4444' : '#10B981'}
-            />
-            <Text
-              style={{
-                fontWeight: '700',
-                marginLeft: 8,
-                color: item.isAvailable ? '#EF4444' : '#10B981',
-              }}
-            >
-              {item.isAvailable ? 'Hide' : 'Show'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Quick Restock for low/out of stock */}
-        {isLowOrOut && (
-          <TouchableOpacity style={s.quickRestockBtn}>
-            <Ionicons name="refresh" size={20} color="#FFFFFF" />
-            <Text style={s.quickRestockText}>Quick Restock</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+  const handleUpdateStock = (id: string, name: string) => {
+    Alert.prompt(
+      'Update Stock',
+      `Enter new stock quantity for "${name}"`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Update',
+          onPress: (value: string | undefined) => {
+            const qty = parseInt(value ?? '0', 10);
+            if (!isNaN(qty) && qty >= 0) {
+              setInventory((prev) => prev.map((i) => i.id === id ? { ...i, stock: qty } : i));
+            }
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'number-pad'
     );
   };
 
   return (
-    <SafeAreaView style={s.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View style={s.header}>
-        <View style={s.headerRow}>
-          <Text style={s.headerTitle}>Inventory</Text>
-          <TouchableOpacity style={s.addBtn}>
-            <Ionicons name="add" size={20} color="#FFFFFF" />
-            <Text style={s.addBtnText}>Add Product</Text>
-          </TouchableOpacity>
+      <Animated.View style={styles.header} entering={FadeInUp.duration(350)}>
+        <View>
+          <Text style={styles.headerTitle}>Inventory</Text>
+          <Text style={styles.headerSub}>{totalProducts} products listed</Text>
         </View>
+        <Pressable
+          style={styles.addFab}
+          onPress={() => router.push('/(app)/add-product')}
+        >
+          <Ionicons name="add" size={18} color={Colors.white} />
+          <Text style={styles.addFabText}>Add Product</Text>
+        </Pressable>
+      </Animated.View>
 
-        {/* Search */}
-        <View style={s.searchBar}>
-          <Ionicons name="search" size={22} color={T.textMuted} />
+      {/* Search */}
+      <View style={styles.searchSection}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color={Colors.textMuted} />
           <TextInput
-            style={s.searchInput}
-            placeholder="Search products..."
-            placeholderTextColor={T.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+            style={styles.searchInput}
+            placeholder="Search products, categories..."
+            placeholderTextColor={Colors.textMuted}
+            value={search}
+            onChangeText={setSearch}
           />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+            </Pressable>
+          )}
         </View>
       </View>
 
-      {/* Stats */}
-      <View style={s.statsRow}>
-        <View style={s.statCard}>
-          <View style={[s.statIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-            <Ionicons name="cube" size={24} color="#3B82F6" />
-          </View>
-          <View style={{ marginLeft: 12 }}>
-            <Text style={s.statValue}>{MOCK_INVENTORY.length}</Text>
-            <Text style={s.statLabel}>Products</Text>
-          </View>
-        </View>
-        <View style={s.statCard}>
-          <View style={[s.statIcon, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
-            <Ionicons name="warning" size={24} color="#F59E0B" />
-          </View>
-          <View style={{ marginLeft: 12 }}>
-            <Text style={[s.statValue, { color: '#F59E0B' }]}>{lowStockCount}</Text>
-            <Text style={s.statLabel}>Low Stock</Text>
-          </View>
-        </View>
-        <View style={s.statCard}>
-          <View style={[s.statIcon, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-            <Ionicons name="close-circle" size={24} color="#EF4444" />
-          </View>
-          <View style={{ marginLeft: 12 }}>
-            <Text style={[s.statValue, { color: '#EF4444' }]}>{outOfStockCount}</Text>
-            <Text style={s.statLabel}>Out</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Tabs */}
-      <View style={s.tabsRow}>
-        {INVENTORY_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              s.tab,
-              selectedTab === tab ? s.tabActive : s.tabInactive,
-            ]}
-            onPress={() => setSelectedTab(tab)}
+      {/* Stats Row */}
+      <View style={styles.statsRow}>
+        {[
+          { label: 'Products', value: totalProducts, color: Colors.primary, icon: 'cube-outline' as const, bg: '#EFF6FF' },
+          { label: 'Low Stock', value: lowCount, color: Colors.accent, icon: 'warning-outline' as const, bg: Colors.amberBg },
+          { label: 'Out of Stock', value: outCount, color: Colors.error, icon: 'close-circle-outline' as const, bg: '#FEF2F2' },
+        ].map((stat) => (
+          <Pressable
+            key={stat.label}
+            style={styles.statCard}
+            onPress={() => setActiveTab(stat.label === 'Products' ? 'All' : stat.label)}
           >
-            <Text
-              style={[
-                s.tabText,
-                selectedTab === tab ? s.tabTextActive : s.tabTextInactive,
-              ]}
-            >
-              {tab}
-            </Text>
-          </TouchableOpacity>
+            <View style={[styles.statIcon, { backgroundColor: stat.bg }]}>
+              <Ionicons name={stat.icon} size={18} color={stat.color} />
+            </View>
+            <Text style={[styles.statValue, { color: stat.color }]}>{stat.value}</Text>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+          </Pressable>
         ))}
       </View>
 
-      {/* Inventory List */}
+      {/* Tabs */}
+      <View style={styles.tabRow}>
+        {TABS.map((tab) => (
+          <Pressable
+            key={tab}
+            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* List */}
       <FlatList
-        data={filteredInventory}
-        renderItem={renderInventoryItem}
+        data={filtered}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={s.emptyContainer}>
-            <Ionicons name="cube" size={48} color={T.textMuted} />
-            <Text style={s.emptyText}>No products found</Text>
-          </View>
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
         }
+        ListEmptyComponent={
+          <Animated.View style={styles.emptyState} entering={FadeInDown.delay(100).springify()}>
+            <Ionicons name="cube-outline" size={48} color={Colors.textMuted} />
+            <Text style={styles.emptyTitle}>No products found</Text>
+            <Text style={styles.emptySub}>
+              {search ? `No results for "${search}"` : 'Add products to your inventory'}
+            </Text>
+          </Animated.View>
+        }
+        renderItem={({ item, index }) => (
+          <InventoryCard
+            item={item}
+            index={index}
+            onEdit={() => Alert.alert('Edit', `Edit "${item.product}" — coming soon`)}
+            onDelete={() => handleDelete(item.id, item.product)}
+            onToggle={(val) => handleToggle(item.id, val)}
+            onUpdateStock={() => handleUpdateStock(item.id, item.product)}
+          />
+        )}
       />
     </SafeAreaView>
   );
 }
 
-const s = {
+const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: T.bg,
-  } as const,
-
-  /* ── Header ── */
+    backgroundColor: Colors.background,
+  },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-  } as const,
-  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-  } as const,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 14,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
   headerTitle: {
-    color: T.text,
-    fontSize: 28,
-    fontWeight: '700',
-  } as const,
-  addBtn: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  headerSub: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  addFab: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.amber,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-  } as const,
-  addBtnText: {
-    color: '#FFFFFF',
+    gap: 6,
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  addFabText: {
+    fontSize: 14,
     fontWeight: '700',
-    marginLeft: 8,
-  } as const,
-
-  /* ── Search ── */
+    color: Colors.white,
+  },
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    paddingHorizontal: 16,
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 44,
     borderWidth: 1,
-    borderColor: T.border,
-  } as const,
+    borderColor: Colors.border,
+    gap: 10,
+  },
   searchInput: {
     flex: 1,
-    color: T.text,
-    paddingVertical: 14,
-    marginLeft: 12,
-    fontSize: 16,
-  } as const,
-
-  /* ── Stats ── */
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     gap: 10,
-  } as const,
+  },
   statCard: {
     flex: 1,
-    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
-    backgroundColor: T.surface,
-    borderRadius: 14,
+    gap: 6,
     borderWidth: 1,
-    borderColor: T.border,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  } as const,
+    borderColor: Colors.border,
+  },
   statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
-  } as const,
+    alignItems: 'center',
+  },
   statValue: {
-    color: T.text,
-    fontWeight: '700',
     fontSize: 20,
-  } as const,
+    fontWeight: '800',
+  },
   statLabel: {
-    color: T.textSecondary,
-    fontSize: 12,
-    fontWeight: '500',
-  } as const,
-
-  /* ── Tabs ── */
-  tabsRow: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  tabRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 10,
     gap: 8,
-  } as const,
+    backgroundColor: Colors.background,
+  },
   tab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 9999,
-    alignItems: 'center',
-  } as const,
-  tabActive: {
-    backgroundColor: T.navy,
-  } as const,
-  tabInactive: {
-    backgroundColor: T.bg,
-  } as const,
-  tabText: {
-    fontWeight: '600',
-    fontSize: 14,
-  } as const,
-  tabTextActive: {
-    color: '#FFFFFF',
-  } as const,
-  tabTextInactive: {
-    color: T.textSecondary,
-  } as const,
-
-  /* ── Inventory Card ── */
-  card: {
-    backgroundColor: T.surface,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: T.border,
-    padding: 20,
-    marginBottom: 16,
+    borderColor: Colors.border,
+  },
+  tabActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  tabTextActive: {
+    color: Colors.white,
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
-  } as const,
+  },
+  cardWarning: {
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.accent,
+  },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  } as const,
-  productName: {
-    color: T.text,
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+  },
+  cardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardHeaderText: {
+    flex: 1,
+  },
+  cardProductName: {
+    fontSize: 15,
     fontWeight: '700',
-    fontSize: 18,
-    marginBottom: 8,
-  } as const,
-  categoryRow: {
+    color: Colors.textPrimary,
+    marginBottom: 5,
+  },
+  cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-  } as const,
-  categoryBadge: {
-    backgroundColor: T.bg,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 14,
-  } as const,
-  categoryText: {
-    color: T.textSecondary,
-    fontSize: 12,
+    gap: 8,
+  },
+  categoryPill: {
+    backgroundColor: Colors.background,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  categoryPillText: {
+    fontSize: 11,
     fontWeight: '600',
-  } as const,
-  priceText: {
-    color: T.textSecondary,
-    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  cardPrice: {
+    fontSize: 13,
+    color: Colors.textSecondary,
     fontWeight: '500',
-  } as const,
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 14,
-  } as const,
-
-  /* ── Stock Info ── */
+  },
+  stockBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  stockBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   stockInfoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    marginBottom: 16,
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 12,
     borderTopWidth: 1,
-    borderTopColor: T.border,
-  } as const,
-  stockLabel: {
-    color: T.textMuted,
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 4,
-  } as const,
-  minStockValue: {
-    color: T.textSecondary,
+    borderTopColor: Colors.border,
+    marginBottom: 10,
+  },
+  stockInfoItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  stockInfoLabel: {
+    fontSize: 10,
     fontWeight: '600',
-  } as const,
-
-  /* ── Progress Bar ── */
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  stockInfoValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  stockInfoMinValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  stockSwitch: {
+    transform: [{ scale: 0.85 }],
+  },
   progressTrack: {
-    height: 8,
-    borderRadius: 9999,
-    marginBottom: 16,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.background,
     overflow: 'hidden',
-    backgroundColor: T.bg,
-  } as const,
-
-  /* ── Actions ── */
-  actionsRow: {
+    marginBottom: 14,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  cardActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-    paddingTop: 16,
+    gap: 8,
     borderTopWidth: 1,
-    borderTopColor: T.border,
-  } as const,
-  updateStockBtn: {
+    borderTopColor: Colors.border,
+    paddingTop: 12,
+  },
+  actionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: T.bg,
-  } as const,
-  updateStockText: {
-    color: T.amber,
-    fontWeight: '700',
-    marginLeft: 8,
-  } as const,
-  toggleBtn: {
-    flex: 1,
+    gap: 6,
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  actionBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  actionBtnSecondary: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  actionBtnDanger: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  restockBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 14,
-  } as const,
-
-  /* ── Quick Restock ── */
-  quickRestockBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginTop: 16,
-    backgroundColor: T.amber,
-    shadowColor: T.amber,
+    gap: 6,
+    backgroundColor: Colors.accent,
+    borderRadius: 10,
+    paddingVertical: 11,
+    marginTop: 8,
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
-  } as const,
-  quickRestockText: {
-    color: '#FFFFFF',
+  },
+  restockBtnText: {
+    fontSize: 13,
     fontWeight: '700',
-    marginLeft: 8,
-  } as const,
-
-  /* ── Empty State ── */
-  emptyContainer: {
+    color: Colors.white,
+  },
+  emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  } as const,
-  emptyText: {
-    color: T.textSecondary,
-    marginTop: 16,
-  } as const,
-};
+    paddingTop: 60,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginTop: 8,
+  },
+  emptySub: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+});
