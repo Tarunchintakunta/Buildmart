@@ -11,7 +11,23 @@ const sendMessageSchema = z.object({
 });
 
 export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
-  // GET /api/chat/conversations — list all conversations (must be before /:userId)
+  // ─── GET /api/chat/unread-count ──────────────────────────────────────────────
+  // Must register before /:userId to avoid route conflict
+  fastify.get('/unread-count', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const requester = request.user as unknown as JWTPayload;
+
+    const { count, error } = await supabaseAdmin
+      .from('chat_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('receiver_id', requester.userId)
+      .eq('is_read', false);
+
+    if (error) return reply.status(500).send({ error: 'Failed to fetch unread count', code: 'DB_ERROR' });
+
+    return reply.send({ unread_count: count || 0 });
+  });
+
+  // ─── GET /api/chat/conversations ─────────────────────────────────────────────
   fastify.get('/conversations', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
     const requester = request.user as unknown as JWTPayload;
 
@@ -43,13 +59,15 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
       .select('id, full_name, phone, avatar_url, role')
       .in('id', Array.from(partnerIds));
 
-    // Get unread counts per partner
+    // Build conversations with last message and unread count
     const conversations = await Promise.all(
       (partners || []).map(async (partner: any) => {
         const { data: lastMsg } = await supabaseAdmin
           .from('chat_messages')
           .select('message, created_at, is_read, sender_id')
-          .or(`and(sender_id.eq.${requester.userId},receiver_id.eq.${partner.id}),and(sender_id.eq.${partner.id},receiver_id.eq.${requester.userId})`)
+          .or(
+            `and(sender_id.eq.${requester.userId},receiver_id.eq.${partner.id}),and(sender_id.eq.${partner.id},receiver_id.eq.${requester.userId})`
+          )
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
@@ -69,7 +87,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
       })
     );
 
-    // Sort by last message time
+    // Sort by last message time descending
     conversations.sort((a, b) => {
       const ta = a.last_message?.created_at ?? '';
       const tb = b.last_message?.created_at ?? '';
@@ -79,7 +97,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.send({ conversations });
   });
 
-  // GET /api/chat/:userId — get conversation with a user
+  // ─── GET /api/chat/:userId ───────────────────────────────────────────────────
   fastify.get('/:userId', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId } = request.params as { userId: string };
     const requester = request.user as unknown as JWTPayload;
@@ -91,13 +109,15 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     const { data, error, count } = await supabaseAdmin
       .from('chat_messages')
       .select('*', { count: 'exact' })
-      .or(`and(sender_id.eq.${requester.userId},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${requester.userId})`)
+      .or(
+        `and(sender_id.eq.${requester.userId},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${requester.userId})`
+      )
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) return reply.status(500).send({ error: 'Failed to fetch messages', code: 'DB_ERROR' });
 
-    // Mark received messages as read
+    // Mark all received messages from this user as read
     await supabaseAdmin
       .from('chat_messages')
       .update({ is_read: true })
@@ -105,7 +125,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
       .eq('receiver_id', requester.userId)
       .eq('is_read', false);
 
-    // Get partner info
+    // Fetch partner info
     const { data: partner } = await supabaseAdmin
       .from('users')
       .select('id, full_name, phone, avatar_url, role')
@@ -113,7 +133,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
       .single();
 
     return reply.send({
-      messages: (data || []).reverse(), // Return in chronological order
+      messages: (data || []).reverse(), // Return in chronological order ASC
       partner,
       total: count,
       page,
@@ -121,7 +141,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     });
   });
 
-  // POST /api/chat/:userId — send message
+  // ─── POST /api/chat/:userId ──────────────────────────────────────────────────
   fastify.post('/:userId', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId } = request.params as { userId: string };
     const requester = request.user as unknown as JWTPayload;
@@ -136,7 +156,11 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     // Verify recipient exists
-    const { data: recipient } = await supabaseAdmin.from('users').select('id').eq('id', userId).single();
+    const { data: recipient } = await supabaseAdmin
+      .from('users')
+      .select('id, full_name')
+      .eq('id', userId)
+      .single();
     if (!recipient) return reply.status(404).send({ error: 'Recipient not found', code: 'NOT_FOUND' });
 
     const { data, error } = await supabaseAdmin
