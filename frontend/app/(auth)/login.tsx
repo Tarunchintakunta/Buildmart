@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,8 +15,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import Animated, {
+  FadeInDown,
+  FadeInLeft,
+  FadeInUp,
+  ZoomIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 import { useAuthStore } from '../../src/store/auth.store';
 import { Colors, LightTheme as T } from '../../src/theme/colors';
+
+const SPRING_SNAPPY = { damping: 18, stiffness: 280, mass: 0.8 };
 
 interface SeedUser {
   label: string;
@@ -39,6 +50,101 @@ const formatPhone = (raw: string): string => {
   if (digits.length <= 5) return digits;
   return `${digits.slice(0, 5)} ${digits.slice(5)}`;
 };
+
+function SeedCard({
+  item,
+  index,
+  isLoading,
+  loadingPhone,
+  onPress,
+}: {
+  item: SeedUser;
+  index: number;
+  isLoading: boolean;
+  loadingPhone: string | null;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  const isBusy = isLoading && loadingPhone === item.phone;
+
+  return (
+    <Animated.View
+      entering={FadeInLeft.delay(440 + index * 60).springify().damping(18).stiffness(180)}
+      style={animStyle}
+    >
+      <Pressable
+        style={[
+          styles.seedCard,
+          { borderLeftColor: item.color, borderLeftWidth: 3 },
+          isLoading && styles.seedCardDisabled,
+        ]}
+        onPress={onPress}
+        disabled={isLoading}
+        onPressIn={() => { scale.value = withSpring(0.96, SPRING_SNAPPY); }}
+        onPressOut={() => { scale.value = withSpring(1, SPRING_SNAPPY); }}
+      >
+        {isBusy ? (
+          <ActivityIndicator size="small" color={item.color} />
+        ) : (
+          <Ionicons name={item.icon} size={20} color={item.color} />
+        )}
+        <View style={styles.seedCardInfo}>
+          <Text style={styles.seedCardLabel}>{item.label}</Text>
+          <Text style={styles.seedCardPhone}>
+            +91 {item.phone.slice(0, 5)} {item.phone.slice(5)}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={14} color={T.textMuted} />
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function ContinueButton({
+  isValid,
+  isLoading,
+  loadingPhone,
+  rawDigits,
+  onPress,
+}: {
+  isValid: boolean;
+  isLoading: boolean;
+  loadingPhone: string | null;
+  rawDigits: string;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View
+      entering={FadeInUp.delay(320).springify()}
+      style={animStyle}
+    >
+      <Pressable
+        style={[styles.continueBtn, (!isValid || isLoading) && styles.continueBtnDisabled]}
+        onPress={onPress}
+        disabled={!isValid || isLoading}
+        onPressIn={() => { if (isValid && !isLoading) scale.value = withSpring(0.97, SPRING_SNAPPY); }}
+        onPressOut={() => { scale.value = withSpring(1, SPRING_SNAPPY); }}
+      >
+        {isLoading && loadingPhone === rawDigits ? (
+          <ActivityIndicator size="small" color={Colors.white} />
+        ) : (
+          <View style={styles.continueBtnInner}>
+            <Text style={styles.continueBtnText}>Continue</Text>
+            <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -102,108 +208,101 @@ export default function LoginScreen() {
           {/* Header: Logo + Name */}
           <View style={styles.header}>
             <View style={styles.logoRow}>
-              <View style={styles.logoCircle}>
+              <Animated.View
+                entering={ZoomIn.delay(0).springify().damping(14)}
+                style={styles.logoCircle}
+              >
                 <Ionicons name="hammer" size={20} color={Colors.accent} />
-              </View>
-              <Text style={styles.logoText}>BuildMart</Text>
+              </Animated.View>
+              <Animated.Text
+                entering={FadeInDown.delay(120).springify()}
+                style={styles.logoText}
+              >
+                BuildMart
+              </Animated.Text>
             </View>
           </View>
 
           {/* Hero banner */}
-          <View style={styles.heroBanner}>
+          <Animated.View
+            entering={FadeInDown.delay(80).springify().damping(18)}
+            style={styles.heroBanner}
+          >
             <Ionicons name="business" size={60} color="rgba(255,255,255,0.25)" />
+            <View style={styles.heroTextBlock}>
+              <Text style={styles.heroHeadline}>Build Smarter.</Text>
+              <Text style={styles.heroSubline}>Hyderabad's #1 construction marketplace</Text>
+            </View>
             <View style={styles.heroLocationBadge}>
               <Ionicons name="location" size={13} color={Colors.accent} />
               <Text style={styles.heroLocationText}>Hyderabad, Telangana</Text>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Main content */}
           <View style={styles.content}>
-            <Text style={styles.welcomeTitle}>Welcome to BuildMart</Text>
-            <Text style={styles.welcomeSubtitle}>
-              Hyderabad's construction marketplace — materials, labor, and more.
-            </Text>
+            <Animated.View entering={FadeInDown.delay(200).springify()}>
+              <Text style={styles.welcomeTitle}>Welcome to BuildMart</Text>
+              <Text style={styles.welcomeSubtitle}>
+                Hyderabad's construction marketplace — materials, labor, and more.
+              </Text>
+            </Animated.View>
 
             {/* Phone Input */}
-            <Text style={styles.inputLabel}>Phone Number</Text>
-            <View style={styles.phoneRow}>
-              <View style={styles.countryCode}>
-                <Text style={styles.flag}>🇮🇳</Text>
-                <Text style={styles.codeText}>+91</Text>
+            <Animated.View entering={FadeInDown.delay(260).springify()}>
+              <Text style={styles.inputLabel}>Phone Number</Text>
+              <View style={styles.phoneRow}>
+                <View style={styles.countryCode}>
+                  <Text style={styles.flag}>🇮🇳</Text>
+                  <Text style={styles.codeText}>+91</Text>
+                </View>
+                <View style={styles.phoneDivider} />
+                <TextInput
+                  style={styles.phoneInput}
+                  placeholder="98765 43210"
+                  placeholderTextColor={T.textMuted}
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={handlePhoneChange}
+                  maxLength={11}
+                  returnKeyType="done"
+                  onSubmitEditing={handleContinue}
+                  editable={!isLoading}
+                />
               </View>
-              <View style={styles.phoneDivider} />
-              <TextInput
-                style={styles.phoneInput}
-                placeholder="98765 43210"
-                placeholderTextColor={T.textMuted}
-                keyboardType="phone-pad"
-                value={phone}
-                onChangeText={handlePhoneChange}
-                maxLength={11}
-                returnKeyType="done"
-                onSubmitEditing={handleContinue}
-                editable={!isLoading}
-              />
-            </View>
+            </Animated.View>
 
             {/* Continue Button */}
-            <TouchableOpacity
-              style={[styles.continueBtn, (!isValid || isLoading) && styles.continueBtnDisabled]}
+            <ContinueButton
+              isValid={isValid}
+              isLoading={isLoading}
+              loadingPhone={loadingPhone}
+              rawDigits={rawDigits}
               onPress={handleContinue}
-              disabled={!isValid || isLoading}
-              activeOpacity={0.8}
-            >
-              {isLoading && loadingPhone === rawDigits ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <View style={styles.continueBtnInner}>
-                  <Text style={styles.continueBtnText}>Continue</Text>
-                  <Ionicons name="arrow-forward" size={18} color={Colors.white} />
-                </View>
-              )}
-            </TouchableOpacity>
+            />
 
             {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>QUICK DEV LOGIN</Text>
-              <View style={styles.dividerLine} />
-            </View>
+            <Animated.View entering={FadeInDown.delay(380)}>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>QUICK DEV LOGIN</Text>
+                <View style={styles.dividerLine} />
+              </View>
+              <Text style={styles.devSubtitle}>Tap to sign in instantly as any role</Text>
+            </Animated.View>
 
-            <Text style={styles.devSubtitle}>Tap to sign in instantly as any role</Text>
-
-            {/* Seed Role Grid — 2 columns */}
+            {/* Seed Role Grid */}
             <View style={styles.seedGrid}>
-              {SEED_USERS.map((item) => {
-                const isBusy = isLoading && loadingPhone === item.phone;
-                return (
-                  <TouchableOpacity
-                    key={item.phone}
-                    style={[
-                      styles.seedCard,
-                      { borderLeftColor: item.color, borderLeftWidth: 3 },
-                      isLoading && styles.seedCardDisabled,
-                    ]}
-                    onPress={() => handleSeedLogin(item.phone)}
-                    disabled={isLoading}
-                    activeOpacity={0.75}
-                  >
-                    {isBusy ? (
-                      <ActivityIndicator size="small" color={item.color} />
-                    ) : (
-                      <Ionicons name={item.icon} size={20} color={item.color} />
-                    )}
-                    <View style={styles.seedCardInfo}>
-                      <Text style={styles.seedCardLabel}>{item.label}</Text>
-                      <Text style={styles.seedCardPhone}>
-                        +91 {item.phone.slice(0, 5)} {item.phone.slice(5)}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={14} color={T.textMuted} />
-                  </TouchableOpacity>
-                );
-              })}
+              {SEED_USERS.map((item, index) => (
+                <SeedCard
+                  key={item.phone}
+                  item={item}
+                  index={index}
+                  isLoading={isLoading}
+                  loadingPhone={loadingPhone}
+                  onPress={() => handleSeedLogin(item.phone)}
+                />
+              ))}
             </View>
 
             {/* Terms */}
@@ -262,8 +361,25 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 130,
+    height: 140,
     overflow: 'hidden',
+  },
+  heroTextBlock: {
+    position: 'absolute',
+    left: 24,
+    top: 24,
+  },
+  heroHeadline: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: Colors.white,
+    letterSpacing: 0.3,
+  },
+  heroSubline: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 4,
+    fontWeight: '500',
   },
   heroLocationBadge: {
     position: 'absolute',

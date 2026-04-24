@@ -1,30 +1,36 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../src/theme/colors';
-
-const T = LightTheme;
+import Animated, { FadeInDown, FadeInLeft, ZoomIn } from 'react-native-reanimated';
+import { LightTheme as T } from '../../src/theme/colors';
 
 type OrderStatus = 'Pending' | 'Processing' | 'Delivered' | 'Cancelled';
 type TabFilter = 'All' | OrderStatus;
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
-  Pending: T.amber,
+  Pending:    T.amber,
   Processing: '#3B82F6',
-  Delivered: '#10B981',
-  Cancelled: '#EF4444',
+  Delivered:  '#10B981',
+  Cancelled:  '#EF4444',
+};
+
+const STATUS_ICONS: Record<OrderStatus, keyof typeof Ionicons.glyphMap> = {
+  Pending:    'time-outline',
+  Processing: 'refresh-outline',
+  Delivered:  'checkmark-circle-outline',
+  Cancelled:  'close-circle-outline',
 };
 
 const TABS: TabFilter[] = ['All', 'Pending', 'Processing', 'Delivered', 'Cancelled'];
 
-const STATS = [
-  { label: 'Total', value: '456', color: T.navy },
-  { label: 'Pending', value: '23', color: T.amber },
-  { label: 'Processing', value: '15', color: '#3B82F6' },
-  { label: 'Delivered', value: '400', color: '#10B981' },
-  { label: 'Cancelled', value: '18', color: '#EF4444' },
+const KPI = [
+  { label: 'Total',      value: '456', color: T.navy   },
+  { label: 'Pending',    value: '23',  color: T.amber  },
+  { label: 'Processing', value: '15',  color: '#3B82F6' },
+  { label: 'Delivered',  value: '400', color: '#10B981' },
+  { label: 'Cancelled',  value: '18',  color: '#EF4444' },
 ];
 
 type Order = {
@@ -35,435 +41,250 @@ type Order = {
   amount: string;
   date: string;
   status: OrderStatus;
+  items: number;
 };
 
 const ORDERS: Order[] = [
-  {
-    id: '1',
-    orderNumber: 'BM-2847',
-    customer: 'Rajesh Kumar',
-    shop: 'Sharma Building Materials',
-    amount: 'Rs.24,500',
-    date: '25 Feb 2026',
-    status: 'Pending',
-  },
-  {
-    id: '2',
-    orderNumber: 'BM-2846',
-    customer: 'Anita Desai',
-    shop: 'Krishna Cement House',
-    amount: 'Rs.18,200',
-    date: '25 Feb 2026',
-    status: 'Processing',
-  },
-  {
-    id: '3',
-    orderNumber: 'BM-2845',
-    customer: 'Suresh Patel',
-    shop: 'Gupta Hardware & Tools',
-    amount: 'Rs.12,800',
-    date: '24 Feb 2026',
-    status: 'Delivered',
-  },
-  {
-    id: '4',
-    orderNumber: 'BM-2844',
-    customer: 'Priya Sharma',
-    shop: 'Patel Steel Traders',
-    amount: 'Rs.45,000',
-    date: '24 Feb 2026',
-    status: 'Delivered',
-  },
-  {
-    id: '5',
-    orderNumber: 'BM-2843',
-    customer: 'Vikram Singh',
-    shop: 'Singh Sand & Gravel',
-    amount: 'Rs.8,500',
-    date: '23 Feb 2026',
-    status: 'Cancelled',
-  },
+  { id: '1', orderNumber: 'BM-2847', customer: 'Rajesh Kumar',  shop: 'Sharma Building Materials', amount: '₹24,500', date: '25 Feb 2026', status: 'Pending',    items: 4 },
+  { id: '2', orderNumber: 'BM-2846', customer: 'Anita Desai',   shop: 'Krishna Cement House',       amount: '₹18,200', date: '25 Feb 2026', status: 'Processing', items: 2 },
+  { id: '3', orderNumber: 'BM-2845', customer: 'Suresh Patel',  shop: 'Gupta Hardware & Tools',     amount: '₹12,800', date: '24 Feb 2026', status: 'Delivered',  items: 6 },
+  { id: '4', orderNumber: 'BM-2844', customer: 'Priya Sharma',  shop: 'Patel Steel Traders',        amount: '₹45,000', date: '24 Feb 2026', status: 'Delivered',  items: 1 },
+  { id: '5', orderNumber: 'BM-2843', customer: 'Vikram Singh',  shop: 'Singh Sand & Gravel',        amount: '₹8,500',  date: '23 Feb 2026', status: 'Cancelled',  items: 3 },
+  { id: '6', orderNumber: 'BM-2842', customer: 'Meena Reddy',   shop: 'Reddy Paint Centre',         amount: '₹6,300',  date: '23 Feb 2026', status: 'Pending',    items: 2 },
+  { id: '7', orderNumber: 'BM-2841', customer: 'Arjun Nair',    shop: 'Nair Electrical Supplies',   amount: '₹9,750',  date: '22 Feb 2026', status: 'Delivered',  items: 5 },
 ];
 
 export default function OrderManagementScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabFilter>('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [search, setSearch] = useState('');
 
-  const filteredOrders = ORDERS.filter((order) => {
-    const matchesTab = activeTab === 'All' || order.status === activeTab;
-    const matchesSearch =
-      searchQuery === '' ||
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.shop.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
+  const filtered = useMemo(() =>
+    ORDERS.filter(o => {
+      const matchesTab = activeTab === 'All' || o.status === activeTab;
+      const q = search.toLowerCase();
+      const matchesSearch = !q ||
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.customer.toLowerCase().includes(q) ||
+        o.shop.toLowerCase().includes(q);
+      return matchesTab && matchesSearch;
+    }),
+  [activeTab, search]);
 
-  const renderOrderCard = (order: Order) => {
-    const statusColor = STATUS_COLORS[order.status];
-    return (
-      <View key={order.id} style={[s.orderCard, { borderLeftWidth: 4, borderLeftColor: statusColor }]}>
-        {/* Order Header */}
-        <View style={s.orderHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.orderNumber}>#{order.orderNumber}</Text>
-            <Text style={s.orderDate}>{order.date}</Text>
-          </View>
-          <View style={[s.statusBadge, { backgroundColor: statusColor + '26' }]}>
-            <Text style={[s.statusText, { color: statusColor }]}>{order.status}</Text>
-          </View>
-        </View>
-
-        {/* Order Details */}
-        <View style={s.orderDetails}>
-          <View style={s.detailRow}>
-            <Ionicons name="person-outline" size={14} color={T.textMuted} />
-            <Text style={s.detailLabel}>Customer:</Text>
-            <Text style={s.detailValue}>{order.customer}</Text>
-          </View>
-          <View style={s.detailRow}>
-            <Ionicons name="storefront-outline" size={14} color={T.textMuted} />
-            <Text style={s.detailLabel}>Shop:</Text>
-            <Text style={s.detailValue}>{order.shop}</Text>
-          </View>
-          <View style={s.detailRow}>
-            <Ionicons name="wallet-outline" size={14} color={T.textMuted} />
-            <Text style={s.detailLabel}>Amount:</Text>
-            <Text style={s.detailAmount}>{order.amount}</Text>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={s.actionRow}>
-          <TouchableOpacity style={s.actionBtnOutline}>
-            <Ionicons name="eye-outline" size={15} color={T.navy} />
-            <Text style={s.actionBtnOutlineText}>View Details</Text>
-          </TouchableOpacity>
-          {order.status === 'Pending' && (
-            <TouchableOpacity style={s.actionBtnFilled}>
-              <Ionicons name="car-outline" size={15} color={T.white} />
-              <Text style={s.actionBtnFilledText}>Assign Driver</Text>
-            </TouchableOpacity>
-          )}
-          {(order.status === 'Processing' || order.status === 'Cancelled') && (
-            <TouchableOpacity style={[s.actionBtnOutline, { borderColor: '#EF4444' }]}>
-              <Ionicons name="alert-circle-outline" size={15} color="#EF4444" />
-              <Text style={[s.actionBtnOutlineText, { color: '#EF4444' }]}>Resolve Issue</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
+  const handleAction = (order: Order, action: 'accept' | 'dispatch' | 'cancel') => {
+    const labels = { accept: 'Accept', dispatch: 'Mark Dispatched', cancel: 'Cancel' };
+    Alert.alert(`${labels[action]} Order`, `${labels[action]} order #${order.orderNumber}?`, [
+      { text: 'No', style: 'cancel' },
+      { text: 'Yes', onPress: () => Alert.alert('✅ Done', `Order #${order.orderNumber} updated.`) },
+    ]);
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={styles.safe}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+      <Animated.View style={styles.header} entering={FadeInDown.duration(280)}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Order Management</Text>
-        <View style={{ width: 40 }} />
-      </View>
+        </Pressable>
+        <Text style={styles.headerTitle}>Order Management</Text>
+        <Pressable style={styles.exportBtn}>
+          <Ionicons name="download-outline" size={20} color={T.navy} />
+        </Pressable>
+      </Animated.View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-        {/* Search Bar */}
-        <View style={s.searchContainer}>
-          <View style={s.searchBar}>
-            <Ionicons name="search-outline" size={18} color={T.textMuted} />
-            <TextInput
-              style={s.searchInput}
-              placeholder="Search orders, customers, shops..."
-              placeholderTextColor={T.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery !== '' && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={18} color={T.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Stats Row */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
-        >
-          {STATS.map((stat) => (
-            <View key={stat.label} style={s.statCard}>
-              <Text style={[s.statValue, { color: stat.color }]}>{stat.value}</Text>
-              <Text style={s.statLabel}>{stat.label}</Text>
-            </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        {/* KPI Strip */}
+        <Animated.View style={styles.kpiStrip} entering={FadeInDown.delay(60).springify().damping(18)}>
+          {KPI.map((k, i) => (
+            <Animated.View key={k.label} style={styles.kpiItem} entering={ZoomIn.delay(80 + i * 50).springify().damping(14)}>
+              <Text style={[styles.kpiValue, { color: k.color }]}>{k.value}</Text>
+              <Text style={styles.kpiLabel}>{k.label}</Text>
+            </Animated.View>
           ))}
-        </ScrollView>
+        </Animated.View>
 
-        {/* Tabs */}
-        <ScrollView
+        {/* Search */}
+        <Animated.View style={styles.searchRow} entering={FadeInDown.delay(140)}>
+          <Ionicons name="search-outline" size={18} color={T.textMuted} style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by order, customer, shop..."
+            placeholderTextColor={T.textMuted}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={18} color={T.textMuted} />
+            </Pressable>
+          )}
+        </Animated.View>
+
+        {/* Tab Filter */}
+        <Animated.ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8, marginTop: 16 }}
+          style={styles.tabScroll}
+          contentContainerStyle={styles.tabScrollContent}
+          entering={FadeInDown.delay(180)}
         >
-          {TABS.map((tab) => (
-            <TouchableOpacity
+          {TABS.map(tab => (
+            <Pressable
               key={tab}
-              style={[s.tab, activeTab === tab && s.tabActive]}
+              style={[styles.tabChip, activeTab === tab && styles.tabChipActive]}
               onPress={() => setActiveTab(tab)}
             >
-              <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Order Cards */}
-        <View style={s.orderList}>
-          {filteredOrders.length === 0 ? (
-            <View style={s.empty}>
-              <View style={s.emptyIcon}>
-                <Ionicons name="cube-outline" size={48} color={T.textMuted} />
-              </View>
-              <Text style={s.emptyTitle}>No orders found</Text>
-              <Text style={s.emptyDesc}>
-                {searchQuery ? 'Try a different search term.' : 'No orders match this filter.'}
+              <Text style={[styles.tabChipText, activeTab === tab && styles.tabChipTextActive]}>
+                {tab}
               </Text>
-            </View>
-          ) : (
-            filteredOrders.map(renderOrderCard)
-          )}
-        </View>
+            </Pressable>
+          ))}
+        </Animated.ScrollView>
+
+        {/* Count */}
+        <Animated.Text style={styles.resultCount} entering={FadeInDown.delay(220)}>
+          {filtered.length} order{filtered.length !== 1 ? 's' : ''}
+        </Animated.Text>
+
+        {/* Orders */}
+        {filtered.length === 0 ? (
+          <Animated.View style={styles.emptyState} entering={ZoomIn.springify().damping(14)}>
+            <Ionicons name="receipt-outline" size={44} color={T.textMuted} />
+            <Text style={styles.emptyText}>No orders found</Text>
+          </Animated.View>
+        ) : (
+          filtered.map((order, i) => {
+            const statusColor = STATUS_COLORS[order.status];
+            return (
+              <Animated.View
+                key={order.id}
+                style={[styles.orderCard, { borderLeftColor: statusColor }]}
+                entering={FadeInLeft.delay(240 + i * 70).springify().damping(18).stiffness(180)}
+              >
+                {/* Top Row */}
+                <View style={styles.orderTop}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.orderNumber}>#{order.orderNumber}</Text>
+                    <Text style={styles.orderDate}>{order.date}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
+                    <Ionicons name={STATUS_ICONS[order.status]} size={12} color={statusColor} />
+                    <Text style={[styles.statusText, { color: statusColor }]}>{order.status}</Text>
+                  </View>
+                </View>
+
+                {/* Details */}
+                <View style={styles.orderDetail}>
+                  <Ionicons name="person-outline" size={14} color={T.textMuted} />
+                  <Text style={styles.orderDetailText}>{order.customer}</Text>
+                </View>
+                <View style={styles.orderDetail}>
+                  <Ionicons name="storefront-outline" size={14} color={T.textMuted} />
+                  <Text style={styles.orderDetailText}>{order.shop}</Text>
+                </View>
+
+                {/* Footer */}
+                <View style={styles.orderFooter}>
+                  <Text style={styles.orderAmount}>{order.amount}</Text>
+                  <Text style={styles.orderItems}>{order.items} item{order.items !== 1 ? 's' : ''}</Text>
+                  {order.status === 'Pending' && (
+                    <View style={styles.actionRow}>
+                      <Pressable
+                        style={[styles.actionBtn, { backgroundColor: '#DCFCE7', borderColor: '#10B981' }]}
+                        onPress={() => handleAction(order, 'accept')}
+                      >
+                        <Text style={[styles.actionBtnText, { color: '#10B981' }]}>Accept</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderColor: '#EF4444' }]}
+                        onPress={() => handleAction(order, 'cancel')}
+                      >
+                        <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Cancel</Text>
+                      </Pressable>
+                    </View>
+                  )}
+                  {order.status === 'Processing' && (
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: '#EFF6FF', borderColor: '#3B82F6' }]}
+                      onPress={() => handleAction(order, 'dispatch')}
+                    >
+                      <Text style={[styles.actionBtnText, { color: '#3B82F6' }]}>Dispatch</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </Animated.View>
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = {
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: T.bg },
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+    backgroundColor: T.surface, borderBottomWidth: 1, borderBottomColor: T.border,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+  backBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: T.text },
+  exportBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center' },
+  scroll: { padding: 16, paddingBottom: 48 },
+  kpiStrip: {
+    flexDirection: 'row', backgroundColor: T.surface,
+    borderRadius: 14, borderWidth: 1, borderColor: T.border,
+    paddingVertical: 14, marginBottom: 14,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: T.text,
+  kpiItem: { flex: 1, alignItems: 'center' },
+  kpiValue: { fontSize: 18, fontWeight: '800' },
+  kpiLabel: { fontSize: 10, color: T.textMuted, marginTop: 2, textAlign: 'center' },
+  searchRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: T.surface, borderRadius: 12,
+    borderWidth: 1, borderColor: T.border,
+    paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12,
   },
-
-  /* Search */
-  searchContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
+  searchInput: { flex: 1, fontSize: 14, color: T.text },
+  tabScroll: { marginBottom: 12 },
+  tabScrollContent: { gap: 8, paddingRight: 4 },
+  tabChip: {
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+    backgroundColor: T.surface, borderWidth: 1.5, borderColor: T.border,
   },
-  searchBar: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: T.border,
-    paddingHorizontal: 14,
-    height: 44,
-    gap: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: T.text,
-    fontWeight: '400' as const,
-  },
-
-  /* Stats */
-  statCard: {
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: T.border,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    alignItems: 'center' as const,
-    minWidth: 80,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '800' as const,
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-
-  /* Tabs */
-  tab: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  tabActive: {
-    backgroundColor: T.navy,
-    borderColor: T.navy,
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: T.textMuted,
-  },
-  tabTextActive: {
-    color: T.white,
-  },
-
-  /* Order List */
-  orderList: {
-    paddingHorizontal: 20,
-    marginTop: 16,
-    gap: 14,
-  },
-
-  /* Order Card */
+  tabChipActive: { backgroundColor: T.navy, borderColor: T.navy },
+  tabChipText: { fontSize: 13, fontWeight: '600', color: T.textSecondary },
+  tabChipTextActive: { color: T.white },
+  resultCount: { fontSize: 13, color: T.textMuted, marginBottom: 12, marginLeft: 2 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 12 },
+  emptyText: { fontSize: 15, color: T.textMuted, fontWeight: '600' },
   orderCard: {
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    backgroundColor: T.surface, borderRadius: 14,
+    borderWidth: 1, borderColor: T.border, borderLeftWidth: 4,
+    padding: 14, marginBottom: 12,
   },
-  orderHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    marginBottom: 14,
-  },
-  orderNumber: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  orderDate: {
-    fontSize: 12,
-    color: T.textMuted,
-    marginTop: 2,
-  },
+  orderTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+  orderNumber: { fontSize: 15, fontWeight: '700', color: T.text },
+  orderDate: { fontSize: 12, color: T.textMuted, marginTop: 2 },
   statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8,
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
+  statusText: { fontSize: 11, fontWeight: '700' },
+  orderDetail: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  orderDetailText: { fontSize: 13, color: T.textSecondary },
+  orderFooter: {
+    flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap',
+    gap: 8, marginTop: 10, paddingTop: 10,
+    borderTopWidth: 1, borderTopColor: T.border,
   },
-
-  /* Order Details */
-  orderDetails: {
-    gap: 8,
-    marginBottom: 14,
+  orderAmount: { fontSize: 16, fontWeight: '800', color: T.text, flex: 1 },
+  orderItems: { fontSize: 13, color: T.textMuted },
+  actionRow: { flexDirection: 'row', gap: 8 },
+  actionBtn: {
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 8, borderWidth: 1.5,
   },
-  detailRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 8,
-  },
-  detailLabel: {
-    fontSize: 13,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-  detailValue: {
-    fontSize: 13,
-    color: T.text,
-    fontWeight: '600' as const,
-    flex: 1,
-  },
-  detailAmount: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: T.amber,
-  },
-
-  /* Actions */
-  actionRow: {
-    flexDirection: 'row' as const,
-    gap: 10,
-  },
-  actionBtnOutline: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: T.navy,
-  },
-  actionBtnOutlineText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: T.navy,
-  },
-  actionBtnFilled: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: T.navy,
-  },
-  actionBtnFilledText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: T.white,
-  },
-
-  /* Empty */
-  empty: {
-    alignItems: 'center' as const,
-    paddingTop: 60,
-    gap: 10,
-  },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginBottom: 8,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  emptyDesc: {
-    fontSize: 14,
-    color: T.textSecondary,
-    textAlign: 'center' as const,
-    paddingHorizontal: 40,
-    lineHeight: 20,
-  },
-};
+  actionBtnText: { fontSize: 12, fontWeight: '700' },
+});

@@ -40,3 +40,5 @@ export type { ConfirmModalProps } from './ConfirmModal';
 
 export { default as AmountDisplay } from './AmountDisplay';
 export type { AmountDisplayProps } from './AmountDisplay';
+
+export { default as ErrorBoundary } from './ErrorBoundary';

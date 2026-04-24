@@ -1,471 +1,587 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../src/theme/colors';
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import { LightTheme as T } from '../../src/theme/colors';
+import { SPRING_SNAPPY, SPRING_BOUNCY } from '../../src/utils/animations';
 
-const T = LightTheme;
+type TabKey = 'open' | 'mybids' | 'won';
 
-type TenderStatus = 'open' | 'submitted' | 'won' | 'lost';
-
-type Tender = {
-  id: string;
-  title: string;
-  postedBy: string;
-  budgetMin: number;
-  budgetMax: number;
-  deadline: string;
-  daysLeft: number;
-  location: string;
-  materials: string[];
-  status: TenderStatus;
-};
-
-const TABS: { key: TenderStatus | 'all'; label: string }[] = [
-  { key: 'all', label: 'Open' },
-  { key: 'submitted', label: 'My Bids' },
-  { key: 'won', label: 'Won' },
-  { key: 'lost', label: 'Lost' },
+const TABS: { key: TabKey; label: string; count: number }[] = [
+  { key: 'open', label: 'Open', count: 3 },
+  { key: 'mybids', label: 'My Bids', count: 2 },
+  { key: 'won', label: 'Won', count: 1 },
 ];
 
-const TENDERS: Tender[] = [
+type OpenTender = {
+  id: string;
+  title: string;
+  budget: string;
+  deadlineDays: number;
+  bids: number;
+  category: string;
+  location: string;
+  categoryColor: string;
+  categoryIcon: keyof typeof Ionicons.glyphMap;
+};
+
+type MyBid = {
+  id: string;
+  title: string;
+  bidAmount: string;
+  submittedDate: string;
+  status: 'Pending' | 'Under Review';
+  budget: string;
+};
+
+type WonTender = {
+  id: string;
+  title: string;
+  contractValue: string;
+  awardedDate: string;
+  location: string;
+};
+
+const OPEN_TENDERS: OpenTender[] = [
   {
     id: '1',
-    title: 'Residential Complex — Phase 2 Foundation',
-    postedBy: 'Prestige Developers',
-    budgetMin: 8,
-    budgetMax: 12,
-    deadline: '05 Mar 2026',
-    daysLeft: 7,
-    location: 'Whitefield, Bengaluru',
-    materials: ['Cement', 'TMT Steel', 'River Sand', 'Aggregates'],
-    status: 'open',
+    title: '3BHK Residential Complex, Kondapur',
+    budget: '₹45L',
+    deadlineDays: 3,
+    bids: 8,
+    category: 'Construction',
+    location: 'Kondapur, Hyderabad',
+    categoryColor: '#8B5CF6',
+    categoryIcon: 'business-outline',
   },
   {
     id: '2',
-    title: 'Office Interior — Electrical & Plumbing',
-    postedBy: 'Brigade Group',
-    budgetMin: 3,
-    budgetMax: 5,
-    deadline: '10 Mar 2026',
-    daysLeft: 12,
-    location: 'Koramangala, Bengaluru',
-    materials: ['Wiring', 'PVC Pipes', 'Switches', 'Fixtures'],
-    status: 'open',
+    title: 'Commercial Office Fit-out, HITEC City',
+    budget: '₹18L',
+    deadlineDays: 5,
+    bids: 12,
+    category: 'Interior',
+    location: 'HITEC City, Hyderabad',
+    categoryColor: '#3B82F6',
+    categoryIcon: 'home-outline',
   },
   {
     id: '3',
-    title: 'Warehouse Roofing — 20,000 sqft',
-    postedBy: 'Godrej Properties',
-    budgetMin: 15,
-    budgetMax: 20,
-    deadline: '28 Feb 2026',
-    daysLeft: 2,
-    location: 'Electronic City, Bengaluru',
-    materials: ['Steel Sheets', 'Purlins', 'Bolts', 'Sealant'],
-    status: 'open',
-  },
-  {
-    id: '4',
-    title: 'Villa Compound Wall & Landscaping',
-    postedBy: 'Sobha Developers',
-    budgetMin: 4,
-    budgetMax: 6,
-    deadline: '15 Mar 2026',
-    daysLeft: 17,
-    location: 'Hebbal, Bengaluru',
-    materials: ['Bricks', 'Cement', 'Sand', 'Plants'],
-    status: 'open',
-  },
-  {
-    id: '5',
-    title: 'School Building — Ground Floor Masonry',
-    postedBy: 'Delhi Public School Trust',
-    budgetMin: 10,
-    budgetMax: 14,
-    deadline: '20 Feb 2026',
-    daysLeft: 0,
-    location: 'Sarjapur Road, Bengaluru',
-    materials: ['AAC Blocks', 'Cement', 'Steel', 'Sand'],
-    status: 'submitted',
-  },
-  {
-    id: '6',
-    title: 'Community Hall — Complete Construction',
-    postedBy: 'BBMP Ward Office',
-    budgetMin: 25,
-    budgetMax: 30,
-    deadline: '01 Feb 2026',
-    daysLeft: 0,
-    location: 'Jayanagar, Bengaluru',
-    materials: ['Cement', 'Steel', 'Bricks', 'Timber', 'Paint'],
-    status: 'won',
-  },
-  {
-    id: '7',
-    title: 'Apartment Painting — 3 Towers',
-    postedBy: 'Puravankara Ltd',
-    budgetMin: 6,
-    budgetMax: 8,
-    deadline: '10 Jan 2026',
-    daysLeft: 0,
-    location: 'Marathahalli, Bengaluru',
-    materials: ['Exterior Paint', 'Primer', 'Putty'],
-    status: 'lost',
+    title: 'Road Resurfacing, Gachibowli',
+    budget: '₹22L',
+    deadlineDays: 7,
+    bids: 5,
+    category: 'Civil',
+    location: 'Gachibowli, Hyderabad',
+    categoryColor: '#10B981',
+    categoryIcon: 'construct-outline',
   },
 ];
 
-const STATUS_ACCENT: Record<TenderStatus, string> = {
-  open: T.amber,
-  submitted: T.info,
-  won: T.success,
-  lost: T.textMuted,
-};
+const MY_BIDS: MyBid[] = [
+  {
+    id: '1',
+    title: 'School Renovation — Ameerpet',
+    bidAmount: '₹8.5L',
+    submittedDate: '20 Apr 2026',
+    status: 'Under Review',
+    budget: '₹10L',
+  },
+  {
+    id: '2',
+    title: 'Community Hall Construction — LB Nagar',
+    bidAmount: '₹22L',
+    submittedDate: '18 Apr 2026',
+    status: 'Pending',
+    budget: '₹25L',
+  },
+];
+
+const WON_TENDERS: WonTender[] = [
+  {
+    id: '1',
+    title: 'GHMC Park Infrastructure — Madhapur',
+    contractValue: '₹32L',
+    awardedDate: '10 Apr 2026',
+    location: 'Madhapur, Hyderabad',
+  },
+];
+
+function PressableCard({
+  children,
+  style,
+  onPress,
+}: {
+  children: React.ReactNode;
+  style?: any;
+  onPress?: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Animated.View style={anim}>
+      <Pressable
+        style={style}
+        onPressIn={() => { scale.value = withSpring(0.98, SPRING_SNAPPY); }}
+        onPressOut={() => { scale.value = withSpring(1, SPRING_BOUNCY); }}
+        onPress={onPress}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function OpenTenderCard({ tender, index }: { tender: OpenTender; index: number }) {
+  const isUrgent = tender.deadlineDays <= 3;
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 70).springify().damping(18).stiffness(180)}>
+      <PressableCard style={styles.tenderCard}>
+        {/* Category + Deadline */}
+        <View style={styles.tenderTopRow}>
+          <View style={[styles.categoryChip, { backgroundColor: `${tender.categoryColor}18` }]}>
+            <Ionicons name={tender.categoryIcon} size={12} color={tender.categoryColor} />
+            <Text style={[styles.categoryText, { color: tender.categoryColor }]}>
+              {tender.category}
+            </Text>
+          </View>
+          <View style={[styles.deadlineChip, isUrgent && styles.deadlineUrgent]}>
+            <Ionicons
+              name="time-outline"
+              size={12}
+              color={isUrgent ? '#EF4444' : T.textSecondary}
+            />
+            <Text style={[styles.deadlineText, isUrgent && styles.deadlineTextUrgent]}>
+              {tender.deadlineDays}d left
+            </Text>
+          </View>
+        </View>
+
+        {/* Title */}
+        <Text style={styles.tenderTitle}>{tender.title}</Text>
+
+        {/* Location */}
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={13} color={T.textMuted} />
+          <Text style={styles.locationText}>{tender.location}</Text>
+        </View>
+
+        {/* Budget & Bids */}
+        <View style={styles.tenderMetaRow}>
+          <View style={styles.tenderMetaItem}>
+            <Ionicons name="wallet-outline" size={14} color={T.amber} />
+            <Text style={styles.budgetText}>{tender.budget}</Text>
+          </View>
+          <View style={styles.tenderMetaItem}>
+            <Ionicons name="people-outline" size={14} color={T.textSecondary} />
+            <Text style={styles.bidsText}>{tender.bids} bids placed</Text>
+          </View>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Place Bid */}
+        <Pressable
+          style={styles.placeBidBtn}
+          onPress={() =>
+            Alert.alert(
+              'Place Bid',
+              `Submit your bid for "${tender.title}"?`,
+              [{ text: 'Cancel', style: 'cancel' }, { text: 'Proceed' }]
+            )
+          }
+        >
+          <Ionicons name="send" size={15} color="#fff" />
+          <Text style={styles.placeBidText}>Place Bid</Text>
+        </Pressable>
+      </PressableCard>
+    </Animated.View>
+  );
+}
+
+function MyBidCard({ bid, index }: { bid: MyBid; index: number }) {
+  const statusColor = bid.status === 'Under Review' ? '#3B82F6' : T.amber;
+  const statusBg = bid.status === 'Under Review' ? '#DBEAFE' : '#FEF3C7';
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 70).springify().damping(18).stiffness(180)}>
+      <PressableCard style={styles.tenderCard}>
+        <View style={styles.tenderTopRow}>
+          <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <Text style={[styles.statusPillText, { color: statusColor }]}>{bid.status}</Text>
+          </View>
+          <Text style={styles.submittedDate}>{bid.submittedDate}</Text>
+        </View>
+        <Text style={styles.tenderTitle}>{bid.title}</Text>
+        <View style={styles.bidMetaRow}>
+          <View style={styles.tenderMetaItem}>
+            <Ionicons name="wallet-outline" size={14} color={T.amber} />
+            <Text style={styles.budgetText}>Budget: {bid.budget}</Text>
+          </View>
+          <View style={[styles.myBidAmountBox]}>
+            <Text style={styles.myBidLabel}>My Bid</Text>
+            <Text style={styles.myBidAmount}>{bid.bidAmount}</Text>
+          </View>
+        </View>
+        <View style={styles.divider} />
+        <Pressable style={styles.viewBidBtn}>
+          <Ionicons name="eye-outline" size={15} color={T.navy} />
+          <Text style={styles.viewBidText}>View Bid Details</Text>
+        </Pressable>
+      </PressableCard>
+    </Animated.View>
+  );
+}
+
+function WonTenderCard({ tender, index }: { tender: WonTender; index: number }) {
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 70).springify().damping(18).stiffness(180)}>
+      <PressableCard style={[styles.tenderCard, styles.wonCard]}>
+        {/* Won Banner */}
+        <View style={styles.wonBanner}>
+          <Ionicons name="trophy" size={16} color={T.amber} />
+          <Text style={styles.wonBannerText}>Contract Awarded</Text>
+        </View>
+        <Text style={styles.tenderTitle}>{tender.title}</Text>
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={13} color={T.textMuted} />
+          <Text style={styles.locationText}>{tender.location}</Text>
+        </View>
+        <View style={styles.wonMetaRow}>
+          <View>
+            <Text style={styles.wonMetaLabel}>Contract Value</Text>
+            <Text style={styles.wonContractValue}>{tender.contractValue}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={styles.wonMetaLabel}>Awarded On</Text>
+            <Text style={styles.wonAwardDate}>{tender.awardedDate}</Text>
+          </View>
+        </View>
+        <View style={styles.divider} />
+        <Pressable
+          style={styles.viewContractBtn}
+          onPress={() =>
+            Alert.alert('View Contract', 'Opening contract details...', [{ text: 'OK' }])
+          }
+        >
+          <Ionicons name="document-text-outline" size={15} color="#fff" />
+          <Text style={styles.viewContractText}>View Contract</Text>
+        </Pressable>
+      </PressableCard>
+    </Animated.View>
+  );
+}
 
 export default function TendersScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TenderStatus | 'all'>('all');
-
-  const filteredTenders = TENDERS.filter((t) => {
-    if (activeTab === 'all') return t.status === 'open';
-    return t.status === activeTab;
-  });
-
-  const renderTenderCard = (tender: Tender) => {
-    const accent = STATUS_ACCENT[tender.status];
-    const isUrgent = tender.status === 'open' && tender.daysLeft <= 3;
-    const isLost = tender.status === 'lost';
-
-    return (
-      <View
-        key={tender.id}
-        style={[s.tenderCard, { borderLeftColor: accent, borderLeftWidth: 4 }, isLost && { opacity: 0.65 }]}
-      >
-        {/* Title & Posted By */}
-        <Text style={s.tenderTitle}>{tender.title}</Text>
-        <View style={s.postedByRow}>
-          <Ionicons name="business-outline" size={13} color={T.textMuted} />
-          <Text style={s.postedByText}>{tender.postedBy}</Text>
-        </View>
-
-        {/* Budget & Deadline */}
-        <View style={s.metaRow}>
-          <View style={s.metaItem}>
-            <Ionicons name="wallet-outline" size={14} color={T.amber} />
-            <Text style={s.budgetText}>Rs.{tender.budgetMin}L — Rs.{tender.budgetMax}L</Text>
-          </View>
-          <View style={s.metaItem}>
-            <Ionicons
-              name="calendar-outline"
-              size={14}
-              color={isUrgent ? '#EF4444' : T.textMuted}
-            />
-            <Text style={[s.deadlineText, isUrgent && { color: '#EF4444', fontWeight: '700' as const }]}>
-              {tender.deadline}
-              {isUrgent ? ` (${tender.daysLeft}d left!)` : ''}
-            </Text>
-          </View>
-        </View>
-
-        {/* Location */}
-        <View style={s.locationRow}>
-          <Ionicons name="location-outline" size={14} color={T.textMuted} />
-          <Text style={s.locationText}>{tender.location}</Text>
-        </View>
-
-        {/* Materials */}
-        <View style={s.materialsRow}>
-          {tender.materials.map((mat) => (
-            <View key={mat} style={s.materialChip}>
-              <Text style={s.materialText}>{mat}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Action Button */}
-        {tender.status === 'open' && (
-          <TouchableOpacity style={s.placeBidBtn}>
-            <Ionicons name="send" size={14} color={T.white} />
-            <Text style={s.placeBidText}>Place Bid</Text>
-          </TouchableOpacity>
-        )}
-        {tender.status === 'submitted' && (
-          <TouchableOpacity style={s.viewBidBtn}>
-            <Ionicons name="eye-outline" size={14} color={T.info} />
-            <Text style={s.viewBidText}>View Bid</Text>
-          </TouchableOpacity>
-        )}
-        {tender.status === 'won' && (
-          <View style={s.wonBadge}>
-            <Ionicons name="checkmark-circle" size={16} color={T.success} />
-            <Text style={s.wonBadgeText}>Contract Awarded</Text>
-          </View>
-        )}
-        {tender.status === 'lost' && (
-          <View style={s.lostBadge}>
-            <Ionicons name="close-circle" size={16} color={T.textMuted} />
-            <Text style={s.lostBadgeText}>Not Selected</Text>
-          </View>
-        )}
-      </View>
-    );
-  };
+  const [activeTab, setActiveTab] = useState<TabKey>('open');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={styles.safe}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Tenders & Bids</Text>
-        <View style={{ width: 40 }} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Tenders & Bids</Text>
+        <Pressable style={styles.filterBtn}>
+          <Ionicons name="options-outline" size={20} color={T.text} />
+        </Pressable>
       </View>
 
-      {/* Tabs */}
-      <View style={s.tabRow}>
-        {TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[s.tab, activeTab === tab.key && s.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <Text style={[s.tabText, activeTab === tab.key && s.tabTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Tab Bar */}
+      <View style={styles.tabBar}>
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              style={[styles.tab, isActive && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                {tab.label}
+              </Text>
+              <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+                <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
+                  {tab.count}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-        <View style={s.tenderList}>
-          {filteredTenders.length > 0 ? (
-            filteredTenders.map(renderTenderCard)
-          ) : (
-            <View style={s.emptyState}>
-              <Ionicons name="document-text-outline" size={48} color={T.textMuted} />
-              <Text style={s.emptyText}>No tenders in this category</Text>
-            </View>
-          )}
-        </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Open Tenders */}
+        {activeTab === 'open' && (
+          <View style={styles.cardsList}>
+            {OPEN_TENDERS.map((tender, i) => (
+              <OpenTenderCard key={tender.id} tender={tender} index={i} />
+            ))}
+          </View>
+        )}
+
+        {/* My Bids */}
+        {activeTab === 'mybids' && (
+          <View style={styles.cardsList}>
+            {MY_BIDS.map((bid, i) => (
+              <MyBidCard key={bid.id} bid={bid} index={i} />
+            ))}
+          </View>
+        )}
+
+        {/* Won */}
+        {activeTab === 'won' && (
+          <View style={styles.cardsList}>
+            {WON_TENDERS.map((tender, i) => (
+              <WonTenderCard key={tender.id} tender={tender} index={i} />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = {
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: T.bg },
+
+  /* Header */
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 8,
+    paddingBottom: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: T.bg,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: T.text,
+  headerTitle: { fontSize: 17, fontWeight: '700', color: T.text },
+  filterBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: T.bg,
   },
 
-  /* Tabs */
-  tabRow: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 8,
+  /* Tab Bar */
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 8,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
   },
   tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 18,
-    borderRadius: 24,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 12,
     backgroundColor: T.bg,
     borderWidth: 1,
     borderColor: T.border,
+    gap: 6,
   },
   tabActive: {
     backgroundColor: T.navy,
     borderColor: T.navy,
   },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: T.textMuted,
+  tabLabel: { fontSize: 13, fontWeight: '600', color: T.textMuted },
+  tabLabelActive: { color: '#fff' },
+  tabBadge: {
+    backgroundColor: T.border,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
   },
-  tabTextActive: {
-    color: T.white,
-  },
+  tabBadgeActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
+  tabBadgeText: { fontSize: 11, fontWeight: '700', color: T.textMuted },
+  tabBadgeTextActive: { color: '#fff' },
 
-  /* Tender List */
-  tenderList: {
-    paddingHorizontal: 20,
-    marginTop: 8,
-    gap: 14,
-  },
+  scrollContent: { paddingBottom: 40 },
+  cardsList: { padding: 16, gap: 14 },
 
   /* Tender Card */
   tenderCard: {
     backgroundColor: T.surface,
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: T.border,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  tenderTitle: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: T.text,
-    marginBottom: 6,
-  },
-  postedByRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 5,
-    marginBottom: 12,
-  },
-  postedByText: {
-    fontSize: 12,
-    color: T.textMuted,
-    fontWeight: '500' as const,
+  wonCard: {
+    borderColor: `${T.amber}40`,
+    borderWidth: 1.5,
   },
 
-  /* Meta */
-  metaRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
+  /* Top Row */
+  tenderTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 10,
   },
-  metaItem: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 5,
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
-  budgetText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: T.amber,
+  categoryText: { fontSize: 11, fontWeight: '700' },
+  deadlineChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    backgroundColor: T.bg,
   },
-  deadlineText: {
-    fontSize: 12,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
+  deadlineUrgent: { backgroundColor: '#FEE2E2' },
+  deadlineText: { fontSize: 11, fontWeight: '600', color: T.textSecondary },
+  deadlineTextUrgent: { color: '#EF4444', fontWeight: '700' },
+
+  /* Title */
+  tenderTitle: { fontSize: 15, fontWeight: '700', color: T.text, marginBottom: 8, lineHeight: 22 },
 
   /* Location */
-  locationRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 5,
-    marginBottom: 12,
-  },
-  locationText: {
-    fontSize: 12,
-    color: T.textSecondary,
-  },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },
+  locationText: { fontSize: 12, color: T.textMuted },
 
-  /* Materials */
-  materialsRow: {
-    flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
-    gap: 6,
+  /* Meta */
+  tenderMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 14,
   },
-  materialChip: {
-    backgroundColor: T.bg,
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  materialText: {
-    fontSize: 11,
-    color: T.textSecondary,
-    fontWeight: '500' as const,
-  },
+  tenderMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  budgetText: { fontSize: 14, fontWeight: '700', color: T.amber },
+  bidsText: { fontSize: 12, color: T.textSecondary, fontWeight: '500' },
 
-  /* Action Buttons */
+  /* Divider */
+  divider: { height: 1, backgroundColor: T.border, marginBottom: 14 },
+
+  /* Place Bid */
   placeBidBtn: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 12,
     backgroundColor: T.amber,
   },
-  placeBidText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: T.white,
-  },
-  viewBidBtn: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: T.info,
-  },
-  viewBidText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: T.info,
-  },
-  wonBadge: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 10,
-    backgroundColor: T.success + '14',
-  },
-  wonBadgeText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: T.success,
-  },
-  lostBadge: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 10,
-    backgroundColor: T.bg,
-  },
-  lostBadgeText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: T.textMuted,
-  },
+  placeBidText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 
-  /* Empty */
-  emptyState: {
-    alignItems: 'center' as const,
-    paddingTop: 60,
-    gap: 12,
+  /* My Bids */
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
-  emptyText: {
-    fontSize: 14,
-    color: T.textMuted,
-    fontWeight: '500' as const,
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusPillText: { fontSize: 11, fontWeight: '700' },
+  submittedDate: { fontSize: 12, color: T.textMuted, fontWeight: '500' },
+  bidMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-};
+  myBidAmountBox: { alignItems: 'flex-end' },
+  myBidLabel: { fontSize: 11, color: T.textMuted, fontWeight: '500', marginBottom: 2 },
+  myBidAmount: { fontSize: 16, fontWeight: '800', color: T.navy },
+  viewBidBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: T.navy,
+  },
+  viewBidText: { fontSize: 14, fontWeight: '700', color: T.navy },
+
+  /* Won */
+  wonBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  wonBannerText: { fontSize: 13, fontWeight: '700', color: T.amber },
+  wonMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 14,
+  },
+  wonMetaLabel: { fontSize: 11, color: T.textMuted, fontWeight: '500', marginBottom: 3 },
+  wonContractValue: { fontSize: 20, fontWeight: '800', color: '#10B981' },
+  wonAwardDate: { fontSize: 13, fontWeight: '600', color: T.text },
+  viewContractBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: T.navy,
+  },
+  viewContractText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+});

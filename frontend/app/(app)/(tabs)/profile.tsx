@@ -1,11 +1,19 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  FadeInDown,
+  FadeInLeft,
+  ZoomIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 import { useAuth } from '../../../src/hooks/useAuth';
-import { LightTheme } from '../../../src/theme/colors';
+import { LightTheme as T, Colors } from '../../../src/theme/colors';
 
-const T = LightTheme;
+const SPRING_SNAPPY = { damping: 18, stiffness: 280, mass: 0.8 };
 
 type MenuItem = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -90,9 +98,49 @@ const ROLE_MENUS: Record<string, MenuItem[]> = {
   admin: ADMIN_MENU,
 };
 
+function AnimatedMenuItem({ item, index, onPress }: { item: MenuItem; index: number; onPress: () => void }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View
+      entering={FadeInLeft.delay(index * 50 + 200).springify().damping(18)}
+      style={animStyle}
+    >
+      <Pressable
+        style={styles.menuItem}
+        onPress={onPress}
+        onPressIn={() => { scale.value = withSpring(0.98, SPRING_SNAPPY); }}
+        onPressOut={() => { scale.value = withSpring(1, SPRING_SNAPPY); }}
+      >
+        <View style={styles.menuIcon}>
+          <Ionicons name={item.icon} size={20} color={T.navy} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.menuLabel}>{item.label}</Text>
+          {item.subtitle && <Text style={styles.menuSub}>{item.subtitle}</Text>}
+        </View>
+        {item.badge && (
+          <View style={styles.menuBadge}>
+            <Text style={styles.menuBadgeText}>{item.badge}</Text>
+          </View>
+        )}
+        <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
+
+  const logoutScale = useSharedValue(1);
+  const logoutAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoutScale.value }],
+  }));
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -109,92 +157,118 @@ export default function ProfileScreen() {
   };
 
   const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : '';
+  const initials = user?.full_name
+    ? user.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'U';
+  const menuItems = ROLE_MENUS[user?.role || 'customer'] || CUSTOMER_MENU;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        <View style={s.header}>
-          <Text style={s.headerTitle}>Profile</Text>
-          <TouchableOpacity style={s.settingsBtn} onPress={() => router.push('/(app)/settings')}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <Pressable style={styles.settingsBtn} onPress={() => router.push('/(app)/settings' as any)}>
             <Ionicons name="settings-outline" size={22} color={T.text} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
-        {/* Profile Card */}
-        <View style={s.profileCard}>
-          <View style={s.avatar}>
-            <Text style={s.avatarText}>
-              {user?.full_name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
-            </Text>
-          </View>
-          <View style={{ flex: 1, marginLeft: 16 }}>
-            <Text style={s.name}>{user?.full_name}</Text>
-            <Text style={s.phone}>+91 {user?.phone}</Text>
-            <View style={s.roleBadge}>
+        {/* Avatar + Info */}
+        <View style={styles.profileCard}>
+          <Animated.View entering={ZoomIn.delay(0).springify().damping(14)} style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(60).springify()} style={styles.profileInfo}>
+            <Text style={styles.name}>{user?.full_name || 'BuildMart User'}</Text>
+            <Text style={styles.phone}>+91 {user?.phone}</Text>
+            <View style={styles.roleBadge}>
               <Ionicons name="shield-checkmark" size={12} color={T.amber} />
-              <Text style={s.roleText}>{roleLabel}</Text>
+              <Text style={styles.roleText}>{roleLabel}</Text>
             </View>
-          </View>
-          <TouchableOpacity style={s.editBtn} onPress={() => router.push('/(app)/edit-profile')}>
+          </Animated.View>
+          <Pressable style={styles.editBtn} onPress={() => router.push('/(app)/edit-profile' as any)}>
             <Ionicons name="create-outline" size={18} color={T.navy} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
+
+        {/* Stats Row */}
+        <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statLabel}>Orders</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>3</Text>
+            <Text style={styles.statLabel}>Agreements</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <View style={styles.ratingInline}>
+              <Text style={styles.statValue}>4.7</Text>
+              <Ionicons name="star" size={14} color={T.amber} style={{ marginTop: 2 }} />
+            </View>
+            <Text style={styles.statLabel}>Rating</Text>
+          </View>
+        </Animated.View>
 
         {/* Wallet Summary */}
-        <TouchableOpacity style={s.walletCard} onPress={() => router.push('/(app)/(tabs)/wallet')}>
-          <View style={s.walletIcon}>
-            <Ionicons name="wallet" size={22} color={T.white} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={s.walletLabel}>Wallet Balance</Text>
-            <Text style={s.walletAmount}>Rs.25,000</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={T.textMuted} />
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(150).springify()}>
+          <Pressable style={styles.walletCard} onPress={() => router.push('/(app)/(tabs)/wallet' as any)}>
+            <View style={styles.walletIcon}>
+              <Ionicons name="wallet" size={22} color={T.white} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={styles.walletLabel}>Wallet Balance</Text>
+              <Text style={styles.walletAmount}>₹25,000</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={T.textMuted} />
+          </Pressable>
+        </Animated.View>
 
         {/* Menu Items */}
-        <View style={s.menuSection}>
-          {(ROLE_MENUS[user?.role || 'customer'] || CUSTOMER_MENU).map((item, i) => (
-            <TouchableOpacity
+        <View style={styles.menuSection}>
+          {menuItems.map((item, i) => (
+            <AnimatedMenuItem
               key={i}
-              style={s.menuItem}
+              item={item}
+              index={i}
               onPress={() => item.route && router.push(item.route as any)}
-            >
-              <View style={s.menuIcon}>
-                <Ionicons name={item.icon} size={20} color={T.navy} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.menuLabel}>{item.label}</Text>
-                {item.subtitle && <Text style={s.menuSub}>{item.subtitle}</Text>}
-              </View>
-              {item.badge && (
-                <View style={s.menuBadge}>
-                  <Text style={s.menuBadgeText}>{item.badge}</Text>
-                </View>
-              )}
-              <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
-            </TouchableOpacity>
+            />
           ))}
         </View>
 
         {/* Logout */}
-        <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={s.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+        <Animated.View style={logoutAnimStyle}>
+          <Pressable
+            style={styles.logoutBtn}
+            onPress={handleLogout}
+            onPressIn={() => { logoutScale.value = withSpring(0.97, SPRING_SNAPPY); }}
+            onPressOut={() => { logoutScale.value = withSpring(1, SPRING_SNAPPY); }}
+          >
+            <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+            <Text style={styles.logoutText}>Log Out</Text>
+          </Pressable>
+        </Animated.View>
 
-        <Text style={s.version}>BuildMart v1.0.0</Text>
+        <Text style={styles.version}>BuildMart v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = {
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: T.bg,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
   header: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
@@ -202,11 +276,22 @@ const s = {
     borderBottomWidth: 1,
     borderBottomColor: T.border,
   },
-  headerTitle: { fontSize: 22, fontWeight: '800' as const, color: T.text },
-  settingsBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: T.bg, justifyContent: 'center' as const, alignItems: 'center' as const },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: T.text,
+  },
+  settingsBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: T.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   profileCard: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: T.surface,
     margin: 16,
     padding: 20,
@@ -215,42 +300,101 @@ const s = {
     borderColor: T.border,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 60,
+    height: 60,
+    borderRadius: 18,
     backgroundColor: T.navy,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: T.navy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  avatarText: { fontSize: 20, fontWeight: '800' as const, color: T.white },
-  name: { fontSize: 17, fontWeight: '700' as const, color: T.text },
-  phone: { fontSize: 13, color: T.textSecondary, marginTop: 2 },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: T.white,
+  },
+  profileInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  name: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: T.text,
+  },
+  phone: {
+    fontSize: 13,
+    color: T.textSecondary,
+    marginTop: 2,
+  },
   roleBadge: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: T.amberBg,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    alignSelf: 'flex-start' as const,
+    alignSelf: 'flex-start',
     gap: 4,
     marginTop: 6,
   },
-  roleText: { fontSize: 11, fontWeight: '700' as const, color: T.text },
+  roleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: T.text,
+  },
   editBtn: {
     width: 36,
     height: 36,
     borderRadius: 10,
     backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  walletCard: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+  statsRow: {
+    flexDirection: 'row',
     backgroundColor: T.surface,
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    paddingVertical: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: T.border,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: T.text,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: T.textSecondary,
+    fontWeight: '500',
+  },
+  ratingInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  walletCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: T.surface,
+    marginHorizontal: 16,
+    marginBottom: 12,
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
@@ -261,22 +405,31 @@ const s = {
     height: 44,
     borderRadius: 12,
     backgroundColor: T.navy,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  walletLabel: { fontSize: 12, color: T.textSecondary },
-  walletAmount: { fontSize: 18, fontWeight: '800' as const, color: T.text, marginTop: 2 },
+  walletLabel: {
+    fontSize: 12,
+    color: T.textSecondary,
+  },
+  walletAmount: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: T.text,
+    marginTop: 2,
+  },
   menuSection: {
     backgroundColor: T.surface,
     marginHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: T.border,
-    overflow: 'hidden' as const,
+    overflow: 'hidden',
+    marginBottom: 16,
   },
   menuItem: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
@@ -287,12 +440,20 @@ const s = {
     height: 38,
     borderRadius: 10,
     backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 14,
   },
-  menuLabel: { fontSize: 15, fontWeight: '600' as const, color: T.text },
-  menuSub: { fontSize: 12, color: T.textMuted, marginTop: 1 },
+  menuLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: T.text,
+  },
+  menuSub: {
+    fontSize: 12,
+    color: T.textMuted,
+    marginTop: 1,
+  },
   menuBadge: {
     backgroundColor: T.amber,
     borderRadius: 10,
@@ -300,13 +461,17 @@ const s = {
     paddingVertical: 2,
     marginRight: 8,
   },
-  menuBadgeText: { fontSize: 11, fontWeight: '700' as const, color: T.white },
+  menuBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: T.white,
+  },
   logoutBtn: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginHorizontal: 16,
-    marginTop: 20,
+    marginTop: 4,
     paddingVertical: 14,
     borderRadius: 14,
     backgroundColor: '#FEF2F2',
@@ -314,12 +479,16 @@ const s = {
     borderColor: '#FECACA',
     gap: 8,
   },
-  logoutText: { fontSize: 15, fontWeight: '700' as const, color: '#EF4444' },
+  logoutText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.error,
+  },
   version: {
-    textAlign: 'center' as const,
+    textAlign: 'center',
     fontSize: 12,
     color: T.textMuted,
     marginTop: 16,
     marginBottom: 32,
   },
-};
+});

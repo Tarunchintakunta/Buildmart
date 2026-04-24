@@ -1,45 +1,164 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, Pressable, ScrollView, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  ZoomIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { useCartStore } from '../../src/store/cart.store';
-import { LightTheme } from '../../src/theme/colors';
-import { getProductImage } from '../../src/constants/images';
+import { LightTheme as T, Colors } from '../../src/theme/colors';
+import { MOCK_PRODUCTS } from '../../src/constants/mockData';
 
-const T = LightTheme;
+const SPRING_SNAPPY = { damping: 18, stiffness: 280, mass: 0.8 };
+const SPRING_BOUNCY = { damping: 12, stiffness: 200, mass: 0.9 };
 
-const TABS = ['All Items', 'In Stock', 'Price Drops'];
+const INITIAL_WISHLIST = MOCK_PRODUCTS.slice(0, 6).map((p) => ({
+  id: p.id,
+  name: p.name,
+  brand: p.brand,
+  price: p.price,
+  unit: p.unit,
+  image: p.image,
+  category: p.category,
+  inStock: p.inStock,
+  rating: p.rating,
+}));
 
-const WISHLIST_ITEMS = [
-  { id: '1', brand: 'UltraTech', name: 'Premium Portland Cement 50kg', price: 450, originalPrice: null, inStock: true, priceDrop: null },
-  { id: '2', brand: 'Tata Tiscon', name: 'TMT Steel Bars 12mm Fe500D', price: 1240, originalPrice: null, inStock: true, priceDrop: null },
-  { id: '3', brand: 'Kajaria', name: 'Ceramic Floor Tiles 2x2 ft', price: 850, originalPrice: 950, inStock: true, priceDrop: 100 },
-  { id: '4', brand: 'Asian Paints', name: 'Apex Exterior Emulsion 20L', price: 3200, originalPrice: null, inStock: false, priceDrop: null },
-  { id: '5', brand: 'Astral', name: 'CPVC Pipes 1 inch - 10ft', price: 380, originalPrice: 420, inStock: true, priceDrop: 40 },
-  { id: '6', brand: 'Havells', name: 'Electrical Wire 2.5mm 90m', price: 2800, originalPrice: null, inStock: true, priceDrop: null },
-  { id: '7', brand: 'ACC', name: 'Ready Mix Concrete M25', price: 5500, originalPrice: null, inStock: false, priceDrop: null },
-  { id: '8', brand: 'Pidilite', name: 'Dr. Fixit Waterproofing 20kg', price: 1850, originalPrice: 2000, inStock: true, priceDrop: 150 },
-];
+function WishlistCard({
+  item,
+  index,
+  onRemove,
+  onAddToCart,
+}: {
+  item: typeof INITIAL_WISHLIST[0];
+  index: number;
+  onRemove: () => void;
+  onAddToCart: () => void;
+}) {
+  const cardScale = useSharedValue(1);
+  const cartScale = useSharedValue(1);
+  const removeScale = useSharedValue(1);
+  const heartScale = useSharedValue(1);
+
+  const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }] }));
+  const cartStyle = useAnimatedStyle(() => ({ transform: [{ scale: cartScale.value }] }));
+  const removeStyle = useAnimatedStyle(() => ({ transform: [{ scale: removeScale.value }] }));
+  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heartScale.value }] }));
+
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(index * 70).springify().damping(16)}
+      style={[styles.card, cardStyle]}
+    >
+      {/* Remove X button */}
+      <Animated.View style={[styles.removeBtn, removeStyle]}>
+        <Pressable
+          style={styles.removeBtnInner}
+          onPress={() => {
+            removeScale.value = withSpring(1.2, SPRING_BOUNCY, () => {
+              removeScale.value = withSpring(1, SPRING_BOUNCY);
+            });
+            onRemove();
+          }}
+          onPressIn={() => { removeScale.value = withSpring(0.85, SPRING_SNAPPY); }}
+          onPressOut={() => { removeScale.value = withSpring(1, SPRING_SNAPPY); }}
+        >
+          <Ionicons name="close" size={14} color={T.white} />
+        </Pressable>
+      </Animated.View>
+
+      {/* Image */}
+      <View style={styles.imageBox}>
+        <Image
+          source={{ uri: item.image as string }}
+          style={styles.productImage}
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Heart */}
+      <Animated.View style={[styles.heartBtn, heartStyle]}>
+        <Pressable
+          onPress={() => {
+            heartScale.value = withSpring(1.3, SPRING_BOUNCY, () => {
+              heartScale.value = withSpring(1, SPRING_BOUNCY);
+            });
+          }}
+        >
+          <Ionicons name="heart" size={18} color={T.amber} />
+        </Pressable>
+      </Animated.View>
+
+      {/* Info */}
+      <View style={styles.cardBody}>
+        <Text style={styles.brand}>{item.brand}</Text>
+        <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+        <Text style={styles.unit}>{item.unit}</Text>
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>₹{item.price.toLocaleString('en-IN')}</Text>
+          <View style={styles.ratingPill}>
+            <Ionicons name="star" size={10} color="#F59E0B" />
+            <Text style={styles.ratingText}>{item.rating}</Text>
+          </View>
+        </View>
+        {!item.inStock && (
+          <View style={styles.outOfStockBadge}>
+            <Text style={styles.outOfStockText}>Out of Stock</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Add to Cart */}
+      <Animated.View style={cartStyle}>
+        <Pressable
+          style={[styles.cartBtn, !item.inStock && styles.cartBtnDisabled]}
+          disabled={!item.inStock}
+          onPress={() => {
+            cartScale.value = withSpring(0.9, SPRING_BOUNCY, () => {
+              cartScale.value = withSpring(1, SPRING_BOUNCY);
+            });
+            onAddToCart();
+          }}
+          onPressIn={() => { if (item.inStock) cartScale.value = withSpring(0.95, SPRING_SNAPPY); }}
+          onPressOut={() => { cartScale.value = withSpring(1, SPRING_SNAPPY); }}
+        >
+          <Ionicons
+            name="cart-outline"
+            size={15}
+            color={item.inStock ? T.white : T.textMuted}
+          />
+          <Text style={[styles.cartBtnText, !item.inStock && styles.cartBtnTextDisabled]}>
+            {item.inStock ? 'Add to Cart' : 'Unavailable'}
+          </Text>
+        </Pressable>
+      </Animated.View>
+    </Animated.View>
+  );
+}
 
 export default function WishlistScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('All Items');
-  const [items, setItems] = useState(WISHLIST_ITEMS);
-  const { addItem } = useCartStore();
+  const addItem = useCartStore((s) => s.addItem);
+  const [items, setItems] = useState(INITIAL_WISHLIST);
 
-  const filtered = items.filter((item) => {
-    if (activeTab === 'In Stock') return item.inStock;
-    if (activeTab === 'Price Drops') return item.priceDrop !== null;
-    return true;
-  });
+  const totalValue = items.reduce((sum, i) => sum + i.price, 0);
 
-  const removeItem = (id: string) => setItems(items.filter((i) => i.id !== id));
+  const removeItem = (id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  };
 
-  const moveToCart = (item: typeof WISHLIST_ITEMS[0]) => {
+  const addToCart = (item: typeof INITIAL_WISHLIST[0]) => {
     addItem({
       inventory_id: item.id,
-      product: { id: item.id, name: `${item.brand} ${item.name}`, description: item.brand } as any,
+      product: { id: item.id, name: item.name, description: item.brand, unit: item.unit } as any,
       shop: { id: 'shop-1', name: 'BuildMart Store' } as any,
       quantity: 1,
       price: item.price,
@@ -48,126 +167,364 @@ export default function WishlistScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+      <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Wishlist ({items.length})</Text>
-        <View style={{ width: 42 }} />
-      </View>
-
-      {/* Filter Tabs */}
-      <View style={s.tabRow}>
-        {TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[s.tab, activeTab === tab && s.tabActive]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 12 }}>
-        {filtered.length === 0 ? (
-          <View style={s.empty}>
-            <Ionicons name="heart-outline" size={48} color={T.textMuted} />
-            <Text style={s.emptyTitle}>No items found</Text>
-            <Text style={s.emptyDesc}>Your {activeTab.toLowerCase()} wishlist items will appear here</Text>
+        </Pressable>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Wishlist</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{items.length}</Text>
           </View>
-        ) : (
-          filtered.map((item) => (
-            <View key={item.id} style={s.itemCard}>
-              <View style={s.itemTop}>
-                <View style={s.itemImage}>
-                  <Image source={getProductImage(item.name)} style={{ width: '100%', height: '100%', borderRadius: 12 }} resizeMode="cover" />
-                </View>
-                <View style={{ flex: 1, marginLeft: 14 }}>
-                  <Text style={s.itemBrand}>{item.brand}</Text>
-                  <Text style={s.itemName} numberOfLines={2}>{item.name}</Text>
-                  <View style={s.priceRow}>
-                    <Text style={s.itemPrice}>Rs.{item.price.toLocaleString()}</Text>
-                    {item.originalPrice && (
-                      <Text style={s.originalPrice}>Rs.{item.originalPrice.toLocaleString()}</Text>
-                    )}
-                  </View>
-                </View>
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={s.heartBtn}>
-                  <Ionicons name="heart" size={20} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
+        </View>
+        <View style={{ width: 42 }} />
+      </Animated.View>
 
-              {/* Status Badge */}
-              {!item.inStock && (
-                <View style={s.outOfStockBadge}>
-                  <Ionicons name="alert-circle" size={14} color="#EF4444" />
-                  <Text style={s.outOfStockText}>Out of Stock</Text>
-                </View>
-              )}
-              {item.priceDrop && (
-                <View style={s.priceDropBadge}>
-                  <Ionicons name="trending-down" size={14} color={T.success} />
-                  <Text style={s.priceDropText}>Price dropped Rs.{item.priceDrop}</Text>
-                </View>
-              )}
-
-              {/* Action Buttons */}
-              <View style={s.actionRow}>
-                <TouchableOpacity
-                  style={[s.cartBtn, !item.inStock && s.cartBtnDisabled]}
-                  onPress={() => item.inStock && moveToCart(item)}
-                  disabled={!item.inStock}
-                >
-                  <Ionicons name="cart-outline" size={16} color={item.inStock ? T.white : T.textMuted} />
-                  <Text style={[s.cartBtnText, !item.inStock && s.cartBtnTextDisabled]}>
-                    {item.inStock ? 'Move to Cart' : 'Unavailable'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={s.removeBtn} onPress={() => removeItem(item.id)}>
-                  <Text style={s.removeBtnText}>Remove</Text>
-                </TouchableOpacity>
-              </View>
+      {items.length === 0 ? (
+        /* Empty State */
+        <Animated.View entering={ZoomIn.delay(60).springify()} style={styles.emptyState}>
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="heart-outline" size={44} color={T.textMuted} />
+          </View>
+          <Text style={styles.emptyTitle}>Your wishlist is empty</Text>
+          <Text style={styles.emptyDesc}>Save items you love and revisit them anytime</Text>
+          <Pressable style={styles.browseBtn} onPress={() => router.push('/(app)/search' as any)}>
+            <Ionicons name="search-outline" size={16} color={T.white} />
+            <Text style={styles.browseBtnText}>Browse Products</Text>
+          </Pressable>
+        </Animated.View>
+      ) : (
+        <>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Grid */}
+            <View style={styles.grid}>
+              {items.map((item, i) => (
+                <WishlistCard
+                  key={item.id}
+                  item={item}
+                  index={i}
+                  onRemove={() => removeItem(item.id)}
+                  onAddToCart={() => addToCart(item)}
+                />
+              ))}
             </View>
-          ))
-        )}
-      </ScrollView>
+
+            {/* Spacer for bottom bar */}
+            <View style={{ height: 16 }} />
+          </ScrollView>
+
+          {/* Total Value Row */}
+          <Animated.View entering={FadeInUp.delay(200).springify()} style={styles.bottomBar}>
+            <View style={styles.totalRow}>
+              <View>
+                <Text style={styles.totalLabel}>Total Value</Text>
+                <Text style={styles.totalValue}>₹{totalValue.toLocaleString('en-IN')}</Text>
+              </View>
+              <Pressable
+                style={styles.addAllBtn}
+                onPress={() => {
+                  items.filter((i) => i.inStock).forEach((i) => addToCart(i));
+                }}
+              >
+                <Ionicons name="cart-outline" size={16} color={T.white} />
+                <Text style={styles.addAllText}>Add All to Cart</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
 
-const s = {
-  header: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: T.surface, borderBottomWidth: 1, borderBottomColor: T.border },
-  backBtn: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center' as const, alignItems: 'center' as const },
-  headerTitle: { fontSize: 18, fontWeight: '700' as const, color: T.text },
-  tabRow: { flexDirection: 'row' as const, paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: T.surface },
-  tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: T.bg },
-  tabActive: { backgroundColor: T.navy },
-  tabText: { fontSize: 13, fontWeight: '600' as const, color: T.textSecondary },
-  tabTextActive: { color: T.white },
-  itemCard: { backgroundColor: T.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: T.border },
-  itemTop: { flexDirection: 'row' as const },
-  itemImage: { width: 72, height: 72, borderRadius: 12, backgroundColor: T.bg, justifyContent: 'center' as const, alignItems: 'center' as const, borderWidth: 1, borderColor: T.border, overflow: 'hidden' as const },
-  itemBrand: { fontSize: 11, fontWeight: '600' as const, color: T.textMuted, textTransform: 'uppercase' as const, letterSpacing: 0.5 },
-  itemName: { fontSize: 15, fontWeight: '700' as const, color: T.text, marginTop: 2, lineHeight: 20 },
-  priceRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, marginTop: 6 },
-  itemPrice: { fontSize: 17, fontWeight: '800' as const, color: T.text },
-  originalPrice: { fontSize: 13, fontWeight: '500' as const, color: T.textMuted, textDecorationLine: 'line-through' as const },
-  heartBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEF2F2', justifyContent: 'center' as const, alignItems: 'center' as const },
-  outOfStockBadge: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, backgroundColor: '#FEF2F2', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 10, alignSelf: 'flex-start' as const },
-  outOfStockText: { fontSize: 12, fontWeight: '600' as const, color: '#EF4444' },
-  priceDropBadge: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, backgroundColor: '#D1FAE5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 10, alignSelf: 'flex-start' as const },
-  priceDropText: { fontSize: 12, fontWeight: '600' as const, color: T.success },
-  actionRow: { flexDirection: 'row' as const, gap: 10, marginTop: 14 },
-  cartBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: T.navy, borderRadius: 10, paddingVertical: 12, gap: 6 },
-  cartBtnDisabled: { backgroundColor: T.bg },
-  cartBtnText: { fontSize: 13, fontWeight: '700' as const, color: T.white },
-  cartBtnTextDisabled: { color: T.textMuted },
-  removeBtn: { paddingHorizontal: 20, justifyContent: 'center' as const, alignItems: 'center' as const, borderRadius: 10, borderWidth: 1, borderColor: T.border },
-  removeBtnText: { fontSize: 13, fontWeight: '600' as const, color: T.textSecondary },
-  empty: { alignItems: 'center' as const, paddingTop: 60, gap: 8 },
-  emptyTitle: { fontSize: 18, fontWeight: '700' as const, color: T.text },
-  emptyDesc: { fontSize: 14, color: T.textSecondary },
-};
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: T.bg,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+  backBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: T.text,
+  },
+  countBadge: {
+    backgroundColor: T.amber,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  countBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: T.white,
+  },
+  scrollContent: {
+    paddingTop: 14,
+    paddingHorizontal: 12,
+    paddingBottom: 20,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  card: {
+    width: '47.5%',
+    backgroundColor: T.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+    overflow: 'hidden',
+    padding: 0,
+  },
+  removeBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 10,
+  },
+  removeBtnInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageBox: {
+    height: 130,
+    backgroundColor: T.bg,
+    overflow: 'hidden',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heartBtn: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  cardBody: {
+    padding: 10,
+  },
+  brand: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: T.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  productName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.text,
+    lineHeight: 18,
+    marginBottom: 2,
+  },
+  unit: {
+    fontSize: 11,
+    color: T.textMuted,
+    marginBottom: 6,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  price: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: T.text,
+  },
+  ratingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  ratingText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  outOfStockBadge: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  outOfStockText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.error,
+  },
+  cartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: T.navy,
+    paddingVertical: 10,
+    margin: 10,
+    marginTop: 0,
+    borderRadius: 10,
+  },
+  cartBtnDisabled: {
+    backgroundColor: T.bg,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  cartBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: T.white,
+  },
+  cartBtnTextDisabled: {
+    color: T.textMuted,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    gap: 12,
+  },
+  emptyIconCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 28,
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: T.text,
+  },
+  emptyDesc: {
+    fontSize: 14,
+    color: T.textSecondary,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  browseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: T.navy,
+    shadowColor: T.navy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  browseBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: T.white,
+  },
+  bottomBar: {
+    backgroundColor: T.surface,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  totalLabel: {
+    fontSize: 12,
+    color: T.textSecondary,
+    fontWeight: '500',
+  },
+  totalValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: T.text,
+    marginTop: 2,
+  },
+  addAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: T.navy,
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+    borderRadius: 12,
+    shadowColor: T.navy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  addAllText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.white,
+  },
+});

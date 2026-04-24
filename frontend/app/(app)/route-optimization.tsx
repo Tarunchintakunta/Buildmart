@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../src/theme/colors';
-
-const T = LightTheme;
+import Animated, { FadeInDown, FadeInLeft, ZoomIn } from 'react-native-reanimated';
+import { LightTheme as T } from '../../src/theme/colors';
 
 type DeliveryStop = {
   id: string;
@@ -18,35 +17,29 @@ type DeliveryStop = {
 
 const STOPS: DeliveryStop[] = [
   {
-    id: '1',
-    order: 1,
-    type: 'pickup',
-    address: '12, Industrial Area, Phase 2, Whitefield',
+    id: '1', order: 1, type: 'pickup',
+    address: 'Sri Lakshmi Cement Depot, Phase 2, Jeedimetla, Hyderabad',
     customer: 'Sri Lakshmi Cement Depot',
-    items: '50 bags cement, 20 bags sand',
+    items: '50 bags cement, 20 bags river sand',
   },
   {
-    id: '2',
-    order: 2,
-    type: 'delivery',
-    address: '45/A, 3rd Cross, JP Nagar, Bangalore',
+    id: '2', order: 2, type: 'delivery',
+    address: '45/A, 3rd Cross, Kondapur, Hyderabad 500084',
     customer: 'Rajesh Kumar',
     items: '30 bags cement, 10 TMT bars',
   },
   {
-    id: '3',
-    order: 3,
-    type: 'delivery',
-    address: '78, MG Road, Indiranagar, Bangalore',
-    customer: 'Priya Construction',
-    items: '20 bags sand, 5 bags putty',
+    id: '3', order: 3, type: 'delivery',
+    address: '78, MG Road, Kukatpally, Hyderabad 500072',
+    customer: 'Priya Construction Co.',
+    items: '20 bags M-sand, 5 bags wall putty',
   },
 ];
 
 const ROUTE_STATS = [
-  { label: 'Total Distance', value: '15.3 km', icon: 'navigate-outline' as const },
-  { label: 'Est. Time', value: '1h 45m', icon: 'time-outline' as const },
-  { label: 'Total Earnings', value: 'Rs.550', icon: 'wallet-outline' as const },
+  { label: 'Total Distance', value: '15.3 km',  icon: 'navigate-outline'  as const },
+  { label: 'Est. Time',      value: '1h 45m',   icon: 'time-outline'      as const },
+  { label: 'Earnings',       value: '₹550',     icon: 'wallet-outline'    as const },
 ];
 
 export default function RouteOptimizationScreen() {
@@ -54,381 +47,207 @@ export default function RouteOptimizationScreen() {
   const [optimized, setOptimized] = useState(false);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={styles.safe}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+      <Animated.View style={styles.header} entering={FadeInDown.duration(280)}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Route Planner</Text>
-        <View style={{ width: 40 }} />
-      </View>
+        </Pressable>
+        <Text style={styles.headerTitle}>Route Planner</Text>
+        <View style={{ width: 42 }} />
+      </Animated.View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Map Placeholder */}
-        <View style={s.mapArea}>
-          <View style={s.mapContent}>
-            {/* Dotted route visualization */}
-            <View style={s.routeVisualization}>
-              {/* Start point */}
-              <View style={s.routePointStart}>
-                <Ionicons name="navigate" size={14} color={T.white} />
-              </View>
-              {/* Dotted line segment 1 */}
-              <View style={s.dottedLineContainer}>
-                {[...Array(8)].map((_, i) => (
-                  <View key={`d1-${i}`} style={s.dot} />
+        <Animated.View style={styles.mapArea} entering={FadeInDown.delay(60).springify().damping(18)}>
+          <View style={styles.routeVisualization}>
+            <View style={[styles.routePoint, { backgroundColor: T.info }]}>
+              <Ionicons name="navigate" size={14} color={T.white} />
+            </View>
+            {[1, 2].map((_, i) => (
+              <View key={i} style={styles.dotRow}>
+                {[...Array(6)].map((__, j) => (
+                  <View key={j} style={styles.dot} />
                 ))}
+                <View style={[styles.routePoint, { backgroundColor: T.navy, width: 26, height: 26, borderRadius: 13 }]}>
+                  <Text style={styles.routePointText}>{i + 1}</Text>
+                </View>
               </View>
-              {/* Stop 1 */}
-              <View style={s.routePointMid}>
-                <Text style={s.routePointText}>1</Text>
-              </View>
-              {/* Dotted line segment 2 */}
-              <View style={s.dottedLineContainer}>
-                {[...Array(8)].map((_, i) => (
-                  <View key={`d2-${i}`} style={s.dot} />
-                ))}
-              </View>
-              {/* Stop 2 */}
-              <View style={s.routePointMid}>
-                <Text style={s.routePointText}>2</Text>
-              </View>
-              {/* Dotted line segment 3 */}
-              <View style={s.dottedLineContainer}>
-                {[...Array(8)].map((_, i) => (
-                  <View key={`d3-${i}`} style={s.dot} />
-                ))}
-              </View>
-              {/* End point */}
-              <View style={[s.routePointStart, { backgroundColor: T.success }]}>
+            ))}
+            <View style={styles.dotRow}>
+              {[...Array(6)].map((_, j) => <View key={j} style={styles.dot} />)}
+              <View style={[styles.routePoint, { backgroundColor: T.success }]}>
                 <Ionicons name="location" size={14} color={T.white} />
               </View>
             </View>
-            <Text style={s.mapLabel}>Route Overview</Text>
           </View>
-        </View>
+          <Text style={styles.mapLabel}>
+            {optimized ? '✅ Route Optimized — Shortest path' : 'Route Overview'}
+          </Text>
+        </Animated.View>
 
-        {/* Route Stats */}
-        <View style={s.statsRow}>
+        {/* Stats */}
+        <View style={styles.statsRow}>
           {ROUTE_STATS.map((stat, i) => (
-            <View key={i} style={s.statCard}>
+            <Animated.View
+              key={i}
+              style={styles.statCard}
+              entering={ZoomIn.delay(120 + i * 70).springify().damping(14)}
+            >
               <Ionicons name={stat.icon} size={18} color={T.amber} />
-              <Text style={s.statValue}>{stat.value}</Text>
-              <Text style={s.statLabel}>{stat.label}</Text>
-            </View>
+              <Text style={styles.statValue}>{stat.value}</Text>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+            </Animated.View>
           ))}
         </View>
 
-        {/* Active Deliveries */}
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Active Deliveries</Text>
-          <Text style={s.sectionSub}>{STOPS.length} stops</Text>
-        </View>
+        {/* Stops */}
+        <Animated.Text style={styles.sectionLabel} entering={FadeInDown.delay(280)}>
+          DELIVERY STOPS ({STOPS.length})
+        </Animated.Text>
 
-        {STOPS.map((stop) => (
-          <View key={stop.id} style={s.stopCard}>
-            <View style={s.stopLeft}>
-              {/* Drag handle */}
-              <View style={s.dragHandle}>
-                <Ionicons name="reorder-three" size={20} color={T.textMuted} />
-              </View>
-              {/* Stop number */}
-              <View style={s.stopNumber}>
-                <Text style={s.stopNumberText}>{stop.order}</Text>
+        {STOPS.map((stop, i) => (
+          <Animated.View
+            key={stop.id}
+            style={styles.stopCard}
+            entering={FadeInLeft.delay(300 + i * 80).springify().damping(18).stiffness(180)}
+          >
+            <View style={styles.stopLeft}>
+              <View style={styles.stopNumber}>
+                <Text style={styles.stopNumberText}>{stop.order}</Text>
               </View>
             </View>
-            <View style={s.stopContent}>
-              <View style={s.stopTypeRow}>
+            <View style={styles.stopContent}>
+              <View style={styles.stopTypeRow}>
                 <View style={[
-                  s.stopTypeDot,
+                  styles.stopTypeDot,
                   { backgroundColor: stop.type === 'pickup' ? T.info : T.success },
                 ]} />
-                <Text style={s.stopTypeText}>
-                  {stop.type === 'pickup' ? 'Pickup' : 'Deliver'}
+                <Text style={styles.stopTypeText}>
+                  {stop.type === 'pickup' ? 'PICKUP' : 'DELIVER'}
                 </Text>
               </View>
-              <Text style={s.stopCustomer}>{stop.customer}</Text>
-              <View style={s.stopAddressRow}>
-                <Ionicons name="location-outline" size={14} color={T.textMuted} />
-                <Text style={s.stopAddress}>{stop.address}</Text>
+              <Text style={styles.stopCustomer}>{stop.customer}</Text>
+              <View style={styles.infoRow}>
+                <Ionicons name="location-outline" size={13} color={T.textMuted} />
+                <Text style={styles.stopAddress}>{stop.address}</Text>
               </View>
-              <View style={s.stopItemsRow}>
-                <Ionicons name="cube-outline" size={14} color={T.textSecondary} />
-                <Text style={s.stopItems}>{stop.items}</Text>
+              <View style={styles.infoRow}>
+                <Ionicons name="cube-outline" size={13} color={T.textSecondary} />
+                <Text style={styles.stopItems}>{stop.items}</Text>
               </View>
             </View>
-          </View>
+          </Animated.View>
         ))}
 
-        {/* Optimize Route Button */}
-        <TouchableOpacity
-          style={s.optimizeBtn}
-          onPress={() => setOptimized(!optimized)}
-        >
-          <Ionicons name="analytics-outline" size={20} color={T.white} />
-          <Text style={s.optimizeBtnText}>
-            {optimized ? 'Route Optimized' : 'Optimize Route'}
-          </Text>
-        </TouchableOpacity>
+        {/* Optimize Button */}
+        <Animated.View entering={FadeInDown.delay(580).springify()}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.optimizeBtn,
+              optimized && styles.optimizeBtnDone,
+              pressed && { opacity: 0.85 },
+            ]}
+            onPress={() => setOptimized(!optimized)}
+          >
+            <Ionicons name={optimized ? 'checkmark-circle' : 'analytics-outline'} size={20} color={T.white} />
+            <Text style={styles.optimizeBtnText}>
+              {optimized ? 'Route Optimized ✓' : 'Optimize Route'}
+            </Text>
+          </Pressable>
+        </Animated.View>
       </ScrollView>
 
-      {/* Start Navigation Button */}
-      <View style={s.bottomBar}>
-        <TouchableOpacity style={s.navBtn}>
+      {/* Bottom Nav Bar */}
+      <View style={styles.bottomBar}>
+        <Pressable
+          style={({ pressed }) => [styles.navBtn, pressed && { opacity: 0.85 }]}
+        >
           <Ionicons name="navigate" size={20} color={T.white} />
-          <Text style={s.navBtnText}>Start Navigation</Text>
-        </TouchableOpacity>
+          <Text style={styles.navBtnText}>Start Navigation</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
 }
 
-const s = {
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: T.bg },
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 10,
+    backgroundColor: T.surface, borderBottomWidth: 1, borderBottomColor: T.border,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    width: 42, height: 42, borderRadius: 12, backgroundColor: T.bg,
+    alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: T.text },
+  scroll: { padding: 16, paddingBottom: 32 },
   mapArea: {
-    height: 200,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 14,
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
-    overflow: 'hidden' as const,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    height: 180, backgroundColor: T.surface, borderRadius: 16,
+    borderWidth: 1, borderColor: T.border, marginBottom: 12,
+    alignItems: 'center', justifyContent: 'center', gap: 12,
   },
-  mapContent: {
-    alignItems: 'center' as const,
-    gap: 12,
+  routeVisualization: { flexDirection: 'row', alignItems: 'center' },
+  routePoint: {
+    width: 30, height: 30, borderRadius: 15,
+    alignItems: 'center', justifyContent: 'center',
   },
-  routeVisualization: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: 20,
-  },
-  routePointStart: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: T.info,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  routePointMid: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: T.navy,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  routePointText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-    color: T.white,
-  },
-  dottedLineContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-    marginHorizontal: 4,
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: T.textMuted,
-  },
-  mapLabel: {
-    fontSize: 13,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-  statsRow: {
-    flexDirection: 'row' as const,
-    marginHorizontal: 16,
-    marginTop: 12,
-    gap: 10,
-  },
+  routePointText: { fontSize: 12, fontWeight: '700', color: T.white },
+  dotRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginHorizontal: 2 },
+  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: T.textMuted },
+  mapLabel: { fontSize: 13, color: T.textMuted, fontWeight: '500' },
+  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   statCard: {
-    flex: 1,
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center' as const,
-    borderWidth: 1,
-    borderColor: T.border,
+    flex: 1, backgroundColor: T.surface, borderRadius: 12, padding: 12,
+    alignItems: 'center', borderWidth: 1, borderColor: T.border, gap: 4,
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: T.text,
-    marginTop: 6,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: T.textMuted,
-    marginTop: 2,
-  },
-  sectionHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  sectionSub: {
-    fontSize: 13,
-    color: T.textMuted,
+  statValue: { fontSize: 16, fontWeight: '700', color: T.text },
+  statLabel: { fontSize: 10, color: T.textMuted, textAlign: 'center' },
+  sectionLabel: {
+    fontSize: 12, fontWeight: '700', color: T.textMuted,
+    textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, marginLeft: 2,
   },
   stopCard: {
-    flexDirection: 'row' as const,
-    marginHorizontal: 16,
-    marginBottom: 10,
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: T.border,
+    flexDirection: 'row', backgroundColor: T.surface,
+    borderRadius: 14, padding: 14, borderWidth: 1, borderColor: T.border, marginBottom: 10,
   },
-  stopLeft: {
-    alignItems: 'center' as const,
-    marginRight: 12,
-    gap: 8,
-  },
-  dragHandle: {
-    opacity: 0.5,
-  },
+  stopLeft: { alignItems: 'center', marginRight: 14 },
   stopNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: T.navy,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    width: 30, height: 30, borderRadius: 15, backgroundColor: T.navy,
+    alignItems: 'center', justifyContent: 'center',
   },
-  stopNumberText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: T.white,
-  },
-  stopContent: {
-    flex: 1,
-  },
-  stopTypeRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-    marginBottom: 4,
-  },
-  stopTypeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
+  stopNumberText: { fontSize: 13, fontWeight: '700', color: T.white },
+  stopContent: { flex: 1 },
+  stopTypeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  stopTypeDot: { width: 8, height: 8, borderRadius: 4 },
   stopTypeText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: T.textSecondary,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
+    fontSize: 11, fontWeight: '700', color: T.textSecondary,
+    textTransform: 'uppercase', letterSpacing: 0.8,
   },
-  stopCustomer: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: T.text,
-    marginBottom: 4,
-  },
-  stopAddressRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-start' as const,
-    gap: 4,
-    marginBottom: 4,
-  },
-  stopAddress: {
-    flex: 1,
-    fontSize: 13,
-    color: T.textSecondary,
-    lineHeight: 18,
-  },
-  stopItemsRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-  },
-  stopItems: {
-    flex: 1,
-    fontSize: 12,
-    color: T.textMuted,
-  },
+  stopCustomer: { fontSize: 15, fontWeight: '700', color: T.text, marginBottom: 5 },
+  infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginBottom: 3 },
+  stopAddress: { flex: 1, fontSize: 12, color: T.textSecondary, lineHeight: 17 },
+  stopItems: { flex: 1, fontSize: 12, color: T.textMuted },
   optimizeBtn: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginHorizontal: 16,
-    marginTop: 8,
-    backgroundColor: T.amber,
-    borderRadius: 14,
-    paddingVertical: 14,
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: T.amber, borderRadius: 14, paddingVertical: 14,
+    marginTop: 4, gap: 8,
+    shadowColor: T.amber, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25, shadowRadius: 12, elevation: 6,
   },
-  optimizeBtnText: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: T.white,
-  },
+  optimizeBtnDone: { backgroundColor: T.success },
+  optimizeBtnText: { fontSize: 15, fontWeight: '700', color: T.white },
   bottomBar: {
-    padding: 16,
-    backgroundColor: T.surface,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
+    padding: 16, backgroundColor: T.surface,
+    borderTopWidth: 1, borderTopColor: T.border,
   },
   navBtn: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: T.navy,
-    borderRadius: 14,
-    paddingVertical: 16,
-    gap: 8,
-    shadowColor: T.navy,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: T.navy, borderRadius: 14, paddingVertical: 16, gap: 8,
+    shadowColor: T.navy, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25, shadowRadius: 12, elevation: 6,
   },
-  navBtnText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: T.white,
-  },
-};
+  navBtnText: { fontSize: 16, fontWeight: '700', color: T.white },
+});

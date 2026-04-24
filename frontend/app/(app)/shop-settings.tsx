@@ -2,109 +2,91 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   TextInput,
   Switch,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../src/theme/colors';
+import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
+import { LightTheme as T } from '../../src/theme/colors';
 
-const T = LightTheme;
-
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-type DaySchedule = {
-  open: string;
-  close: string;
-  isOpen: boolean;
-};
+const SPRING_SNAPPY = { damping: 18, stiffness: 280, mass: 0.8 };
 
 export default function ShopSettingsScreen() {
   const router = useRouter();
 
-  const [shopName, setShopName] = useState('BuildMart Hardware Store');
-  const [description, setDescription] = useState(
-    'Your one-stop shop for all construction materials and hardware supplies.'
-  );
-  const [phone, setPhone] = useState('9876543401');
-  const [email, setEmail] = useState('shop@buildmart.com');
-  const [address, setAddress] = useState('123, MG Road, Koramangala, Bangalore - 560034');
-  const [deliveryRadius, setDeliveryRadius] = useState('15');
-  const [minOrder, setMinOrder] = useState('500');
-  const [deliveryCharge, setDeliveryCharge] = useState('50');
-
-  const [schedule, setSchedule] = useState<Record<string, DaySchedule>>(
-    DAYS.reduce(
-      (acc, day) => ({
-        ...acc,
-        [day]: {
-          open: '09:00 AM',
-          close: '09:00 PM',
-          isOpen: day !== 'Sunday',
-        },
-      }),
-      {} as Record<string, DaySchedule>
-    )
-  );
-
-  const toggleDay = (day: string) => {
-    setSchedule((prev) => ({
-      ...prev,
-      [day]: { ...prev[day], isOpen: !prev[day].isOpen },
-    }));
-  };
+  const [shopName, setShopName] = useState('Hyderabad Building Supplies');
+  const [gstNumber, setGstNumber] = useState('36AABCH1234A1Z5');
+  const [phone, setPhone] = useState('9876543210');
+  const [address, setAddress] = useState('Plot 45, KPHB Colony Phase 1, Kukatpally, Hyderabad – 500072');
+  const [openingHours, setOpeningHours] = useState('9:00 AM – 8:00 PM');
+  const [whatsapp, setWhatsapp] = useState('9876543210');
+  const [monSatOpen, setMonSatOpen] = useState(true);
+  const [acceptOnlineOrders, setAcceptOnlineOrders] = useState(true);
+  const [deliveryRadius, setDeliveryRadius] = useState(5);
 
   const handleSave = () => {
     if (!shopName.trim()) {
       Alert.alert('Error', 'Shop name is required.');
       return;
     }
-    Alert.alert('Success', 'Shop settings have been saved successfully.', [
+    Alert.alert('Saved!', 'Your shop settings have been updated successfully.', [
       { text: 'OK', onPress: () => router.back() },
     ]);
+  };
+
+  const cycleDeliveryRadius = () => {
+    const options = [3, 5, 10, 15, 20];
+    const current = options.indexOf(deliveryRadius);
+    setDeliveryRadius(options[(current + 1) % options.length]);
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.7 }]}
+        >
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={s.headerTitle}>Shop Settings</Text>
         <View style={{ width: 42 }} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 48 }}
       >
-        {/* Shop Banner & Avatar */}
-        <View style={s.bannerSection}>
-          <View style={s.banner}>
-            <Ionicons name="image-outline" size={32} color={T.textMuted} />
-            <Text style={s.bannerText}>Shop Banner</Text>
+        {/* Shop Avatar */}
+        <Animated.View
+          entering={ZoomIn.delay(100).springify().damping(SPRING_SNAPPY.damping).stiffness(SPRING_SNAPPY.stiffness)}
+          style={s.avatarSection}
+        >
+          <View style={s.avatarCircle}>
+            <Text style={s.avatarLetter}>H</Text>
           </View>
-          <View style={s.avatarWrapper}>
-            <View style={s.avatar}>
-              <Ionicons name="storefront" size={32} color={T.navy} />
-            </View>
-            <TouchableOpacity style={s.cameraBtn}>
-              <Ionicons name="camera" size={14} color={T.white} />
-            </TouchableOpacity>
-          </View>
-        </View>
+          <Pressable
+            style={({ pressed }) => [s.changePhotoBtn, pressed && { opacity: 0.8 }]}
+          >
+            <Ionicons name="camera" size={14} color={T.amber} />
+            <Text style={s.changePhotoText}>Change Logo</Text>
+          </Pressable>
+          <Text style={s.avatarShopName}>{shopName}</Text>
+        </Animated.View>
 
-        {/* Shop Details Section */}
-        <View style={s.formContainer}>
-          <Text style={s.sectionTitle}>SHOP DETAILS</Text>
+        {/* Basic Info Section */}
+        <Animated.View entering={FadeInDown.delay(160).springify()} style={s.formSection}>
+          <Text style={s.sectionLabel}>SHOP DETAILS</Text>
 
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Shop Name</Text>
+            <Text style={s.fieldLabel}>Shop Name</Text>
             <TextInput
               style={s.input}
               value={shopName}
@@ -112,24 +94,24 @@ export default function ShopSettingsScreen() {
               placeholder="Enter shop name"
               placeholderTextColor={T.textMuted}
             />
+            <View style={s.inputUnderline} />
           </View>
 
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Description</Text>
+            <Text style={s.fieldLabel}>GST Number</Text>
             <TextInput
-              style={[s.input, s.inputMultiline]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Describe your shop..."
+              style={s.input}
+              value={gstNumber}
+              onChangeText={setGstNumber}
+              placeholder="22AAAAA0000A1Z5"
               placeholderTextColor={T.textMuted}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
+              autoCapitalize="characters"
             />
+            <View style={s.inputUnderline} />
           </View>
 
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Phone</Text>
+            <Text style={s.fieldLabel}>Phone Number</Text>
             <TextInput
               style={s.input}
               value={phone}
@@ -138,118 +120,120 @@ export default function ShopSettingsScreen() {
               placeholderTextColor={T.textMuted}
               keyboardType="phone-pad"
             />
+            <View style={s.inputUnderline} />
           </View>
 
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Email</Text>
+            <Text style={s.fieldLabel}>WhatsApp Number</Text>
             <TextInput
               style={s.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter email"
+              value={whatsapp}
+              onChangeText={setWhatsapp}
+              placeholder="Enter WhatsApp number"
               placeholderTextColor={T.textMuted}
-              keyboardType="email-address"
-              autoCapitalize="none"
+              keyboardType="phone-pad"
             />
+            <View style={s.inputUnderline} />
           </View>
 
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Address</Text>
+            <Text style={s.fieldLabel}>Shop Address</Text>
             <TextInput
               style={[s.input, s.inputMultiline]}
               value={address}
               onChangeText={setAddress}
-              placeholder="Enter shop address"
+              placeholder="Enter full address"
               placeholderTextColor={T.textMuted}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
             />
+            <View style={s.inputUnderline} />
           </View>
+        </Animated.View>
 
-          {/* Opening Hours */}
-          <Text style={[s.sectionTitle, { marginTop: 24 }]}>OPENING HOURS</Text>
-
-          <View style={s.card}>
-            {DAYS.map((day, index) => (
-              <View
-                key={day}
-                style={[s.dayRow, index < DAYS.length - 1 && s.dayRowBorder]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={s.dayName}>{day}</Text>
-                  {schedule[day].isOpen ? (
-                    <Text style={s.dayTime}>
-                      {schedule[day].open} - {schedule[day].close}
-                    </Text>
-                  ) : (
-                    <Text style={[s.dayTime, { color: T.textMuted }]}>Closed</Text>
-                  )}
-                </View>
-                <Switch
-                  value={schedule[day].isOpen}
-                  onValueChange={() => toggleDay(day)}
-                  trackColor={{ false: T.border, true: T.success }}
-                  thumbColor={T.white}
-                />
-              </View>
-            ))}
-          </View>
-
-          {/* Delivery Settings */}
-          <Text style={[s.sectionTitle, { marginTop: 24 }]}>DELIVERY SETTINGS</Text>
+        {/* Operating Hours Section */}
+        <Animated.View entering={FadeInDown.delay(240).springify()} style={s.formSection}>
+          <Text style={s.sectionLabel}>OPERATING HOURS</Text>
 
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Delivery Radius (km)</Text>
+            <Text style={s.fieldLabel}>Hours</Text>
             <TextInput
               style={s.input}
-              value={deliveryRadius}
-              onChangeText={setDeliveryRadius}
-              placeholder="e.g. 15"
+              value={openingHours}
+              onChangeText={setOpeningHours}
+              placeholder="e.g. 9:00 AM – 8:00 PM"
               placeholderTextColor={T.textMuted}
-              keyboardType="number-pad"
+            />
+            <View style={s.inputUnderline} />
+          </View>
+
+          <View style={s.switchRow}>
+            <View style={s.switchLeft}>
+              <Text style={s.switchLabel}>Mon–Sat Open</Text>
+              <Text style={s.switchSub}>Toggle Mon–Sat schedule</Text>
+            </View>
+            <Switch
+              value={monSatOpen}
+              onValueChange={setMonSatOpen}
+              trackColor={{ false: T.border, true: T.success }}
+              thumbColor={T.white}
+            />
+          </View>
+        </Animated.View>
+
+        {/* Order Settings Section */}
+        <Animated.View entering={FadeInDown.delay(320).springify()} style={s.formSection}>
+          <Text style={s.sectionLabel}>ORDER SETTINGS</Text>
+
+          <View style={s.switchRow}>
+            <View style={s.switchLeft}>
+              <Text style={s.switchLabel}>Accept Online Orders</Text>
+              <Text style={s.switchSub}>Customers can place orders online</Text>
+            </View>
+            <Switch
+              value={acceptOnlineOrders}
+              onValueChange={setAcceptOnlineOrders}
+              trackColor={{ false: T.border, true: T.success }}
+              thumbColor={T.white}
             />
           </View>
 
-          <View style={s.fieldGroup}>
-            <Text style={s.label}>Minimum Order Amount (Rs.)</Text>
-            <TextInput
-              style={s.input}
-              value={minOrder}
-              onChangeText={setMinOrder}
-              placeholder="e.g. 500"
-              placeholderTextColor={T.textMuted}
-              keyboardType="number-pad"
-            />
+          <View style={s.deliveryRadiusRow}>
+            <View style={s.switchLeft}>
+              <Text style={s.switchLabel}>Delivery Radius</Text>
+              <Text style={s.switchSub}>Tap to cycle between options</Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [s.radiusBadge, pressed && { opacity: 0.8 }]}
+              onPress={cycleDeliveryRadius}
+            >
+              <Text style={s.radiusValue}>{deliveryRadius} km</Text>
+              <Ionicons name="chevron-forward" size={14} color={T.amber} />
+            </Pressable>
           </View>
+        </Animated.View>
 
-          <View style={s.fieldGroup}>
-            <Text style={s.label}>Delivery Charge (Rs.)</Text>
-            <TextInput
-              style={s.input}
-              value={deliveryCharge}
-              onChangeText={setDeliveryCharge}
-              placeholder="e.g. 50"
-              placeholderTextColor={T.textMuted}
-              keyboardType="number-pad"
-            />
-          </View>
-
-          {/* Save Button */}
-          <TouchableOpacity style={s.saveBtn} onPress={handleSave} activeOpacity={0.8}>
+        {/* Save Button */}
+        <Animated.View entering={FadeInUp.delay(400).springify()} style={s.saveSection}>
+          <Pressable
+            style={({ pressed }) => [s.saveBtn, pressed && { opacity: 0.88 }]}
+            onPress={handleSave}
+          >
+            <Ionicons name="checkmark-circle" size={20} color={T.white} />
             <Text style={s.saveBtnText}>Save Changes</Text>
-          </TouchableOpacity>
-        </View>
+          </Pressable>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = {
+const s = StyleSheet.create({
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: T.surface,
@@ -261,131 +245,159 @@ const s = {
     height: 42,
     borderRadius: 12,
     backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: T.text,
   },
-  bannerSection: {
-    alignItems: 'center' as const,
-    marginBottom: 16,
-  },
-  banner: {
-    width: '100%' as const,
-    height: 140,
+  avatarSection: {
+    alignItems: 'center',
+    paddingVertical: 28,
     backgroundColor: T.surface,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
+    gap: 10,
   },
-  bannerText: {
-    fontSize: 13,
-    color: T.textMuted,
-    marginTop: 6,
-  },
-  avatarWrapper: {
-    marginTop: -40,
-    position: 'relative' as const,
-  },
-  avatar: {
+  avatarCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    backgroundColor: T.navy,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 3,
-    borderColor: T.surface,
+    borderColor: T.amberBg,
   },
-  cameraBtn: {
-    position: 'absolute' as const,
-    bottom: 0,
-    right: -2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: T.amber,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    borderWidth: 2,
-    borderColor: T.surface,
+  avatarLetter: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: T.white,
   },
-  formContainer: {
-    paddingHorizontal: 20,
+  changePhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: T.amber,
   },
-  sectionTitle: {
+  changePhotoText: {
     fontSize: 13,
-    fontWeight: '700' as const,
+    fontWeight: '600',
+    color: T.amber,
+  },
+  avatarShopName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: T.text,
+    marginTop: 4,
+  },
+  formSection: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
     color: T.textMuted,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-    marginBottom: 12,
-    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 16,
+    marginLeft: 2,
   },
   fieldGroup: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: T.text,
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: T.textSecondary,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderRadius: 12,
-    padding: 14,
     fontSize: 15,
     color: T.text,
+    paddingVertical: 6,
+    paddingHorizontal: 0,
+    backgroundColor: 'transparent',
   },
   inputMultiline: {
-    minHeight: 90,
-    paddingTop: 14,
+    minHeight: 64,
+    lineHeight: 22,
   },
-  card: {
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
-    overflow: 'hidden' as const,
-    marginBottom: 8,
+  inputUnderline: {
+    height: 1,
+    backgroundColor: T.navy,
+    marginTop: 4,
+    opacity: 0.25,
   },
-  dayRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: 16,
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 14,
-  },
-  dayRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: T.border,
+    marginBottom: 4,
   },
-  dayName: {
+  switchLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  switchLabel: {
     fontSize: 15,
-    fontWeight: '600' as const,
+    fontWeight: '600',
     color: T.text,
   },
-  dayTime: {
-    fontSize: 13,
-    color: T.textSecondary,
+  switchSub: {
+    fontSize: 12,
+    color: T.textMuted,
     marginTop: 2,
   },
+  deliveryRadiusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  radiusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: T.amberBg,
+    borderWidth: 1,
+    borderColor: T.amber,
+  },
+  radiusValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.amber,
+  },
+  saveSection: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
   saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
     backgroundColor: T.amber,
     borderRadius: 14,
     paddingVertical: 16,
-    alignItems: 'center' as const,
-    marginTop: 12,
   },
   saveBtnText: {
     fontSize: 16,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: T.white,
   },
-};
+});

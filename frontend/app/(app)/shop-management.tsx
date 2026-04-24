@@ -1,552 +1,451 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Switch, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../src/theme/colors';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+import { LightTheme as T } from '../../src/theme/colors';
 
-const T = LightTheme;
+const SPRING_SNAPPY = { damping: 18, stiffness: 280, mass: 0.8 };
+const SPRING_BOUNCY = { damping: 12, stiffness: 200, mass: 0.9 };
 
-type ShopStatus = 'Active' | 'Pending' | 'Suspended';
-type TabFilter = ShopStatus;
-
-const STATUS_COLORS: Record<ShopStatus, string> = {
-  Active: '#10B981',
-  Pending: T.amber,
-  Suspended: '#EF4444',
-};
-
-const TABS: TabFilter[] = ['Active', 'Pending', 'Suspended'];
-
-const STATS = [
-  { label: 'Total Shops', value: '45', icon: 'storefront' as const, color: '#3B82F6' },
-  { label: 'Active', value: '40', icon: 'checkmark-circle' as const, color: '#10B981' },
-  { label: 'Suspended', value: '3', icon: 'ban' as const, color: '#EF4444' },
-  { label: 'Pending', value: '2', icon: 'time' as const, color: T.amber },
+const QUICK_ACTIONS = [
+  { label: 'Add Product', icon: 'add-circle-outline' as const, color: '#3B82F6', bg: '#DBEAFE', route: '/(app)/add-product' },
+  { label: 'Manage Inventory', icon: 'list-outline' as const, color: '#8B5CF6', bg: '#EDE9FE', route: '/(app)/inventory' },
+  { label: 'View Orders', icon: 'bag-outline' as const, color: T.success, bg: '#D1FAE5', route: '/(app)/orders' },
+  { label: 'Promotions', icon: 'pricetag-outline' as const, color: T.amber, bg: T.amberBg, route: '/(app)/promotions' },
 ];
 
-type Shop = {
-  id: string;
-  name: string;
-  owner: string;
-  phone: string;
-  rating: number;
-  totalOrders: number;
-  revenue: string;
-  joinedDate: string;
-  status: ShopStatus;
-  avatarColor: string;
-};
+const PENDING_ACTIONS = [
+  { id: 'p1', message: '3 orders need approval', icon: 'time-outline' as const, color: '#F97316', count: 3 },
+  { id: 'p2', message: '5 products low on stock', icon: 'warning-outline' as const, color: T.error, count: 5 },
+  { id: 'p3', message: '2 customer queries pending', icon: 'chatbubble-outline' as const, color: '#3B82F6', count: 2 },
+];
 
-const SHOPS: Shop[] = [
+const RECENT_ACTIVITY = [
   {
-    id: '1',
-    name: 'Sharma Building Materials',
-    owner: 'Ramesh Sharma',
-    phone: '+91 98765 43210',
-    rating: 4.8,
-    totalOrders: 342,
-    revenue: 'Rs.8.5L',
-    joinedDate: '15 Mar 2025',
-    status: 'Active',
-    avatarColor: '#3B82F6',
+    id: 'a1',
+    icon: 'bag-check-outline' as const,
+    iconColor: T.success,
+    iconBg: '#D1FAE5',
+    title: 'New order placed',
+    sub: 'Order #ORD-8821 — ₹2,310',
+    time: '12 min ago',
   },
   {
-    id: '2',
-    name: 'Krishna Cement House',
-    owner: 'Sunil Krishna',
-    phone: '+91 98765 43211',
-    rating: 4.5,
-    totalOrders: 278,
-    revenue: 'Rs.6.2L',
-    joinedDate: '22 Apr 2025',
-    status: 'Active',
-    avatarColor: '#10B981',
+    id: 'a2',
+    icon: 'star-outline' as const,
+    iconColor: '#F59E0B',
+    iconBg: T.amberBg,
+    title: 'Product reviewed',
+    sub: 'UltraTech Cement got ★4.8',
+    time: '1h ago',
   },
   {
-    id: '3',
-    name: 'New Age Hardware Store',
-    owner: 'Mohit Jain',
-    phone: '+91 98765 43212',
-    rating: 0,
-    totalOrders: 0,
-    revenue: 'Rs.0',
-    joinedDate: '24 Feb 2026',
-    status: 'Pending',
-    avatarColor: '#8B5CF6',
+    id: 'a3',
+    icon: 'alert-circle-outline' as const,
+    iconColor: T.error,
+    iconBg: '#FEE2E2',
+    title: 'Stock alert',
+    sub: 'Birla White Cement — 3 bags left',
+    time: '2h ago',
   },
   {
-    id: '4',
-    name: 'Budget Tiles & Sanitary',
-    owner: 'Deepak Verma',
-    phone: '+91 98765 43213',
-    rating: 3.2,
-    totalOrders: 45,
-    revenue: 'Rs.1.1L',
-    joinedDate: '10 Aug 2025',
-    status: 'Suspended',
-    avatarColor: '#EF4444',
+    id: 'a4',
+    icon: 'person-outline' as const,
+    iconColor: '#3B82F6',
+    iconBg: '#DBEAFE',
+    title: 'New customer query',
+    sub: 'Ravi Kumar asked about TMT prices',
+    time: '4h ago',
+  },
+  {
+    id: 'a5',
+    icon: 'checkmark-circle-outline' as const,
+    iconColor: T.success,
+    iconBg: '#D1FAE5',
+    title: 'Order delivered',
+    sub: 'Order #ORD-8819 marked complete',
+    time: '6h ago',
   },
 ];
 
 export default function ShopManagementScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabFilter>('Active');
-
-  const filteredShops = SHOPS.filter((shop) => shop.status === activeTab);
-
-  const renderShopCard = (shop: Shop) => {
-    const statusColor = STATUS_COLORS[shop.status];
-    return (
-      <View key={shop.id} style={s.shopCard}>
-        {/* Shop Header */}
-        <View style={s.shopHeader}>
-          <View style={[s.shopAvatar, { backgroundColor: shop.avatarColor + '18' }]}>
-            <Ionicons name="storefront" size={22} color={shop.avatarColor} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.shopName}>{shop.name}</Text>
-            <Text style={s.shopOwner}>{shop.owner}</Text>
-          </View>
-          <View style={[s.statusBadge, { backgroundColor: statusColor + '26' }]}>
-            <Text style={[s.statusText, { color: statusColor }]}>{shop.status}</Text>
-          </View>
-        </View>
-
-        {/* Shop Info */}
-        <View style={s.infoGrid}>
-          <View style={s.infoItem}>
-            <Ionicons name="call-outline" size={14} color={T.textMuted} />
-            <Text style={s.infoText}>{shop.phone}</Text>
-          </View>
-          <View style={s.infoItem}>
-            <Ionicons name="calendar-outline" size={14} color={T.textMuted} />
-            <Text style={s.infoText}>Joined {shop.joinedDate}</Text>
-          </View>
-        </View>
-
-        {/* Stats Row */}
-        {shop.status !== 'Pending' && (
-          <View style={s.shopStatsRow}>
-            <View style={s.shopStat}>
-              <View style={s.ratingRow}>
-                <Ionicons name="star" size={14} color={T.amber} />
-                <Text style={s.shopStatValue}>{shop.rating}</Text>
-              </View>
-              <Text style={s.shopStatLabel}>Rating</Text>
-            </View>
-            <View style={s.shopStatDivider} />
-            <View style={s.shopStat}>
-              <Text style={s.shopStatValue}>{shop.totalOrders}</Text>
-              <Text style={s.shopStatLabel}>Orders</Text>
-            </View>
-            <View style={s.shopStatDivider} />
-            <View style={s.shopStat}>
-              <Text style={[s.shopStatValue, { color: T.amber }]}>{shop.revenue}</Text>
-              <Text style={s.shopStatLabel}>Revenue</Text>
-            </View>
-          </View>
-        )}
-
-        {/* Action Buttons */}
-        <View style={s.actionRow}>
-          {shop.status === 'Pending' ? (
-            <>
-              <TouchableOpacity style={s.approveBtn}>
-                <Ionicons name="checkmark-circle-outline" size={16} color={T.white} />
-                <Text style={s.approveBtnText}>Approve</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.rejectBtn}>
-                <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
-                <Text style={s.rejectBtnText}>Reject</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity style={s.viewBtn}>
-                <Ionicons name="eye-outline" size={16} color={T.navy} />
-                <Text style={s.viewBtnText}>View</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  s.toggleBtn,
-                  {
-                    backgroundColor: shop.status === 'Active' ? '#EF444418' : '#10B98118',
-                    borderColor: shop.status === 'Active' ? '#EF4444' : '#10B981',
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={shop.status === 'Active' ? 'ban-outline' : 'checkmark-circle-outline'}
-                  size={16}
-                  color={shop.status === 'Active' ? '#EF4444' : '#10B981'}
-                />
-                <Text
-                  style={[
-                    s.toggleBtnText,
-                    { color: shop.status === 'Active' ? '#EF4444' : '#10B981' },
-                  ]}
-                >
-                  {shop.status === 'Active' ? 'Suspend' : 'Activate'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.contactBtn}>
-                <Ionicons name="call-outline" size={16} color={T.navy} />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
-    );
-  };
+  const [shopOnline, setShopOnline] = useState(true);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.7 }]}
+        >
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={s.headerTitle}>Shop Management</Text>
-        <View style={{ width: 40 }} />
+        <Pressable style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.7 }]}>
+          <Ionicons name="notifications-outline" size={22} color={T.text} />
+        </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-        {/* Stats Summary */}
-        <View style={s.statsRow}>
-          {STATS.map((stat) => (
-            <View key={stat.label} style={s.statCard}>
-              <View style={[s.statIcon, { backgroundColor: stat.color + '18' }]}>
-                <Ionicons name={stat.icon} size={18} color={stat.color} />
-              </View>
-              <Text style={s.statValue}>{stat.value}</Text>
-              <Text style={s.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 48 }}>
 
-        {/* Tabs */}
-        <View style={s.tabRow}>
-          {TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[s.tab, activeTab === tab && s.tabActive]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Shop Cards */}
-        <View style={s.shopList}>
-          {filteredShops.length === 0 ? (
-            <View style={s.empty}>
-              <View style={s.emptyIcon}>
-                <Ionicons name="storefront-outline" size={48} color={T.textMuted} />
-              </View>
-              <Text style={s.emptyTitle}>No shops</Text>
-              <Text style={s.emptyDesc}>No {activeTab.toLowerCase()} shops to display.</Text>
+        {/* Shop Status Card */}
+        <Animated.View entering={FadeInDown.delay(60).springify()} style={s.statusCard}>
+          <View style={s.statusCardLeft}>
+            <View style={s.shopAvatarCircle}>
+              <Text style={s.shopAvatarLetter}>H</Text>
             </View>
-          ) : (
-            filteredShops.map(renderShopCard)
-          )}
-        </View>
+            <View style={s.shopInfoBlock}>
+              <Text style={s.shopNameText}>Hyderabad Building Supplies</Text>
+              <View style={s.ratingRow}>
+                <Ionicons name="star" size={13} color="#F59E0B" />
+                <Text style={s.ratingText}>4.6</Text>
+                <Text style={s.ratingOrders}>· 1,200+ orders</Text>
+              </View>
+            </View>
+          </View>
+          <View style={s.statusToggleBlock}>
+            <Text style={[s.statusToggleLabel, { color: shopOnline ? T.success : T.error }]}>
+              {shopOnline ? 'Online' : 'Offline'}
+            </Text>
+            <Switch
+              value={shopOnline}
+              onValueChange={setShopOnline}
+              trackColor={{ false: T.error, true: T.success }}
+              thumbColor={T.white}
+            />
+          </View>
+        </Animated.View>
+
+        {/* Today's Performance */}
+        <Animated.View entering={FadeInDown.delay(130).springify()} style={s.section}>
+          <Text style={s.sectionTitle}>TODAY'S PERFORMANCE</Text>
+          <View style={s.perfCard}>
+            {[
+              { label: "Today's Revenue", value: '₹8,450', icon: 'cash-outline' as const, color: T.amber },
+              { label: 'Orders Today', value: '6', icon: 'bag-outline' as const, color: '#3B82F6' },
+              { label: 'Avg Rating', value: '4.6', icon: 'star' as const, color: '#F59E0B' },
+            ].map((item, i) => (
+              <View key={item.label} style={[s.perfItem, i < 2 && s.perfItemBorder]}>
+                <Ionicons name={item.icon} size={18} color={item.color} style={{ marginBottom: 6 }} />
+                <Text style={s.perfValue}>{item.value}</Text>
+                <Text style={s.perfLabel}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Quick Actions 2×2 */}
+        <Animated.View entering={FadeInDown.delay(200).springify()} style={s.section}>
+          <Text style={s.sectionTitle}>QUICK ACTIONS</Text>
+          <View style={s.quickActionsGrid}>
+            {QUICK_ACTIONS.map((action, i) => (
+              <Animated.View
+                key={action.label}
+                entering={ZoomIn.delay(220 + i * 60).springify().damping(SPRING_BOUNCY.damping).stiffness(SPRING_BOUNCY.stiffness)}
+                style={s.quickActionCell}
+              >
+                <Pressable
+                  style={({ pressed }) => [s.quickActionCard, pressed && { opacity: 0.82 }]}
+                  onPress={() => router.push(action.route as any)}
+                >
+                  <View style={[s.quickActionIconCircle, { backgroundColor: action.bg }]}>
+                    <Ionicons name={action.icon} size={24} color={action.color} />
+                  </View>
+                  <Text style={s.quickActionLabel}>{action.label}</Text>
+                </Pressable>
+              </Animated.View>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Pending Actions */}
+        <Animated.View entering={FadeInDown.delay(380).springify()} style={s.section}>
+          <Text style={s.sectionTitle}>PENDING ACTIONS</Text>
+          <View style={s.listCard}>
+            {PENDING_ACTIONS.map((item, index) => (
+              <Pressable
+                key={item.id}
+                style={({ pressed }) => [
+                  s.pendingRow,
+                  index < PENDING_ACTIONS.length - 1 && s.rowBorder,
+                  pressed && { backgroundColor: T.bg },
+                ]}
+              >
+                <View style={[s.pendingIconCircle, { backgroundColor: item.color + '1A' }]}>
+                  <Ionicons name={item.icon} size={18} color={item.color} />
+                </View>
+                <Text style={s.pendingMessage}>{item.message}</Text>
+                <View style={[s.pendingCountBadge, { backgroundColor: item.color }]}>
+                  <Text style={s.pendingCount}>{item.count}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={T.textMuted} style={{ marginLeft: 6 }} />
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Recent Activity */}
+        <Animated.View entering={FadeInDown.delay(460).springify()} style={s.section}>
+          <Text style={s.sectionTitle}>RECENT ACTIVITY</Text>
+          <View style={s.listCard}>
+            {RECENT_ACTIVITY.map((item, index) => (
+              <View
+                key={item.id}
+                style={[s.activityRow, index < RECENT_ACTIVITY.length - 1 && s.rowBorder]}
+              >
+                <View style={[s.activityIconCircle, { backgroundColor: item.iconBg }]}>
+                  <Ionicons name={item.icon} size={18} color={item.iconColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.activityTitle}>{item.title}</Text>
+                  <Text style={s.activitySub}>{item.sub}</Text>
+                </View>
+                <Text style={s.activityTime}>{item.time}</Text>
+              </View>
+            ))}
+          </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = {
+const s = StyleSheet.create({
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: T.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    backgroundColor: T.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
+    fontSize: 18,
+    fontWeight: '700',
     color: T.text,
   },
-
-  /* Stats */
-  statsRow: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 20,
-    marginTop: 8,
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
+  statusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: T.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
-    paddingVertical: 14,
-    alignItems: 'center' as const,
-  },
-  statIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '800' as const,
-    color: T.text,
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-
-  /* Tabs */
-  tabRow: {
-    flexDirection: 'row' as const,
-    paddingHorizontal: 20,
+    marginHorizontal: 20,
     marginTop: 20,
-    gap: 10,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 24,
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
-    alignItems: 'center' as const,
-  },
-  tabActive: {
-    backgroundColor: T.navy,
-    borderColor: T.navy,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: T.textMuted,
-  },
-  tabTextActive: {
-    color: T.white,
-  },
-
-  /* Shop List */
-  shopList: {
-    paddingHorizontal: 20,
-    marginTop: 16,
-    gap: 14,
-  },
-
-  /* Shop Card */
-  shopCard: {
-    backgroundColor: T.surface,
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: T.border,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  shopHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
     gap: 12,
-    marginBottom: 14,
   },
-  shopAvatar: {
+  statusCardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  shopAvatarCircle: {
     width: 48,
     height: 48,
-    borderRadius: 14,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    borderRadius: 24,
+    backgroundColor: T.navy,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  shopName: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  shopOwner: {
-    fontSize: 13,
-    color: T.textSecondary,
-    marginTop: 2,
-  },
-  statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-  },
-
-  /* Info Grid */
-  infoGrid: {
-    gap: 8,
-    marginBottom: 14,
-  },
-  infoItem: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 8,
-  },
-  infoText: {
-    fontSize: 13,
-    color: T.textSecondary,
-  },
-
-  /* Shop Stats */
-  shopStatsRow: {
-    flexDirection: 'row' as const,
-    backgroundColor: T.bg,
-    borderRadius: 12,
-    paddingVertical: 12,
-    marginBottom: 14,
-  },
-  shopStat: {
-    flex: 1,
-    alignItems: 'center' as const,
-    gap: 4,
-  },
-  shopStatDivider: {
-    width: 1,
-    backgroundColor: T.border,
-  },
-  ratingRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-  },
-  shopStatValue: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: T.text,
-  },
-  shopStatLabel: {
-    fontSize: 11,
-    color: T.textMuted,
-    fontWeight: '500' as const,
-  },
-
-  /* Actions */
-  actionRow: {
-    flexDirection: 'row' as const,
-    gap: 10,
-  },
-  viewBtn: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: T.navy,
-  },
-  viewBtnText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: T.navy,
-  },
-  toggleBtn: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  toggleBtnText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  contactBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: T.navy,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  approveBtn: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 10,
-    backgroundColor: '#10B981',
-  },
-  approveBtnText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
+  shopAvatarLetter: {
+    fontSize: 20,
+    fontWeight: '800',
     color: T.white,
   },
-  rejectBtn: {
+  shopInfoBlock: {
     flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#EF4444',
-    backgroundColor: '#EF444418',
+    gap: 4,
   },
-  rejectBtnText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#EF4444',
-  },
-
-  /* Empty */
-  empty: {
-    alignItems: 'center' as const,
-    paddingTop: 60,
-    gap: 10,
-  },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginBottom: 8,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
+  shopNameText: {
+    fontSize: 14,
+    fontWeight: '700',
     color: T.text,
   },
-  emptyDesc: {
-    fontSize: 14,
-    color: T.textSecondary,
-    textAlign: 'center' as const,
-    paddingHorizontal: 40,
-    lineHeight: 20,
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-};
+  ratingText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.text,
+  },
+  ratingOrders: {
+    fontSize: 12,
+    color: T.textMuted,
+  },
+  statusToggleBlock: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusToggleLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  section: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: T.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 12,
+    marginLeft: 2,
+  },
+  perfCard: {
+    flexDirection: 'row',
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    overflow: 'hidden',
+  },
+  perfItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 8,
+  },
+  perfItemBorder: {
+    borderRightWidth: 1,
+    borderRightColor: T.border,
+  },
+  perfValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: T.text,
+    marginBottom: 3,
+  },
+  perfLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: T.textSecondary,
+    textAlign: 'center',
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  quickActionCell: {
+    width: '47%',
+  },
+  quickActionCard: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 18,
+    alignItems: 'center',
+    gap: 10,
+  },
+  quickActionIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickActionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: T.text,
+    textAlign: 'center',
+  },
+  listCard: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    overflow: 'hidden',
+  },
+  pendingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+  pendingIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pendingMessage: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: T.text,
+  },
+  pendingCountBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  pendingCount: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: T.white,
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    gap: 12,
+  },
+  activityIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activityTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: T.text,
+    marginBottom: 2,
+  },
+  activitySub: {
+    fontSize: 12,
+    color: T.textSecondary,
+  },
+  activityTime: {
+    fontSize: 11,
+    color: T.textMuted,
+    minWidth: 52,
+    textAlign: 'right',
+  },
+});

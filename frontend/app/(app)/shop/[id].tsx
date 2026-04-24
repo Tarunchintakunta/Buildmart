@@ -1,148 +1,244 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  FlatList,
+  Image,
+  StyleSheet,
+  Linking,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LightTheme } from '../../../src/theme/colors';
+import Animated, {
+  FadeInDown,
+  FadeInLeft,
+  FadeInRight,
+  ZoomIn,
+} from 'react-native-reanimated';
+import { LightTheme as T } from '../../../src/theme/colors';
+import { MOCK_PRODUCTS } from '../../../src/constants/mockData';
+import { useCartStore } from '../../../src/store/cart.store';
 
-const T = LightTheme;
+const SPRING_SNAPPY = { damping: 18, stiffness: 280, mass: 0.8 };
 
-const SHOP = {
-  id: '1',
-  name: 'Sharma Building Supplies',
-  address: '42, MG Road, Sector 18, Noida',
-  distance: '3.2 km',
-  rating: 4.5,
-  orders: 1250,
-  isOpen: true,
-  productCount: 156,
-  avgDelivery: '45 min',
-};
-
-const CATEGORIES = ['All', 'Cement', 'Steel', 'Paint', 'Pipes', 'Hardware'];
-
-const PRODUCTS = [
-  { id: '1', name: 'UltraTech Cement 50kg', price: 450, rating: 4.8 },
-  { id: '2', name: 'TMT Steel Bars 12mm', price: 3200, rating: 4.6 },
-  { id: '3', name: 'Asian Paints Ace 10L', price: 1850, rating: 4.7 },
-  { id: '4', name: 'CPVC Pipes 1 inch', price: 320, rating: 4.3 },
-  { id: '5', name: 'Birla White Cement 5kg', price: 180, rating: 4.5 },
-  { id: '6', name: 'Heavy Duty Hinges Set', price: 540, rating: 4.4 },
+const SHOPS = [
+  {
+    id: '1',
+    name: 'Hyderabad Building Supplies',
+    area: 'Kukatpally',
+    address: 'Plot 45, KPHB Colony Phase 1, Kukatpally, Hyderabad – 500072',
+    rating: 4.6,
+    hours: 'Open 9AM – 8PM',
+    distance: '1.2km away',
+    productCount: 240,
+    orders: '1200+',
+    established: '2018',
+    phone: '+91 98765 43210',
+    whatsapp: '+91 98765 43210',
+    bannerImage: 'https://images.unsplash.com/photo-1579613832125-5d34a13ffe2a?w=800&q=80',
+    isOpen: true,
+  },
 ];
+
+const DEFAULT_SHOP = SHOPS[0];
 
 export default function ShopDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const [activeCategory, setActiveCategory] = useState('All');
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const shop = SHOPS.find((s) => s.id === id) ?? DEFAULT_SHOP;
+  const addItem = useCartStore((s) => s.addItem);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
-  const renderProduct = ({ item, index }: { item: typeof PRODUCTS[0]; index: number }) => (
-    <View style={[s.productCard, index % 2 === 0 ? { marginRight: 6 } : { marginLeft: 6 }]}>
-      <View style={s.productImage}>
-        <Ionicons name="cube-outline" size={32} color={T.textMuted} />
-      </View>
+  const shopProducts = MOCK_PRODUCTS.slice(0, 6);
+
+  const handleAddToCart = (product: (typeof MOCK_PRODUCTS)[0]) => {
+    addItem({
+      inventoryId: product.id,
+      inventory_id: product.id,
+      productId: product.id,
+      productName: product.name,
+      unit: product.unit,
+      shopId: shop.id,
+      shopName: shop.name,
+      price: product.price,
+      quantity: 1,
+    });
+    setAddedIds((prev) => new Set(prev).add(product.id));
+  };
+
+  const renderProduct = ({
+    item,
+    index,
+  }: {
+    item: (typeof MOCK_PRODUCTS)[0];
+    index: number;
+  }) => (
+    <Animated.View
+      entering={FadeInDown.delay(index * 80).springify().damping(SPRING_SNAPPY.damping).stiffness(SPRING_SNAPPY.stiffness)}
+      style={[s.productCard, index % 2 === 0 ? { marginRight: 6 } : { marginLeft: 6 }]}
+    >
+      <Image source={{ uri: item.image }} style={s.productImage} resizeMode="cover" />
+      {item.badge ? (
+        <View style={s.badgeWrap}>
+          <Text style={s.badgeText}>{item.badge}</Text>
+        </View>
+      ) : null}
       <View style={s.productInfo}>
         <Text style={s.productName} numberOfLines={2}>{item.name}</Text>
+        <Text style={s.productBrand}>{item.brand}</Text>
         <View style={s.productRatingRow}>
           <Ionicons name="star" size={12} color="#F59E0B" />
           <Text style={s.productRating}>{item.rating}</Text>
+          <Text style={s.productReviews}>({item.reviews})</Text>
         </View>
-        <Text style={s.productPrice}>Rs.{item.price}</Text>
-        <TouchableOpacity style={s.addToCartBtn}>
-          <Ionicons name="cart-outline" size={14} color={T.white} />
-          <Text style={s.addToCartText}>Add to Cart</Text>
-        </TouchableOpacity>
+        <View style={s.productPriceRow}>
+          <Text style={s.productPrice}>₹{item.price.toLocaleString('en-IN')}</Text>
+          <Text style={s.productUnit}>/{item.unit}</Text>
+        </View>
+        <Pressable
+          style={({ pressed }) => [
+            s.addBtn,
+            addedIds.has(item.id) && s.addBtnActive,
+            pressed && { opacity: 0.82 },
+          ]}
+          onPress={() => handleAddToCart(item)}
+        >
+          <Ionicons
+            name={addedIds.has(item.id) ? 'checkmark' : 'add'}
+            size={14}
+            color={T.white}
+          />
+          <Text style={s.addBtnText}>
+            {addedIds.has(item.id) ? 'Added' : 'Add'}
+          </Text>
+        </Pressable>
       </View>
-    </View>
+    </Animated.View>
   );
 
   const ListHeader = () => (
     <View>
-      {/* Shop Hero Banner */}
-      <View style={s.heroBanner}>
-        <Ionicons name="storefront" size={40} color={T.textMuted} />
-      </View>
+      {/* Hero Banner */}
+      <Animated.View entering={FadeInDown.duration(400)}>
+        <Image
+          source={{ uri: shop.bannerImage }}
+          style={s.heroBanner}
+          resizeMode="cover"
+        />
+        <View style={s.heroBannerOverlay} />
+      </Animated.View>
 
       {/* Shop Avatar Overlay */}
-      <View style={s.avatarContainer}>
+      <Animated.View entering={ZoomIn.delay(200).springify()} style={s.avatarContainer}>
         <View style={s.avatar}>
-          <Ionicons name="storefront" size={28} color={T.white} />
+          <Text style={s.avatarLetter}>
+            {shop.name.charAt(0)}
+          </Text>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Shop Info */}
-      <View style={s.shopInfo}>
-        <Text style={s.shopName}>{SHOP.name}</Text>
+      <Animated.View entering={FadeInDown.delay(150).springify()} style={s.shopInfo}>
+        <Text style={s.shopName}>{shop.name}</Text>
         <View style={s.ratingRow}>
           {[1, 2, 3, 4, 5].map((star) => (
             <Ionicons
               key={star}
-              name={star <= Math.floor(SHOP.rating) ? 'star' : star - 0.5 <= SHOP.rating ? 'star-half' : 'star-outline'}
+              name={star <= Math.floor(shop.rating) ? 'star' : 'star-half'}
               size={16}
               color="#F59E0B"
             />
           ))}
-          <Text style={s.ratingText}>{SHOP.rating}</Text>
-          <Text style={s.ordersText}>{SHOP.orders.toLocaleString()} orders</Text>
+          <Text style={s.ratingText}>{shop.rating}</Text>
+          <Text style={s.ordersText}>{shop.orders} orders</Text>
         </View>
-        <View style={s.statusBadgeRow}>
-          <View style={[s.statusBadge, SHOP.isOpen ? s.statusOpen : s.statusClosed]}>
-            <View style={[s.statusDot, { backgroundColor: SHOP.isOpen ? T.success : '#EF4444' }]} />
-            <Text style={[s.statusLabel, { color: SHOP.isOpen ? T.success : '#EF4444' }]}>
-              {SHOP.isOpen ? 'Open' : 'Closed'}
+        <View style={s.statusRow}>
+          <View style={[s.statusBadge, shop.isOpen ? s.statusOpen : s.statusClosed]}>
+            <View style={[s.statusDot, { backgroundColor: shop.isOpen ? T.success : T.error }]} />
+            <Text style={[s.statusLabel, { color: shop.isOpen ? T.success : T.error }]}>
+              {shop.isOpen ? shop.hours : 'Closed'}
             </Text>
           </View>
+          <View style={s.distanceBadge}>
+            <Ionicons name="location-outline" size={13} color={T.amber} />
+            <Text style={s.distanceText}>{shop.distance}</Text>
+          </View>
         </View>
-      </View>
+      </Animated.View>
 
-      {/* Location Row */}
-      <View style={s.locationRow}>
-        <View style={s.locationLeft}>
-          <Ionicons name="location-outline" size={18} color={T.textSecondary} />
-          <Text style={s.locationText} numberOfLines={1}>{SHOP.address}</Text>
-        </View>
-        <Text style={s.distanceText}>{SHOP.distance}</Text>
-      </View>
+      {/* Action Buttons */}
+      <Animated.View entering={FadeInDown.delay(220).springify()} style={s.actionRow}>
+        <Pressable
+          style={({ pressed }) => [s.actionBtn, s.actionBtnAmber, pressed && { opacity: 0.85 }]}
+          onPress={() => Linking.openURL(`tel:${shop.phone}`)}
+        >
+          <Ionicons name="call" size={18} color={T.white} />
+          <Text style={s.actionBtnText}>Call Shop</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [s.actionBtn, s.actionBtnNavy, pressed && { opacity: 0.85 }]}
+          onPress={() =>
+            Linking.openURL(
+              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`
+            )
+          }
+        >
+          <Ionicons name="navigate" size={18} color={T.white} />
+          <Text style={s.actionBtnText}>Get Directions</Text>
+        </Pressable>
+      </Animated.View>
 
       {/* Stats Row */}
-      <View style={s.statsRow}>
-        <View style={s.statCard}>
-          <Text style={s.statValue}>{SHOP.productCount}</Text>
-          <Text style={s.statLabel}>Products</Text>
-        </View>
-        <View style={s.statCard}>
-          <Text style={s.statValue}>{SHOP.avgDelivery}</Text>
-          <Text style={s.statLabel}>Avg Delivery</Text>
-        </View>
-        <View style={s.statCard}>
-          <Text style={s.statValue}>{SHOP.rating}</Text>
-          <Text style={s.statLabel}>Rating</Text>
-        </View>
-      </View>
+      <Animated.View entering={FadeInDown.delay(300).springify()} style={s.statsRow}>
+        {[
+          { label: 'Products', value: String(shop.productCount) },
+          { label: 'Rating', value: String(shop.rating) },
+          { label: 'Orders', value: shop.orders },
+          { label: 'Est.', value: shop.established },
+        ].map((stat, i) => (
+          <View key={stat.label} style={[s.statCard, i < 3 && s.statCardBorder]}>
+            <Text style={s.statValue}>{stat.value}</Text>
+            <Text style={s.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </Animated.View>
 
-      {/* Category Filter Pills */}
-      <FlatList
-        horizontal
-        data={CATEGORIES}
-        keyExtractor={(item) => item}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.categoryList}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[s.categoryPill, activeCategory === item ? s.categoryPillActive : s.categoryPillInactive]}
-            onPress={() => setActiveCategory(item)}
-          >
-            <Text style={[s.categoryText, activeCategory === item ? s.categoryTextActive : s.categoryTextInactive]}>
-              {item}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
+      {/* Contact Info */}
+      <Animated.View entering={FadeInLeft.delay(350).springify()} style={s.contactCard}>
+        <Text style={s.contactTitle}>Contact & Location</Text>
+        <View style={s.contactRow}>
+          <View style={s.contactIconCircle}>
+            <Ionicons name="location" size={16} color={T.amber} />
+          </View>
+          <Text style={s.contactText} numberOfLines={2}>{shop.address}</Text>
+        </View>
+        <View style={s.contactRow}>
+          <View style={s.contactIconCircle}>
+            <Ionicons name="call" size={16} color={T.amber} />
+          </View>
+          <Text style={s.contactText}>{shop.phone}</Text>
+        </View>
+        <View style={s.contactRow}>
+          <View style={s.contactIconCircle}>
+            <Ionicons name="logo-whatsapp" size={16} color={T.success} />
+          </View>
+          <Text style={s.contactText}>{shop.whatsapp}</Text>
+        </View>
+        <View style={s.contactRow}>
+          <View style={s.contactIconCircle}>
+            <Ionicons name="time" size={16} color={T.navy} />
+          </View>
+          <Text style={s.contactText}>{shop.hours} · Mon – Sat</Text>
+        </View>
+      </Animated.View>
 
-      {/* Products Section Title */}
-      <View style={s.sectionHeader}>
-        <Text style={s.sectionTitle}>Products</Text>
-        <Text style={s.sectionCount}>{PRODUCTS.length} items</Text>
-      </View>
+      {/* Products Section Header */}
+      <Animated.View entering={FadeInDown.delay(400).springify()} style={s.sectionHeader}>
+        <Text style={s.sectionTitle}>Products from this Shop</Text>
+        <Text style={s.sectionCount}>{shopProducts.length} items</Text>
+      </Animated.View>
     </View>
   );
 
@@ -150,17 +246,20 @@ export default function ShopDetailScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.headerBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}
+        >
           <Ionicons name="arrow-back" size={22} color={T.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle} numberOfLines={1}>{SHOP.name}</Text>
-        <TouchableOpacity style={s.headerBtn}>
+        </Pressable>
+        <Text style={s.headerTitle} numberOfLines={1}>{shop.name}</Text>
+        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}>
           <Ionicons name="share-outline" size={20} color={T.text} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <FlatList
-        data={PRODUCTS}
+        data={shopProducts}
         keyExtractor={(item) => item.id}
         numColumns={2}
         renderItem={renderProduct}
@@ -173,11 +272,11 @@ export default function ShopDetailScreen() {
   );
 }
 
-const s = {
+const s = StyleSheet.create({
   header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: T.surface,
@@ -188,27 +287,31 @@ const s = {
     width: 42,
     height: 42,
     borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: T.text,
-    textAlign: 'center' as const,
+    textAlign: 'center',
     marginHorizontal: 8,
   },
   heroBanner: {
-    height: 180,
-    backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    height: 200,
+    width: '100%',
+  },
+  heroBannerOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: 'rgba(0,0,0,0.18)',
   },
   avatarContainer: {
-    alignItems: 'center' as const,
+    alignItems: 'center',
     marginTop: -36,
     marginBottom: 8,
   },
@@ -217,47 +320,53 @@ const s = {
     height: 72,
     borderRadius: 36,
     backgroundColor: T.navy,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 3,
     borderColor: T.surface,
   },
+  avatarLetter: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: T.white,
+  },
   shopInfo: {
-    alignItems: 'center' as const,
+    alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   shopName: {
     fontSize: 20,
-    fontWeight: '700' as const,
+    fontWeight: '800',
     color: T.text,
     marginBottom: 8,
-    textAlign: 'center' as const,
+    textAlign: 'center',
   },
   ratingRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginBottom: 10,
   },
   ratingText: {
     fontSize: 14,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: T.text,
     marginLeft: 4,
   },
   ordersText: {
     fontSize: 13,
     color: T.textSecondary,
-    marginLeft: 8,
+    marginLeft: 6,
   },
-  statusBadgeRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   statusBadge: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
@@ -276,102 +385,124 @@ const s = {
   },
   statusLabel: {
     fontSize: 12,
-    fontWeight: '600' as const,
+    fontWeight: '600',
   },
-  locationRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: T.border,
-    marginBottom: 12,
-  },
-  locationLeft: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 8,
-    flex: 1,
-    marginRight: 12,
-  },
-  locationText: {
-    fontSize: 13,
-    color: T.textSecondary,
-    flex: 1,
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: T.amberBg,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   distanceText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
+    fontSize: 12,
+    fontWeight: '700',
     color: T.amber,
   },
-  statsRow: {
-    flexDirection: 'row' as const,
+  actionRow: {
+    flexDirection: 'row',
     paddingHorizontal: 16,
-    gap: 10,
+    gap: 12,
     marginBottom: 16,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 14,
+  },
+  actionBtnAmber: {
+    backgroundColor: T.amber,
+  },
+  actionBtnNavy: {
+    backgroundColor: T.navy,
+  },
+  actionBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.white,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    overflow: 'hidden',
   },
   statCard: {
     flex: 1,
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center' as const,
-    borderWidth: 1,
-    borderColor: T.border,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  statCardBorder: {
+    borderRightWidth: 1,
+    borderRightColor: T.border,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: '800' as const,
+    fontSize: 17,
+    fontWeight: '800',
     color: T.text,
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 11,
-    fontWeight: '500' as const,
+    fontWeight: '500',
     color: T.textSecondary,
   },
-  categoryList: {
-    paddingHorizontal: 16,
-    gap: 8,
-    marginBottom: 16,
-  },
-  categoryPill: {
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 20,
-  },
-  categoryPillActive: {
-    backgroundColor: T.navy,
-  },
-  categoryPillInactive: {
-    backgroundColor: T.bg,
+  contactCard: {
+    marginHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: T.surface,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: T.border,
+    padding: 16,
+    gap: 12,
   },
-  categoryText: {
+  contactTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.text,
+    marginBottom: 4,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  contactIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: T.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contactText: {
+    flex: 1,
     fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  categoryTextActive: {
-    color: T.white,
-  },
-  categoryTextInactive: {
     color: T.textSecondary,
+    lineHeight: 19,
+    paddingTop: 6,
   },
   sectionHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
+    fontSize: 16,
+    fontWeight: '700',
     color: T.text,
   },
   sectionCount: {
@@ -379,7 +510,7 @@ const s = {
     color: T.textSecondary,
   },
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: 32,
   },
   columnWrapper: {
     paddingHorizontal: 16,
@@ -391,53 +522,87 @@ const s = {
     borderRadius: 14,
     borderWidth: 1,
     borderColor: T.border,
-    overflow: 'hidden' as const,
+    overflow: 'hidden',
   },
   productImage: {
     height: 120,
+    width: '100%',
     backgroundColor: T.bg,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+  },
+  badgeWrap: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: T.amber,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: T.white,
   },
   productInfo: {
-    padding: 12,
+    padding: 10,
   },
   productName: {
-    fontSize: 13,
-    fontWeight: '600' as const,
+    fontSize: 12,
+    fontWeight: '600',
     color: T.text,
-    lineHeight: 18,
-    marginBottom: 6,
+    lineHeight: 17,
+    marginBottom: 3,
+  },
+  productBrand: {
+    fontSize: 11,
+    color: T.textMuted,
+    marginBottom: 5,
   },
   productRatingRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-    marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginBottom: 5,
   },
   productRating: {
     fontSize: 12,
-    fontWeight: '600' as const,
+    fontWeight: '600',
     color: T.textSecondary,
   },
+  productReviews: {
+    fontSize: 11,
+    color: T.textMuted,
+  },
+  productPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 9,
+  },
   productPrice: {
-    fontSize: 16,
-    fontWeight: '800' as const,
+    fontSize: 15,
+    fontWeight: '800',
     color: T.amber,
-    marginBottom: 10,
   },
-  addToCartBtn: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  productUnit: {
+    fontSize: 10,
+    color: T.textMuted,
+    marginLeft: 2,
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: T.navy,
-    borderRadius: 10,
-    paddingVertical: 9,
-    gap: 6,
+    borderRadius: 9,
+    paddingVertical: 8,
+    gap: 5,
   },
-  addToCartText: {
+  addBtnActive: {
+    backgroundColor: T.success,
+  },
+  addBtnText: {
     fontSize: 12,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: T.white,
   },
-};
+});

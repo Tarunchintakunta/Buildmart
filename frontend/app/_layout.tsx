@@ -6,8 +6,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../src/hooks/useAuth';
+import { setupNotificationHandler } from '../src/utils/notifications';
+import ErrorBoundary from '../src/components/ui/ErrorBoundary';
 import '../src/i18n';
 import '../global.css';
+
+// Register notification handler immediately (before any component mounts)
+setupNotificationHandler();
 
 function RootLayoutNav() {
   const { isInitialized, isAuthenticated, initialize } = useAuth();
@@ -62,10 +67,12 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <RootLayoutNav />
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <RootLayoutNav />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
