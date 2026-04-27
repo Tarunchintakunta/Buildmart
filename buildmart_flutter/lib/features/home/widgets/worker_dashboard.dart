@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -102,18 +103,26 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard>
 
             // Availability card with animated banner
             _staggeredItem(0, _buildAvailabilityCard(firstName)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+
+            // Today at a Glance
+            _staggeredItem(1, _buildTodayStats()),
+            const SizedBox(height: 14),
+
+            // Quick actions row
+            _staggeredItem(2, _buildQuickActions()),
+            const SizedBox(height: 14),
 
             // Earnings card
-            _staggeredItem(1, _buildEarningsCard()),
-            const SizedBox(height: 16),
+            _staggeredItem(3, _buildEarningsCard()),
+            const SizedBox(height: 14),
 
             // Jobs completed radial progress
-            _staggeredItem(2, _buildJobsCompletedCard()),
+            _staggeredItem(4, _buildJobsCompletedCard()),
             const SizedBox(height: 16),
 
             // Job Requests header
-            _staggeredItem(3, const Text('Job Requests',
+            _staggeredItem(5, const Text('Job Requests',
                 style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -122,7 +131,7 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard>
 
             // Job request cards
             for (int i = 0; i < _jobRequests.length; i++) ...[
-              _staggeredItem(4 + i, _JobRequestCard(job: _jobRequests[i])),
+              _staggeredItem(6 + i, _JobRequestCard(job: _jobRequests[i])),
               const SizedBox(height: 10),
             ],
 
@@ -264,6 +273,87 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTodayStats() {
+    const stats = [
+      (label: "Today's Pay", value: '₹850', icon: Icons.payments_outlined, color: AppColors.amber),
+      (label: 'Rating', value: '4.7★', icon: Icons.star_outline, color: Color(0xFFFBBF24)),
+      (label: 'Active Job', value: '1', icon: Icons.work_outline, color: AppColors.worker),
+    ];
+    return Row(
+      children: stats.asMap().entries.map((e) {
+        final i = e.key;
+        final s = e.value;
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.navy.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Icon(s.icon, color: s.color, size: 20),
+                const SizedBox(height: 6),
+                Text(s.value,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: s.color)),
+                const SizedBox(height: 2),
+                Text(s.label,
+                    style: const TextStyle(
+                        fontSize: 10, color: AppColors.textMuted),
+                    textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickActionBtn(
+            icon: Icons.work_outline,
+            label: 'Find Jobs',
+            color: AppColors.worker,
+            onTap: () => context.go('/jobs'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _QuickActionBtn(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'My Wallet',
+            color: AppColors.amber,
+            onTap: () => context.go('/wallet'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _QuickActionBtn(
+            icon: Icons.handshake_outlined,
+            label: 'Agreements',
+            color: AppColors.navy,
+            onTap: () => context.go('/agreements'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -427,6 +517,62 @@ class _WorkerDashboardState extends ConsumerState<WorkerDashboard>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Quick action button
+// ---------------------------------------------------------------------------
+
+class _QuickActionBtn extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _QuickActionBtn({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+  @override
+  State<_QuickActionBtn> createState() => _QuickActionBtnState();
+}
+
+class _QuickActionBtnState extends State<_QuickActionBtn> {
+  bool _pressed = false;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: widget.color.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: widget.color.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            children: [
+              Icon(widget.icon, color: widget.color, size: 20),
+              const SizedBox(height: 5),
+              Text(widget.label,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: widget.color),
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
       ),
     );
   }

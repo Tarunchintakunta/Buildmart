@@ -466,20 +466,67 @@ class _EmptyState extends StatelessWidget {
     return Center(
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 600),
+        duration: const Duration(milliseconds: 700),
         curve: Curves.elasticOut,
         builder: (_, v, child) => Transform.scale(scale: v, child: child),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people_outline, size: 64, color: _textMuted),
-            SizedBox(height: 16),
-            Text('No workers found',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _navy)),
-            SizedBox(height: 8),
-            Text('Try a different skill or search term.',
-                style: TextStyle(color: _textSecondary, fontSize: 14)),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Illustrated icon stack
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: _navy.withValues(alpha: 0.04),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: _navy.withValues(alpha: 0.06),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const Icon(Icons.people_outline, size: 48, color: _textMuted),
+                    Positioned(
+                      bottom: 16,
+                      right: 16,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: _amber,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(Icons.search_off, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text('No workers found',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: _navy)),
+              const SizedBox(height: 8),
+              const Text('Try a different skill, location\nor search term.',
+                  style: TextStyle(color: _textSecondary, fontSize: 14),
+                  textAlign: TextAlign.center),
+            ],
+          ),
         ),
       ),
     );

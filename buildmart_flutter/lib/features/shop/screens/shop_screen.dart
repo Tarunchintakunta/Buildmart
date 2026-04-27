@@ -597,6 +597,36 @@ class _PulsingBadgeState extends State<_PulsingBadge>
   }
 }
 
+// ─── Category icon/color helpers ────────────────────────────────────────────
+
+IconData _categoryIcon(String cat) {
+  switch (cat) {
+    case 'Cement':   return Icons.architecture;
+    case 'Steel':    return Icons.straighten;
+    case 'Bricks':   return Icons.grid_view;
+    case 'Paint':    return Icons.format_paint;
+    case 'Pipes':    return Icons.plumbing;
+    case 'Electric': return Icons.electrical_services;
+    case 'Hardware': return Icons.hardware;
+    case 'Sand':     return Icons.terrain;
+    default:         return Icons.inventory_2;
+  }
+}
+
+Color _categoryColor(String cat) {
+  switch (cat) {
+    case 'Cement':   return const Color(0xFF6B7280);
+    case 'Steel':    return const Color(0xFF3B82F6);
+    case 'Bricks':   return const Color(0xFFEF4444);
+    case 'Paint':    return const Color(0xFF8B5CF6);
+    case 'Pipes':    return const Color(0xFF06B6D4);
+    case 'Electric': return const Color(0xFFF59E0B);
+    case 'Hardware': return const Color(0xFF10B981);
+    case 'Sand':     return const Color(0xFFD97706);
+    default:         return const Color(0xFF6B7280);
+  }
+}
+
 // ─── Product Card ───────────────────────────────────────────────────────────
 
 class _ProductCard extends StatefulWidget {
@@ -667,15 +697,42 @@ class _ProductCardState extends State<_ProductCard>
                         height: 130,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 130,
-                          color: _bg,
-                        ),
-                        errorWidget: (context, url, err) => Container(
-                          height: 130,
-                          color: _bg,
-                          child: const Icon(Icons.image_not_supported, color: _textMuted),
-                        ),
+                        placeholder: (context, url) {
+                          final color = _categoryColor(widget.product.category);
+                          return Container(
+                            height: 130,
+                            color: color.withValues(alpha: 0.07),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: color.withValues(alpha: 0.4),
+                              ),
+                            ),
+                          );
+                        },
+                        errorWidget: (context, url, err) {
+                          final icon = _categoryIcon(widget.product.category);
+                          final color = _categoryColor(widget.product.category);
+                          return Container(
+                            height: 130,
+                            color: color.withValues(alpha: 0.07),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(icon, size: 44, color: color.withValues(alpha: 0.55)),
+                                const SizedBox(height: 6),
+                                Text(
+                                  widget.product.category,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: color.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
                     if (widget.product.badge != null)

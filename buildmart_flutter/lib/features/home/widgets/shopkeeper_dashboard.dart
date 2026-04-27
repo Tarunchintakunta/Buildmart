@@ -155,6 +155,8 @@ class _ShopkeeperDashboardState extends ConsumerState<ShopkeeperDashboard>
                   items: 'Portland Cement x10 bags',
                   amount: '₹3,800',
                   time: '10 min ago',
+                  itemIcon: Icons.architecture,
+                  itemColor: const Color(0xFF6B7280),
                 )),
                 const SizedBox(height: 10),
                 _staggeredItem(5, _buildPendingOrder(
@@ -163,6 +165,8 @@ class _ShopkeeperDashboardState extends ConsumerState<ShopkeeperDashboard>
                   items: 'TMT Steel 12mm x2 bundles',
                   amount: '₹10,400',
                   time: '28 min ago',
+                  itemIcon: Icons.straighten,
+                  itemColor: const Color(0xFF3B82F6),
                 )),
                 const SizedBox(height: 16),
 
@@ -499,7 +503,16 @@ class _ShopkeeperDashboardState extends ConsumerState<ShopkeeperDashboard>
     required String items,
     required String amount,
     required String time,
+    IconData itemIcon = Icons.inventory_2,
+    Color itemColor = AppColors.amber,
   }) {
+    final initials = customer
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .take(2)
+        .map((w) => w[0].toUpperCase())
+        .join();
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -529,16 +542,63 @@ class _ShopkeeperDashboardState extends ConsumerState<ShopkeeperDashboard>
                   style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(customer,
-              style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500)),
-          const SizedBox(height: 2),
-          Text(items,
-              style: const TextStyle(
-                  fontSize: 13, color: AppColors.textSecondary)),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Customer avatar
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.navy.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(initials,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.navy)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(customer,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: itemColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Icon(itemIcon, size: 12, color: itemColor),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(items,
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textSecondary),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           Row(
             children: [

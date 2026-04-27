@@ -327,6 +327,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       case 'Users':
         context.go('/users');
         break;
+      case 'Availability':
+        context.push('/availability');
+        break;
+      case 'Job History':
+        context.push('/job-history');
+        break;
+      case 'Skills':
+        context.push('/skills');
+        break;
+      case 'Certifications':
+        context.push('/certifications');
+        break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Coming soon!')));

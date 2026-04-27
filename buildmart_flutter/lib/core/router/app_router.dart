@@ -22,6 +22,10 @@ import '../../features/admin/screens/verifications_screen.dart';
 import '../../features/admin/screens/users_screen.dart';
 import '../../features/shop/screens/checkout_screen.dart';
 import '../../features/workers/screens/hire_screen.dart';
+import '../../features/workers/screens/job_history_screen.dart';
+import '../../features/workers/screens/skills_screen.dart';
+import '../../features/workers/screens/certifications_screen.dart';
+import '../../features/jobs/screens/availability_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -153,6 +157,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/availability',
+        builder: (context, state) => const AvailabilityScreen(),
+      ),
+      GoRoute(
+        path: '/job-history',
+        builder: (context, state) => const JobHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/skills',
+        builder: (context, state) => const SkillsScreen(),
+      ),
+      GoRoute(
+        path: '/certifications',
+        builder: (context, state) => const CertificationsScreen(),
       ),
     ],
   );
