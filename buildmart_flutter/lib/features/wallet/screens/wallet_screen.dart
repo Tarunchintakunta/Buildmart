@@ -643,14 +643,7 @@ class _WalletScreenState extends State<WalletScreen>
 
             const Text('Pay via', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _navy)),
             const SizedBox(height: 10),
-            _PayMethodTile(icon: Icons.qr_code_scanner_rounded, label: 'UPI / QR Code',
-                subtitle: 'Instant transfer', color: _success),
-            const SizedBox(height: 8),
-            _PayMethodTile(icon: Icons.credit_card_rounded, label: 'Debit / Credit Card',
-                subtitle: 'Visa • Mastercard • RuPay', color: _info),
-            const SizedBox(height: 8),
-            _PayMethodTile(icon: Icons.account_balance_rounded, label: 'Net Banking',
-                subtitle: 'All major banks supported', color: const Color(0xFF8B5CF6)),
+            _SingleSelectPayMethods(),
             const SizedBox(height: 20),
 
             SizedBox(
@@ -1032,41 +1025,82 @@ class _TransactionCardState extends State<_TransactionCard>
   }
 }
 
-// ─── Pay Method Tile ──────────────────────────────────────────────────────────
-class _PayMethodTile extends StatefulWidget {
+// ─── Single-select payment methods (fixes issue #19) ─────────────────────────
+class _SingleSelectPayMethods extends StatefulWidget {
+  const _SingleSelectPayMethods();
+  @override
+  State<_SingleSelectPayMethods> createState() => _SingleSelectPayMethodsState();
+}
+
+class _SingleSelectPayMethodsState extends State<_SingleSelectPayMethods> {
+  int _selected = 0; // default: UPI selected
+
+  static const _methods = [
+    (Icons.qr_code_scanner_rounded, 'UPI / QR Code',      'Instant transfer',            _success),
+    (Icons.credit_card_rounded,      'Debit / Credit Card', 'Visa • Mastercard • RuPay',   _info),
+    (Icons.account_balance_rounded,  'Net Banking',         'All major banks supported',    Color(0xFF8B5CF6)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: _methods.asMap().entries.map((e) {
+        final i = e.key;
+        final m = e.value;
+        final sel = _selected == i;
+        return Padding(
+          padding: EdgeInsets.only(bottom: i < _methods.length - 1 ? 8 : 0),
+          child: _PayMethodTile(
+            icon: m.$1, label: m.$2, subtitle: m.$3, color: m.$4,
+            isSelected: sel,
+            onSelect: () => setState(() => _selected = i),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ─── Pay Method Tile (stateless — selection managed by parent) ────────────────
+class _PayMethodTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final String subtitle;
   final Color color;
-  const _PayMethodTile({required this.icon, required this.label, required this.subtitle, required this.color});
-  @override
-  State<_PayMethodTile> createState() => _PayMethodTileState();
-}
+  final bool isSelected;
+  final VoidCallback onSelect;
 
-class _PayMethodTileState extends State<_PayMethodTile> {
-  bool _sel = false;
+  const _PayMethodTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.isSelected,
+    required this.onSelect,
+  });
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => setState(() => _sel = !_sel),
+      onTap: onSelect,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: _sel ? widget.color.withValues(alpha: 0.06) : Colors.white,
-          border: Border.all(color: _sel ? widget.color : _border, width: _sel ? 2 : 1),
+          color: isSelected ? color.withValues(alpha: 0.06) : Colors.white,
+          border: Border.all(color: isSelected ? color : _border, width: isSelected ? 2 : 1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
             Container(width: 36, height: 36,
-              decoration: BoxDecoration(color: widget.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-              child: Icon(widget.icon, color: widget.color, size: 18)),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: color, size: 18)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(widget.label, style: const TextStyle(fontWeight: FontWeight.w700, color: _navy, fontSize: 13)),
-                Text(widget.subtitle, style: const TextStyle(color: _textSec, fontSize: 11)),
+                Text(label, style: const TextStyle(fontWeight: FontWeight.w700, color: _navy, fontSize: 13)),
+                Text(subtitle, style: const TextStyle(color: _textSec, fontSize: 11)),
               ]),
             ),
             AnimatedContainer(
@@ -1074,10 +1108,10 @@ class _PayMethodTileState extends State<_PayMethodTile> {
               width: 20, height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: _sel ? widget.color : _border, width: 2),
-                color: _sel ? widget.color : Colors.transparent,
+                border: Border.all(color: isSelected ? color : _border, width: 2),
+                color: isSelected ? color : Colors.transparent,
               ),
-              child: _sel ? const Icon(Icons.check, size: 12, color: Colors.white) : null,
+              child: isSelected ? const Icon(Icons.check, size: 12, color: Colors.white) : null,
             ),
           ],
         ),

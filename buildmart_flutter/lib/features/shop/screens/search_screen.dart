@@ -175,25 +175,27 @@ class _SearchScreenState extends State<SearchScreen>
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, -1),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: _barCtrl, curve: Curves.easeOutCubic)),
+        title: FadeTransition(
+          opacity: CurvedAnimation(parent: _barCtrl, curve: Curves.easeOut),
           child: Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.13),
+                color: Colors.white.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
               ),
               child: TextField(
                 controller: _controller,
                 focusNode: _focusNode,
                 autofocus: true,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                cursorColor: Colors.white,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Search products...',
                   hintStyle: TextStyle(

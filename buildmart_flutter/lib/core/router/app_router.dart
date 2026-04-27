@@ -20,6 +20,8 @@ import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/chat/screens/chat_screen.dart';
 import '../../features/admin/screens/verifications_screen.dart';
 import '../../features/admin/screens/users_screen.dart';
+import '../../features/shop/screens/checkout_screen.dart';
+import '../../features/workers/screens/hire_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -104,15 +106,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             ProductDetailScreen(productId: state.pathParameters['id'] ?? ''),
       ),
+      // /order/:id  and  /orders/:id  both resolve to OrderDetailScreen
       GoRoute(
         path: '/order/:id',
         builder: (context, state) =>
-            OrderDetailScreen(orderId: state.pathParameters['id'] ?? ''),
+            OrderDetailScreen(orderId: state.pathParameters['id'] ?? '', extra: state.extra),
       ),
+      GoRoute(
+        path: '/orders/:id',
+        builder: (context, state) =>
+            OrderDetailScreen(orderId: state.pathParameters['id'] ?? '', extra: state.extra),
+      ),
+      // /worker/:id  and  /workers/:id  both resolve to WorkerDetailScreen
       GoRoute(
         path: '/worker/:id',
         builder: (context, state) =>
-            WorkerDetailScreen(workerId: state.pathParameters['id'] ?? ''),
+            WorkerDetailScreen(workerId: state.pathParameters['id'] ?? '', extra: state.extra),
+      ),
+      GoRoute(
+        path: '/workers/:id',
+        builder: (context, state) =>
+            WorkerDetailScreen(workerId: state.pathParameters['id'] ?? '', extra: state.extra),
+        routes: [
+          GoRoute(
+            path: 'hire',
+            builder: (context, state) =>
+                HireScreen(workerId: state.pathParameters['id'] ?? '', extra: state.extra),
+          ),
+        ],
+      ),
+      // Checkout
+      GoRoute(
+        path: '/shop/checkout',
+        builder: (context, state) => const CheckoutScreen(),
       ),
       GoRoute(
         path: '/agreement/:id',
