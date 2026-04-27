@@ -9,12 +9,16 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native builds
-ios/
-android/
+# Native builds (ignore at root level only — buildmart_flutter/android is tracked)
+/ios/
+/android/
 *.apk
 *.aab
 *.ipa
+
+# Allow Flutter's native directories
+!buildmart_flutter/android/
+!buildmart_flutter/ios/
 
 # Environment variables
 .env

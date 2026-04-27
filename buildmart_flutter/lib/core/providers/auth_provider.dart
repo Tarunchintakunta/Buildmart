@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
+import '../config/supabase_config.dart';
 
 // ---------------------------------------------------------------------------
 // UserRole
@@ -215,15 +217,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier() : super(const AuthState());
 
   // ------------------------------------------------------------------
-  // Session restore (called by SplashScreen for backward compat)
+  // Session restore
   // ------------------------------------------------------------------
 
   Future<void> checkSavedAuth() async {
     state = state.copyWith(isLoading: true);
     try {
+      // ── Real Supabase mode ──────────────────────────────────────────
+      if (SupabaseConfig.isConfigured) {
+        final session = sb.Supabase.instance.client.auth.currentSession;
+        if (session != null) {
+          final user = await _fetchSupabaseProfile(session.user.id, session.user.phone ?? '');
+          if (user != null) {
+            state = AuthState(user: user, isLoading: false);
+            return;
+          }
+        }
+      }
+      // ── Mock/dev mode ───────────────────────────────────────────────
       final prefs = await SharedPreferences.getInstance();
-      final savedPhone = prefs.getString(_kPhoneKey) ??
-          prefs.getString('saved_phone'); // old key
+      final savedPhone = prefs.getString(_kPhoneKey) ?? prefs.getString('saved_phone');
       if (savedPhone != null) {
         final user = _findSeedUser(savedPhone);
         if (user != null) {
@@ -238,7 +251,51 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   // ------------------------------------------------------------------
-  // Login
+  // Send OTP  (Step 1 of real Supabase phone auth)
+  // ------------------------------------------------------------------
+
+  /// Sends a one-time password to [phone] via Supabase/Twilio.
+  /// Returns an error message on failure, null on success.
+  Future<String?> sendOtp(String phone) async {
+    if (!SupabaseConfig.isConfigured) return null; // dev mode — skip
+    try {
+      final formatted = phone.startsWith('+') ? phone : '+91$phone';
+      await sb.Supabase.instance.client.auth.signInWithOtp(phone: formatted);
+      return null;
+    } on sb.AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Verify OTP  (Step 2 of real Supabase phone auth)
+  // ------------------------------------------------------------------
+
+  /// Verifies the OTP and returns null on success, error message on failure.
+  Future<String?> verifyOtp(String phone, String otp) async {
+    if (!SupabaseConfig.isConfigured) return null;
+    try {
+      final formatted = phone.startsWith('+') ? phone : '+91$phone';
+      final res = await sb.Supabase.instance.client.auth.verifyOTP(
+        phone: formatted,
+        token: otp,
+        type: sb.OtpType.sms,
+      );
+      if (res.user == null) return 'Verification failed';
+      final user = await _fetchSupabaseProfile(res.user!.id, phone);
+      if (user != null) state = AuthState(user: user, isLoading: false);
+      return null;
+    } on sb.AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Dev / seed login (mock mode)
   // ------------------------------------------------------------------
 
   /// Logs in by matching the phone number against seed users.
@@ -270,6 +327,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     try {
+      if (SupabaseConfig.isConfigured) {
+        await sb.Supabase.instance.client.auth.signOut();
+      }
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_kPhoneKey);
       await prefs.remove('saved_phone');
@@ -292,11 +352,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void updateProfile({String? fullName, String? email, String? city}) {
     if (state.user != null) {
       state = state.copyWith(
-        user: state.user!.copyWith(
-          fullName: fullName,
-          email: email,
-          city: city,
-        ),
+        user: state.user!.copyWith(fullName: fullName, email: email, city: city),
       );
     }
   }
@@ -310,6 +366,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return seedUsers.firstWhere((u) => u.phone == phone);
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Fetches user profile from Supabase `profiles` table.
+  /// Falls back to a basic AppUser if profile doesn't exist yet.
+  Future<AppUser?> _fetchSupabaseProfile(String uid, String phone) async {
+    try {
+      final data = await sb.Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', uid)
+          .single();
+      return AppUser(
+        id: uid,
+        phone: phone.replaceAll('+91', '').replaceAll('+', ''),
+        fullName: data['full_name'] as String? ?? 'User',
+        role: UserRoleExtension.fromString(data['role'] as String? ?? 'customer'),
+        walletBalance: (data['wallet_balance'] as num?)?.toDouble() ?? 0.0,
+        email: data['email'] as String?,
+        city: data['city'] as String?,
+      );
+    } catch (e) {
+      debugPrint('_fetchSupabaseProfile error: $e');
+      // Return minimal user so login still proceeds
+      return AppUser(
+        id: uid,
+        phone: phone,
+        fullName: 'User',
+        role: UserRole.customer,
+        walletBalance: 0,
+      );
     }
   }
 }
